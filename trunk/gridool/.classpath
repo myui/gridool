@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="junk/|java/" kind="src" path="main/test"/>
+	<classpathentry kind="src" path="main/test/java"/>
+	<classpathentry kind="src" path="main/src"/>
+	<classpathentry kind="src" path="main/conf"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/jgroups-core-2.6.3.GA.jar"/>
+	<classpathentry kind="lib" path="lib/optional/tokyocabinet-1.14.jar"/>
+	<classpathentry kind="lib" path="lib/jsr305.jar"/>
+	<classpathentry kind="lib" path="lib/args4j-2.0.4.jar"/>
+	<classpathentry kind="lib" path="lib/optional/junit-4.1.jar"/>
+	<classpathentry kind="lib" path="lib/commons-logging-1.0.4.jar"/>
+	<classpathentry kind="lib" path="lib/optional/log4j-1.2.13.jar"/>
+	<classpathentry kind="lib" path="lib/optional/sigar-1.6.3.jar">
+		<attributes>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="gridool/lib/native/sigar"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/xbird-open-1.0.jar" sourcepath="/xbird-open"/>
+	<classpathentry kind="output" path="build"/>
+</classpath>
