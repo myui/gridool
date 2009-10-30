@@ -73,8 +73,7 @@ public final class GridTaskProcessorService implements GridService, Runnable {
             final GridTask task;
             try {
                 task = incomingQueue.consumeTask();
-            } catch (InterruptedException e) {
-                // fall through and retry
+            } catch (InterruptedException e) {// fall through
                 Thread.currentThread().interrupt();
                 return;
             }
