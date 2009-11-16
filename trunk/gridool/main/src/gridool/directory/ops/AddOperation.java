@@ -114,6 +114,7 @@ public class AddOperation implements DirectoryOperation {
         return idxName;
     }
 
+    @SuppressWarnings("unchecked")
     public byte[][] getKeys() {
         if(keys instanceof ImmutableArrayList) {
             return ((ImmutableArrayList<byte[]>) keys).getInternalArray();
@@ -122,6 +123,7 @@ public class AddOperation implements DirectoryOperation {
         return keys.toArray(b);
     }
 
+    @SuppressWarnings("unchecked")
     public byte[][] getValues() {
         if(values instanceof ImmutableArrayList) {
             return ((ImmutableArrayList<byte[]>) values).getInternalArray();

@@ -56,7 +56,7 @@ public class ConsistentHashTest {
             for(int replica : numReplicas) {
                 doTest(objects, numNodes, replica, algo);
             }
-            System.out.flush();            
+            System.out.flush();
             System.err.flush();
         }
 
@@ -90,12 +90,10 @@ public class ConsistentHashTest {
         final TreeMap<Long, MutableInt> circle = new TreeMap<Long, MutableInt>();
 
         final int replicas;
-        final int totalNodes;
 
         CHash(int nodes, int replicas, HashAlgorithm algo) {
             this.hashfunc = new DefaultHashFunction(algo);
             this.replicas = replicas;
-            this.totalNodes = nodes;
             this.counters = new ArrayList<MutableInt>(nodes);
             prepareNodes(nodes);
         }

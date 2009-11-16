@@ -24,7 +24,6 @@ import gridool.GridConfiguration;
 import gridool.GridErrorDescription;
 import gridool.GridNode;
 import gridool.GridRuntimeException;
-import gridool.GridTask;
 import gridool.discovery.DiscoveryEvent;
 import gridool.routing.GridNodeSelector;
 import gridool.routing.GridTaskRouter;
@@ -131,20 +130,20 @@ public final class ConsistentHashRouter implements GridTaskRouter {
     }
 
     @Nonnull
-    public GridNode selectNode(@Nonnull GridTask task) {
+    public GridNode selectNode(@Nonnull byte[] key) {
         final GridNodeSelector selector = config.getNodeSelector();
 
         final List<GridNode> nodes;
         final Lock rlock = rwLock.readLock();
         rlock.lock();
         try {
-            Iterator<GridNode> itor = consistentHash.getAll(task);
+            Iterator<GridNode> itor = consistentHash.getAll(key);
             nodes = IteratorUtils.toListUnique(itor);
         } finally {
             rlock.unlock();
         }
 
-        final GridNode node = selector.selectNode(nodes, task, config);
+        final GridNode node = selector.selectNode(nodes, key, config);
         if(node == null) {// There should be at least one node, i.e., local node, in the gird.
             throw new GridRuntimeException(GridErrorDescription.NODE_NOT_FOUND);
         }

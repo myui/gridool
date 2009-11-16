@@ -26,7 +26,8 @@ import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
-import gridool.directory.ops.GridNodeAddOperation;
+import gridool.directory.helpers.DirectoryTaskAdapter;
+import gridool.directory.ops.AddGridNodeOperation;
 import gridool.routing.GridTaskRouter;
 import gridool.util.GridUtils;
 
@@ -48,10 +49,10 @@ import xbird.util.collections.UnmodifiableJointList;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public final class GridNodeDirectoryAddJob extends GridJobBase<GridNodeAddOperation, Serializable> {
+public final class DirectoryAddGridNodeJob extends GridJobBase<AddGridNodeOperation, Serializable> {
     private static final long serialVersionUID = 5629533496790915661L;
 
-    public GridNodeDirectoryAddJob() {
+    public DirectoryAddGridNodeJob() {
         super();
     }
 
@@ -61,7 +62,7 @@ public final class GridNodeDirectoryAddJob extends GridJobBase<GridNodeAddOperat
     }
 
     @SuppressWarnings("unchecked")
-    public Map<GridTask, GridNode> map(GridTaskRouter router, GridNodeAddOperation ops)
+    public Map<GridTask, GridNode> map(GridTaskRouter router, AddGridNodeOperation ops)
             throws GridException {
         final int gridSize = router.getGridSize();
         final GridNode[] allNodes = router.getAllNodes();
@@ -94,7 +95,7 @@ public final class GridNodeDirectoryAddJob extends GridJobBase<GridNodeAddOperat
             byte[][] mappedKeys = new byte[mappedKeysList.size()][];
             mappedKeysList.toArray(mappedKeys);
 
-            GridNodeAddOperation shrinkedOps = ops.makeOperation(mappedKeys);
+            AddGridNodeOperation shrinkedOps = ops.makeOperation(mappedKeys);
             GridTask task = new DirectoryTaskAdapter(this, shrinkedOps);
             map.put(task, node);
         }

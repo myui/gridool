@@ -20,17 +20,16 @@
  */
 package gridool.routing.selector;
 
+import gridool.GridConfiguration;
+import gridool.GridNode;
+import gridool.routing.GridNodeSelector;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import gridool.GridConfiguration;
-import gridool.GridNode;
-import gridool.GridTask;
-import gridool.routing.GridNodeSelector;
 
 /**
  * 
@@ -47,7 +46,7 @@ public final class RandomNodeSelector implements GridNodeSelector {
     public RandomNodeSelector() {}
 
     @Nullable
-    public GridNode selectNode(@Nonnull List<GridNode> nodeList, @Nullable GridTask task, GridConfiguration config) {
+    public GridNode selectNode(@Nonnull List<GridNode> nodeList, @Nullable byte[] key, GridConfiguration config) {
         final int size = nodeList.size();
         if(size == 0) {
             return null;

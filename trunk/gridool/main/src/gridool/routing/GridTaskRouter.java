@@ -21,7 +21,6 @@
 package gridool.routing;
 
 import gridool.GridNode;
-import gridool.GridTask;
 import gridool.discovery.GridDiscoveryListener;
 
 import java.util.List;
@@ -38,8 +37,8 @@ import javax.annotation.Nonnull;
 public interface GridTaskRouter extends GridDiscoveryListener {
 
     GridNodeSelector getNodeSelector();
-    
-    int getGridSize();    
+
+    int getGridSize();
 
     @Nonnull
     GridNode[] getAllNodes();
@@ -48,7 +47,7 @@ public interface GridTaskRouter extends GridDiscoveryListener {
     List<GridNode> getNodes(int maxNodesToSelect);
 
     @Nonnull
-    GridNode selectNode(@Nonnull GridTask task);
+    GridNode selectNode(@Nonnull byte[] key);
 
     @Nonnull
     List<GridNode> selectNodes(@Nonnull byte[] key);

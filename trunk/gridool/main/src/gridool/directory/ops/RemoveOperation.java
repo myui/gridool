@@ -95,6 +95,7 @@ public final class RemoveOperation implements DirectoryOperation {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public byte[][] getKeys() {
         if(keys instanceof ImmutableArrayList) {
             return ((ImmutableArrayList<byte[]>) keys).getInternalArray();

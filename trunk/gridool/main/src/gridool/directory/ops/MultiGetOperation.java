@@ -84,6 +84,7 @@ public final class MultiGetOperation implements DirectoryOperation {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public byte[][] getKeys() {
         if(_keys instanceof ImmutableArrayList) {
             return ((ImmutableArrayList<byte[]>) _keys).getInternalArray();

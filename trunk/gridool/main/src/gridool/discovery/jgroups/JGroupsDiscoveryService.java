@@ -291,12 +291,12 @@ public final class JGroupsDiscoveryService extends DiscoveryServiceBase {
                         if(nodeInfo == null) {
                             continue;
                         }
-        
+
                         final JGroupsNode newTransportNode = new JGroupsNode(nodeInfo);
                         if(nodeInfo.equals(localTransportNodeInfo)) {
                             GridNodeMetrics metrics = metricsProvider.getMetrics();
                             newTransportNode.setMetrics(metrics);
-                        }                        
+                        }
                         handleJoin(newTransportNode);
                     }
                 }
@@ -354,7 +354,7 @@ public final class JGroupsDiscoveryService extends DiscoveryServiceBase {
     private static final class MetricsSender extends Thread {
 
         final JGroupsDiscoveryService gms;
-        final JChannel channel;
+        //final JChannel channel;
         final GridNodeMetricsProvider metricsProvider;
         final IpAddress localAddr;
         final GridConfiguration config;
@@ -364,7 +364,7 @@ public final class JGroupsDiscoveryService extends DiscoveryServiceBase {
         public MetricsSender(@Nonnull JGroupsDiscoveryService groupsDiscoveryService, @Nonnull JChannel channel, @Nonnull GridNodeMetricsProvider metricsProvider, @Nonnull GridConfiguration config, int initialDelay) {
             super("gridool-grid-metrics-sender");
             this.gms = groupsDiscoveryService;
-            this.channel = channel;
+            //this.channel = channel;
             this.metricsProvider = metricsProvider;
             this.localAddr = (IpAddress) channel.getLocalAddress();
             this.config = config;
@@ -383,7 +383,7 @@ public final class JGroupsDiscoveryService extends DiscoveryServiceBase {
                 }
             }
             while(!isInterrupted()) {
-                final GridNodeMetrics metrics = metricsProvider.getMetrics();       
+                final GridNodeMetrics metrics = metricsProvider.getMetrics();
 
                 // handle local metrics update
                 gms.onMetricsReceived(localAddr, metrics);

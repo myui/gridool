@@ -20,17 +20,16 @@
  */
 package gridool.routing.selector;
 
+import gridool.GridConfiguration;
+import gridool.GridNode;
+import gridool.loadblancing.GridLoadProbe;
+import gridool.routing.GridNodeSelector;
+
 import java.util.LinkedList;
 import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import gridool.GridConfiguration;
-import gridool.GridNode;
-import gridool.GridTask;
-import gridool.loadblancing.GridLoadProbe;
-import gridool.routing.GridNodeSelector;
 
 /**
  * 
@@ -44,7 +43,7 @@ public final class LoadBalancingNodeSelector implements GridNodeSelector {
     public LoadBalancingNodeSelector() {}
 
     @Nullable
-    public GridNode selectNode(@Nonnull List<GridNode> nodeList, @Nullable GridTask task, @Nonnull GridConfiguration config) {
+    public GridNode selectNode(@Nonnull List<GridNode> nodeList, @Nullable byte[] key, @Nonnull GridConfiguration config) {
         final int size = nodeList.size();
         if(size == 0) {
             return null;

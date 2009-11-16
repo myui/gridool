@@ -18,7 +18,7 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.directory.job;
+package gridool.directory.helpers;
 
 import gridool.GridException;
 import gridool.GridJob;

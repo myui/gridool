@@ -20,14 +20,13 @@
  */
 package gridool.routing;
 
+import gridool.GridConfiguration;
+import gridool.GridNode;
+
 import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import gridool.GridConfiguration;
-import gridool.GridNode;
-import gridool.GridTask;
 
 /**
  * 
@@ -39,7 +38,7 @@ import gridool.GridTask;
 public interface GridNodeSelector {
 
     @Nullable
-    GridNode selectNode(@Nonnull List<GridNode> nodeList, @Nullable GridTask task, @Nonnull GridConfiguration config);
+    GridNode selectNode(@Nonnull List<GridNode> nodeList, @Nullable byte[] key, @Nonnull GridConfiguration config);
 
     @Nonnull
     List<GridNode> sortNodes(@Nonnull List<GridNode> nodeList, @Nonnull byte[] key, @Nonnull GridConfiguration config);

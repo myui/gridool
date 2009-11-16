@@ -20,14 +20,15 @@
  */
 package gridool.construct;
 
-import java.util.Collection;
-import java.util.IdentityHashMap;
-import java.util.Map;
-
 import gridool.GridException;
 import gridool.GridNode;
 import gridool.GridTask;
 import gridool.routing.GridTaskRouter;
+import gridool.util.GridUtils;
+
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 /**
  * 
@@ -52,7 +53,8 @@ public abstract class GridJobSplitAdapter<A, R> extends GridJobBase<A, R> {
 
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(tasks.size());
         for(GridTask task : tasks) {
-            GridNode mappedNode = router.selectNode(task);
+            byte[] k = GridUtils.getTaskKey(task);
+            GridNode mappedNode = router.selectNode(k);
             map.put(task, mappedNode);
         }
         return map;

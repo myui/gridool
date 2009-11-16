@@ -26,6 +26,7 @@ import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
+import gridool.directory.helpers.DirectoryTaskAdapter;
 import gridool.directory.ops.RemoveOperation;
 import gridool.routing.GridTaskRouter;
 

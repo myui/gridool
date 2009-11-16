@@ -43,16 +43,16 @@ import xbird.util.io.IOUtils;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public final class GridNodeAddOperation implements DirectoryOperation {
+public final class AddGridNodeOperation implements DirectoryOperation {
 
     @Nonnull
     private/* final */byte[][] keys;
     @Nonnull
     private/* final */GridNodeInfo node;
 
-    public GridNodeAddOperation() {}// for Externalizable
+    public AddGridNodeOperation() {}// for Externalizable
 
-    public GridNodeAddOperation(@Nonnull byte[][] keys, @Nonnull GridNodeInfo node) {
+    public AddGridNodeOperation(@Nonnull byte[][] keys, @Nonnull GridNodeInfo node) {
         assert (keys != null);
         assert (node != null);
         this.keys = keys;
@@ -100,8 +100,8 @@ public final class GridNodeAddOperation implements DirectoryOperation {
         node.writeExternal(out);
     }
 
-    public GridNodeAddOperation makeOperation(byte[][] mappedKeys) {
-        return new GridNodeAddOperation(mappedKeys, node);
+    public AddGridNodeOperation makeOperation(byte[][] mappedKeys) {
+        return new AddGridNodeOperation(mappedKeys, node);
     }
 
 }
