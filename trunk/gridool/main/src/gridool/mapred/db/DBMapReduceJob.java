@@ -80,6 +80,11 @@ public final class DBMapReduceJob extends DBMapJob {
         }
 
         @Override
+        public String getInputTableName() {
+            return jobConf.getMapOutputTableName();
+        }
+
+        @Override
         public String getOutputTableName() {
             return jobConf.getReduceOutputTableName();
         }
