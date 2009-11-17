@@ -43,12 +43,9 @@ import xbird.util.collections.ArrayQueue;
 public abstract class Dht2DBScatterReduceTask extends Dht2DBReduceTaskBase<DBRecord> {
     private static final long serialVersionUID = 868218057173104016L;
 
-    protected final DBMapReduceJobConf jobConf;
-
     @SuppressWarnings("unchecked")
     public Dht2DBScatterReduceTask(GridJob job, String inputDhtName, String destDhtName, boolean removeInputDhtOnFinish, DBMapReduceJobConf jobConf) {
-        super(job, inputDhtName, destDhtName, removeInputDhtOnFinish);
-        this.jobConf = jobConf;
+        super(job, inputDhtName, destDhtName, removeInputDhtOnFinish, jobConf);
     }
 
     @Override

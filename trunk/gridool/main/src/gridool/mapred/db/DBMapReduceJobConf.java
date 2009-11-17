@@ -102,9 +102,14 @@ public abstract class DBMapReduceJobConf implements Serializable {
     public final String getReduceOutputTableName() {
         return reduceOutputTableName;
     }
-
+    
     public final void setReduceOutputTableName(@Nonnull String reduceOutputTableName) {
         this.reduceOutputTableName = reduceOutputTableName;
+    }
+    
+    @Nullable
+    public String[] getReduceOutputFieldNames() {
+        return null;
     }
 
     @SuppressWarnings("unchecked")

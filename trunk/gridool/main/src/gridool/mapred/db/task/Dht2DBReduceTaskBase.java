@@ -24,6 +24,7 @@ import gridool.GridException;
 import gridool.GridJob;
 import gridool.GridKernel;
 import gridool.annotation.GridKernelResource;
+import gridool.mapred.db.DBMapReduceJobConf;
 import gridool.mapred.dht.task.DhtReduceTask;
 
 import java.io.Serializable;
@@ -48,6 +49,9 @@ import xbird.util.concurrent.ExecutorUtils;
 public abstract class Dht2DBReduceTaskBase<OUT_TYPE> extends DhtReduceTask {
     private static final long serialVersionUID = -8320924089618476538L;
 
+    @Nonnull
+    protected final DBMapReduceJobConf jobConf;
+    
     // ------------------------
     // injected resources
 
@@ -63,9 +67,9 @@ public abstract class Dht2DBReduceTaskBase<OUT_TYPE> extends DhtReduceTask {
     // ------------------------
 
     @SuppressWarnings("unchecked")
-    public Dht2DBReduceTaskBase(GridJob job, String inputDhtName, String destDhtName, boolean removeInputDhtOnFinish) {
+    public Dht2DBReduceTaskBase(GridJob job, String inputDhtName, String destDhtName, boolean removeInputDhtOnFinish, @Nonnull DBMapReduceJobConf jobConf) {
         super(job, inputDhtName, destDhtName, removeInputDhtOnFinish);
-
+        this.jobConf = jobConf;
     }
 
     /**
