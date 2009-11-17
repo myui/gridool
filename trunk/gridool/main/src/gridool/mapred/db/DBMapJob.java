@@ -26,7 +26,6 @@ import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
-import gridool.mapred.db.task.DBMapShuffleTask;
 import gridool.routing.GridTaskRouter;
 
 import java.util.IdentityHashMap;
@@ -48,7 +47,7 @@ public class DBMapJob extends GridJobBase<byte[], String> {
 
     protected transient DBMapReduceJobConf jobConf;
     protected transient String mapOutputTableName;
-    
+
     public DBMapJob() {
         super();
     }
@@ -57,14 +56,18 @@ public class DBMapJob extends GridJobBase<byte[], String> {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         DBMapReduceJobConf logic = ObjectUtils.readObjectQuietly(rawLogic, cl);
         this.jobConf = logic;
-        String destTableName = generateMapOutputTableName();
-        logic.setMapOutputTableName(destTableName);
+
+        String destTableName = logic.getMapOutputTableName();
+        if(destTableName == null) {
+            destTableName = generateMapOutputTableName();
+            logic.setMapOutputTableName(destTableName);
+        }
         this.mapOutputTableName = destTableName;
-        
+
         final GridNode[] nodes = router.getAllNodes();
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(nodes.length);
         for(GridNode node : nodes) {
-            DBMapShuffleTask task = logic.makeMapShuffleTask(this, destTableName);
+            GridTask task = logic.makeMapShuffleTask(this, destTableName);
             map.put(task, node);
         }
         return map;
@@ -78,7 +81,7 @@ public class DBMapJob extends GridJobBase<byte[], String> {
     public String reduce() throws GridException {
         return mapOutputTableName;
     }
-    
+
     private static String generateMapOutputTableName() {
         return "mr_mapoutput_" + System.nanoTime();
     }

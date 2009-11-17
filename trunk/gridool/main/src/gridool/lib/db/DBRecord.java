@@ -18,22 +18,37 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.marshaller;
+package gridool.lib.db;
+
+import gridool.GridException;
+import gridool.marshaller.GridMarshaller;
+
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import javax.annotation.Nonnull;
 
 /**
  * 
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405@gmail.com)
+ * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class GridMarshallerFactory {
+public interface DBRecord extends Serializable {
 
-    private GridMarshallerFactory() {}
+    @Nonnull
+    byte[] getKey();
 
     @SuppressWarnings("unchecked")
-    public static <T> GridMarshaller<T> createMarshaller() {
-        return (GridMarshaller<T>) new JdkMarshaller();
-    }
+    void writeTo(@Nonnull GridMarshaller marshaller, @Nonnull OutputStream out)
+            throws GridException;
+
+    void readFields(@Nonnull ResultSet resultSet) throws SQLException;
+
+    void writeFields(@Nonnull PreparedStatement statement) throws SQLException;
 
 }

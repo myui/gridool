@@ -20,12 +20,12 @@
  */
 package gridool.marshaller;
 
-import java.io.Serializable;
+import gridool.GridException;
+
+import java.io.OutputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import gridool.GridException;
 
 /**
  * 
@@ -34,11 +34,16 @@ import gridool.GridException;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public interface GridMarshaller {
+public interface GridMarshaller<BASE_TYPE> {
 
-    byte[] marshall(@Nonnull Serializable obj) throws GridException;
+    <T extends BASE_TYPE> T createObject();
 
-    <T extends Serializable> T unmarshall(@Nonnull byte[] obj, @Nullable ClassLoader cl)
+    <T extends BASE_TYPE> byte[] marshall(@Nonnull T obj) throws GridException;
+
+    <T extends BASE_TYPE> void marshall(@Nonnull T obj, @Nonnull OutputStream out)
+            throws GridException;
+
+    <T extends BASE_TYPE> T unmarshall(@Nonnull byte[] ary, @Nullable ClassLoader cl)
             throws GridException;
 
 }

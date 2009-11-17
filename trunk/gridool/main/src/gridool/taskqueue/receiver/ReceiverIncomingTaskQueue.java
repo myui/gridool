@@ -57,11 +57,11 @@ public final class ReceiverIncomingTaskQueue implements TaskReceiverListener {
     private final BlockingQueue<GridTask> waitingTaskQueue;
 
     private final GridResourceRegistry resourceRegistry;
-    private final GridMarshaller marshaller;
+    private final GridMarshaller<GridTask> marshaller;
 
     public ReceiverIncomingTaskQueue(@Nonnull GridResourceRegistry resourceRegistry) {
         this.waitingTaskQueue = new LinkedTransferQueue<GridTask>();
-        this.marshaller = resourceRegistry.getMarshaller();
+        this.marshaller = resourceRegistry.getTaskMarshaller();
         this.resourceRegistry = resourceRegistry;
     }
 

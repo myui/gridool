@@ -18,15 +18,10 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.mapred.db;
+package gridool.marshaller;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.Serializable;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import gridool.GridException;
+import xbird.util.io.FastMultiByteArrayOutputStream;
 
 /**
  * 
@@ -35,16 +30,13 @@ import java.sql.SQLException;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public interface DBRecord extends Serializable {
+public abstract class MarshallerBase<BASE_TYPE> implements GridMarshaller<BASE_TYPE> {
 
-    byte[] getKey();
-    
-    void readFields(DataInput in) throws IOException;
-    
-    void writeFields(DataOutput out) throws IOException;
+    public MarshallerBase() {}
 
-    void readFields(ResultSet resultSet) throws SQLException;
-
-    void writeFields(PreparedStatement statement) throws SQLException;
-
+    public <T extends BASE_TYPE> byte[] marshall(T obj) throws GridException {
+        FastMultiByteArrayOutputStream bos = new FastMultiByteArrayOutputStream();
+        marshall(obj, bos);
+        return bos.toByteArray();
+    }
 }

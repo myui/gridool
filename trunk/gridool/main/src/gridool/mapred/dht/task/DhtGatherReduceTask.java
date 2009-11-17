@@ -37,8 +37,8 @@ public abstract class DhtGatherReduceTask extends DhtScatterReduceTask {
     private static final long serialVersionUID = 7961249443055449973L;
 
     @SuppressWarnings("unchecked")
-    public DhtGatherReduceTask(GridJob job, String inputDhtName, String destDhtName, boolean removeInputDhtOnFinish) {
-        super(job, inputDhtName, destDhtName, removeInputDhtOnFinish);
+    public DhtGatherReduceTask(GridJob job, String inputTblName, String destTblName, boolean removeInputDhtOnFinish) {
+        super(job, inputTblName, destTblName, removeInputDhtOnFinish);
     }
     
     @Override
@@ -51,7 +51,7 @@ public abstract class DhtGatherReduceTask extends DhtScatterReduceTask {
         assert (kernel != null);
 
         GridNode dstNode = getSenderNode();
-        final DestinatedAddOperation ops = new DestinatedAddOperation(destDhtName, dstNode);
+        final DestinatedAddOperation ops = new DestinatedAddOperation(destTableName, dstNode);
         ops.setMaxNumReplicas(0); // TODO
 
         final int size = queue.size();

@@ -55,7 +55,7 @@ public final class GridResourceRegistry {
 
     private final GridKernel kernel;
     private final Map<String, GridService> serviceRegistry;
-    private final GridMarshaller marshaller;
+    private final GridMarshaller<GridTask> marshaller;
     private final ConcurrentMap<GridNode, GridPerNodeClassLoader> ldrMap;
     private final AtomicReference<GridTaskMetricsCounter> taskMetricsCounter;
 
@@ -179,7 +179,7 @@ public final class GridResourceRegistry {
         this.taskProcessor = taskProcessor;
     }
 
-    public GridMarshaller getMarshaller() {
+    public GridMarshaller<GridTask> getTaskMarshaller() {
         return marshaller;
     }
 

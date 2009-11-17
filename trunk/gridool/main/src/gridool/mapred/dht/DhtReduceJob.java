@@ -26,7 +26,6 @@ import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
-import gridool.mapred.dht.task.DhtReduceTask;
 import gridool.routing.GridTaskRouter;
 
 import java.util.IdentityHashMap;
@@ -42,20 +41,23 @@ import java.util.Map;
 public final class DhtReduceJob extends GridJobBase<DhtMapReduceJobConf, String> {
     private static final long serialVersionUID = 3291003882839698498L;
 
-    private transient String destDhtName;
+    private transient String destTableName;
 
     public DhtReduceJob() {}
 
-    public Map<GridTask, GridNode> map(GridTaskRouter router, DhtMapReduceJobConf logic)
+    public Map<GridTask, GridNode> map(GridTaskRouter router, DhtMapReduceJobConf jobConf)
             throws GridException {
-        final String inputDhtName = logic.getInputDhtName();
-        final String destDhtName = generateOutputDhtName(inputDhtName, System.nanoTime());
-        this.destDhtName = destDhtName;
+        final String inputTableName = jobConf.getInputTableName();
+        String destTableName = jobConf.getOutputTableName();
+        if(destTableName == null) {
+            destTableName = generateOutputDhtName(inputTableName, System.nanoTime());
+        }
+        this.destTableName = destTableName;
 
         final GridNode[] nodes = router.getAllNodes();
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(nodes.length);
         for(GridNode node : nodes) {
-            DhtReduceTask task = logic.makeReduceTask(this, inputDhtName, destDhtName);
+            GridTask task = jobConf.makeReduceTask(this, inputTableName, destTableName);
             map.put(task, node);
         }
         return map;
@@ -66,7 +68,7 @@ public final class DhtReduceJob extends GridJobBase<DhtMapReduceJobConf, String>
     }
 
     public String reduce() throws GridException {
-        return destDhtName;
+        return destTableName;
     }
 
     private static String generateOutputDhtName(final String inputDhtName, final long time) {

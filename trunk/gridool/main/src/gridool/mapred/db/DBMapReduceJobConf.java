@@ -20,8 +20,12 @@
  */
 package gridool.mapred.db;
 
-import gridool.mapred.DataSource;
-import gridool.mapred.db.task.DBMapShuffleTask;
+import gridool.GridJob;
+import gridool.GridTask;
+import gridool.lib.db.DBRecord;
+import gridool.mapred.db.task.DBMapShuffleTaskBase;
+import gridool.marshaller.GridMarshaller;
+import gridool.marshaller.JdkMarshaller;
 
 import java.io.Serializable;
 import java.sql.Connection;
@@ -80,18 +84,16 @@ public abstract class DBMapReduceJobConf implements Serializable {
 
     public abstract String getInputQuery();
 
-    public abstract DBRecord createInputRecord();
-
-    public abstract DataSource getDataSinkForShuffleOutput();
+    public abstract DBRecord createMapInputRecord();
 
     public final String getMapOutputTableName() {
         return mapOutputTableName;
     }
-    
+
     public final void setMapOutputTableName(@Nonnull String mapOutputTableName) {
         this.mapOutputTableName = mapOutputTableName;
     }
-    
+
     @Nullable
     public String[] getMapOutputFieldNames() {
         return null;
@@ -105,6 +107,15 @@ public abstract class DBMapReduceJobConf implements Serializable {
         this.reduceOutputTableName = reduceOutputTableName;
     }
 
-    public abstract DBMapShuffleTask makeMapShuffleTask(@Nonnull DBMapJob dbMapJob, @Nonnull String destTableName);
+    @SuppressWarnings("unchecked")
+    public GridMarshaller getMapOutputMarshaller() {
+        return new JdkMarshaller();
+    }
+
+    @SuppressWarnings("unchecked")
+    public abstract DBMapShuffleTaskBase makeMapShuffleTask(@Nonnull DBMapJob dbMapJob, @Nonnull String destTableName);
+
+    @SuppressWarnings("unchecked")
+    protected abstract GridTask makeReduceTask(@Nonnull GridJob job, @Nonnull String inputTableName, @Nonnull String destTableName);
 
 }

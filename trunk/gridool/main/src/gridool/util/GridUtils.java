@@ -266,7 +266,7 @@ public final class GridUtils {
         }
         return cl;
     }
-    
+
     @Nonnull
     public static byte[] getTaskKey(@Nonnull final GridTask task) {
         String key = task.getKey();

@@ -18,12 +18,17 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.mapred.dht;
+package gridool.mapred.db;
 
 import gridool.GridException;
+import gridool.GridJob;
 import gridool.GridJobFuture;
 import gridool.GridKernel;
+import gridool.GridTask;
 import gridool.annotation.GridKernelResource;
+import gridool.mapred.dht.DhtMapReduceJobConf;
+import gridool.mapred.dht.DhtReduceJob;
+import gridool.mapred.dht.task.DhtMapShuffleTask;
 
 import java.util.concurrent.ExecutionException;
 
@@ -36,13 +41,13 @@ import org.apache.commons.logging.LogFactory;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class DhtMapReduceJob extends DhtMapJob {
-    private static final long serialVersionUID = 7199374733551590756L;
+public final class DBMapReduceJob extends DBMapJob {
+    private static final long serialVersionUID = -8756855076582206285L;
 
     @GridKernelResource
     private transient GridKernel kernel;
 
-    public DhtMapReduceJob() {}
+    public DBMapReduceJob() {}
 
     @Override
     public boolean injectResources() {
@@ -51,8 +56,8 @@ public final class DhtMapReduceJob extends DhtMapJob {
 
     @Override
     public String reduce() throws GridException {
-        jobConf.setInputTableName(shuffleDestDhtName);
-        final GridJobFuture<String> result = kernel.execute(DhtReduceJob.class, jobConf);
+        DhtMapReduceJobConf reduceJobConf = new ReduceOnDhtJobConf(mapOutputTableName, jobConf);
+        final GridJobFuture<String> result = kernel.execute(DhtReduceJob.class, reduceJobConf);
         try {
             return result.get();
         } catch (InterruptedException ie) {
@@ -62,6 +67,35 @@ public final class DhtMapReduceJob extends DhtMapJob {
             LogFactory.getLog(getClass()).error(ee.getMessage(), ee);
             throw new GridException(ee);
         }
+    }
+
+    private static final class ReduceOnDhtJobConf extends DhtMapReduceJobConf {
+        private static final long serialVersionUID = 1129731669391900133L;
+
+        private final DBMapReduceJobConf jobConf;
+
+        public ReduceOnDhtJobConf(String inputTableName, DBMapReduceJobConf jobConf) {
+            super(inputTableName);
+            this.jobConf = jobConf;
+        }
+
+        @Override
+        public String getOutputTableName() {
+            return jobConf.getReduceOutputTableName();
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        protected DhtMapShuffleTask makeMapShuffleTask(GridJob job, String inputTableName, String destTableName) {
+            throw new IllegalStateException();
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        protected GridTask makeReduceTask(GridJob job, String inputTableName, String destTableName) {
+            return jobConf.makeReduceTask(job, inputTableName, destTableName);
+        }
+
     }
 
 }

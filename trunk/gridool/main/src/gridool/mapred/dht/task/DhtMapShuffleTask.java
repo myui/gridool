@@ -64,8 +64,8 @@ public abstract class DhtMapShuffleTask extends GridTaskAdapter {
     private static final long serialVersionUID = -5082221855283908817L;
     protected static final Log LOG = LogFactory.getLog(DhtMapShuffleTask.class);
 
-    protected final String inputDhtName;
-    protected final String destDhtName;
+    protected final String inputTableName;
+    protected final String destTableName;
 
     private final boolean removeInputDhtOnFinish;
 
@@ -90,10 +90,10 @@ public abstract class DhtMapShuffleTask extends GridTaskAdapter {
     // ------------------------
 
     @SuppressWarnings("unchecked")
-    public DhtMapShuffleTask(GridJob job, String inputDhtName, String destDhtName, boolean removeInputDhtOnFinish) {
+    public DhtMapShuffleTask(GridJob job, String inputTblName, String destTblName, boolean removeInputDhtOnFinish) {
         super(job, true);
-        this.inputDhtName = inputDhtName;
-        this.destDhtName = destDhtName;
+        this.inputTableName = inputTblName;
+        this.destTableName = destTblName;
         this.removeInputDhtOnFinish = removeInputDhtOnFinish;
     }
 
@@ -153,7 +153,7 @@ public abstract class DhtMapShuffleTask extends GridTaskAdapter {
         final IndexQuery query = getQuery();
         final FlushableBTreeCallback handler = getHandler();
         try { // filter -> process -> shuffle is consequently called
-            directory.retrieve(inputDhtName, query, handler);
+            directory.retrieve(inputTableName, query, handler);
         } catch (DbException e) {
             LOG.error(e.getMessage(), e);
             throw new GridException(e);
@@ -163,12 +163,12 @@ public abstract class DhtMapShuffleTask extends GridTaskAdapter {
 
         if(removeInputDhtOnFinish) {
             try {
-                directory.drop(inputDhtName);
+                directory.drop(inputTableName);
             } catch (DbException e) {
                 LOG.error(e.getMessage(), e);
                 throw new GridException(e);
             }
-            LOG.info("drop index " + inputDhtName);
+            LOG.info("drop index " + inputTableName);
         }
         return null;
     }
@@ -212,7 +212,7 @@ public abstract class DhtMapShuffleTask extends GridTaskAdapter {
             return;
         }
 
-        final AddOperation ops = new AddOperation(destDhtName);
+        final AddOperation ops = new AddOperation(destTableName);
         ops.setMaxNumReplicas(0);
 
         final int size = queue.size();
@@ -245,7 +245,7 @@ public abstract class DhtMapShuffleTask extends GridTaskAdapter {
         final AddOperation ops2;
         {
             // #1. shuffle key/values
-            ops1 = new AddOperation(destDhtName);
+            ops1 = new AddOperation(destTableName);
             ops1.setMaxNumReplicas(0);
             final int size = queue.size();
             final byte[][] shuffledKeys = new byte[size / 2][];
@@ -258,7 +258,7 @@ public abstract class DhtMapShuffleTask extends GridTaskAdapter {
             // #2. collect keys
             String collectKeyDest = (jobConf == null) ? DhtMapReduceJobConf.OutputKeyCollectionName
                     : jobConf.getOutputKeyCollectionName();
-            byte[] key = StringUtils.getBytes(destDhtName);
+            byte[] key = StringUtils.getBytes(destTableName);
             byte[] value = GridUtils.compressOutputKeys(shuffledKeys);
             ops2 = new AddOperation(collectKeyDest, key, value);
             ops2.setMaxNumReplicas(0);

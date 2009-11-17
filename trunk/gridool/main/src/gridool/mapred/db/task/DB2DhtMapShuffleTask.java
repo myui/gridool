@@ -22,8 +22,8 @@ package gridool.mapred.db.task;
 
 import gridool.GridJob;
 import gridool.GridJobFuture;
-import gridool.lib.db.DBInsertOperation;
-import gridool.lib.db.DBInsertRecordJob;
+import gridool.directory.job.DirectoryAddRecordJob;
+import gridool.directory.job.DirectoryAddRecordJob.AddRecordOps;
 import gridool.lib.db.DBRecord;
 import gridool.mapred.db.DBMapReduceJobConf;
 
@@ -40,12 +40,11 @@ import xbird.util.collections.ArrayQueue;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public abstract class DBMapShuffleTask extends DBMapShuffleTaskBase<DBRecord> {
-
-    private static final long serialVersionUID = -269939175231317044L;
+public abstract class DB2DhtMapShuffleTask extends DBMapShuffleTaskBase<DBRecord> {
+    private static final long serialVersionUID = -697335089991627099L;
 
     @SuppressWarnings("unchecked")
-    public DBMapShuffleTask(GridJob job, DBMapReduceJobConf jobConf) {
+    public DB2DhtMapShuffleTask(GridJob job, DBMapReduceJobConf jobConf) {
         super(job, jobConf);
     }
 
@@ -54,14 +53,9 @@ public abstract class DBMapShuffleTask extends DBMapShuffleTaskBase<DBRecord> {
         assert (kernel != null);
         shuffleExecPool.execute(new Runnable() {
             public void run() {
-                String driverClassName = jobConf.getDriverClassName();
-                String connectUrl = jobConf.getConnectUrl();
                 String mapOutputTableName = jobConf.getMapOutputTableName();
-                String[] fieldNames = jobConf.getMapOutputFieldNames();
-                DBRecord[] records = queue.toArray();
-                DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, mapOutputTableName, fieldNames, records);
-                ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
-                final GridJobFuture<Serializable> future = kernel.execute(DBInsertRecordJob.class, ops);
+                AddRecordOps ops = new AddRecordOps(mapOutputTableName, queue, jobConf.getMapOutputMarshaller());
+                final GridJobFuture<Serializable> future = kernel.execute(DirectoryAddRecordJob.class, ops);
                 try {
                     future.get(); // wait for execution
                 } catch (InterruptedException ie) {
@@ -72,5 +66,4 @@ public abstract class DBMapShuffleTask extends DBMapShuffleTaskBase<DBRecord> {
             }
         });
     }
-
 }

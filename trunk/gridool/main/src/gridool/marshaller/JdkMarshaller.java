@@ -23,6 +23,7 @@ package gridool.marshaller;
 import gridool.GridException;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Serializable;
 
 import org.apache.commons.logging.LogFactory;
@@ -38,13 +39,17 @@ import xbird.util.lang.ObjectUtils;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public final class JdkMarshaller implements GridMarshaller {
+public final class JdkMarshaller extends MarshallerBase<Serializable> {
 
     public JdkMarshaller() {}
 
-    public byte[] marshall(Serializable obj) throws GridException {
+    public <T extends Serializable> T createObject() {
+        throw new UnsupportedOperationException();
+    }
+
+    public <T extends Serializable> void marshall(T obj, OutputStream out) throws GridException {
         try {
-            return ObjectUtils.toBytes(obj);
+            ObjectUtils.toStream(obj, out);
         } catch (Throwable e) {
             LogFactory.getLog(getClass()).error(e.getMessage(), e);
             throw new GridException(e);
@@ -52,11 +57,11 @@ public final class JdkMarshaller implements GridMarshaller {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Serializable> T unmarshall(byte[] obj, ClassLoader cl) throws GridException {
+    public <T extends Serializable> T unmarshall(byte[] ary, ClassLoader cl) throws GridException {
         if(cl == null) {
             cl = Thread.currentThread().getContextClassLoader();
         }
-        final FastByteArrayInputStream bis = new FastByteArrayInputStream(obj);
+        final FastByteArrayInputStream bis = new FastByteArrayInputStream(ary);
         final Object result;
         try {
             CustomObjectInputStream ois = new CustomObjectInputStream(bis, cl);

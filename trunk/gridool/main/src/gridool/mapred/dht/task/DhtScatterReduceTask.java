@@ -64,8 +64,8 @@ public abstract class DhtScatterReduceTask extends DhtReduceTask {
     // ------------------------
 
     @SuppressWarnings("unchecked")
-    public DhtScatterReduceTask(GridJob job, String inputDhtName, String destDhtName, boolean removeInputDhtOnFinish) {
-        super(job, inputDhtName, destDhtName, removeInputDhtOnFinish);
+    public DhtScatterReduceTask(GridJob job, String inputTableName, String destTableName, boolean removeInputDhtOnFinish) {
+        super(job, inputTableName, destTableName, removeInputDhtOnFinish);
     }
 
     /**
@@ -115,7 +115,7 @@ public abstract class DhtScatterReduceTask extends DhtReduceTask {
             return;
         }
 
-        final AddOperation ops = new AddOperation(destDhtName);
+        final AddOperation ops = new AddOperation(destTableName);
         ops.setMaxNumReplicas(0); // TODO
 
         final int size = queue.size();
@@ -148,7 +148,7 @@ public abstract class DhtScatterReduceTask extends DhtReduceTask {
         final AddOperation ops2;
         {
             // #1. shuffle key/values
-            ops1 = new AddOperation(destDhtName);
+            ops1 = new AddOperation(destTableName);
             ops1.setMaxNumReplicas(0);
             final int size = queue.size();
             final byte[][] shuffledKeys = new byte[size / 2][];
@@ -160,7 +160,7 @@ public abstract class DhtScatterReduceTask extends DhtReduceTask {
             }
             // #2. collect keys
             String collectKeyDest = jobConf.getOutputKeyCollectionName();
-            byte[] key = StringUtils.getBytes(destDhtName);
+            byte[] key = StringUtils.getBytes(destTableName);
             byte[] value = GridUtils.compressOutputKeys(shuffledKeys);
             ops2 = new AddOperation(collectKeyDest, key, value);
             ops2.setMaxNumReplicas(0);

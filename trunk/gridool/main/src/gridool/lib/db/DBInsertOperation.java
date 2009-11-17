@@ -20,7 +20,6 @@
  */
 package gridool.lib.db;
 
-import gridool.mapred.db.DBRecord;
 
 import java.io.IOException;
 import java.io.ObjectInput;

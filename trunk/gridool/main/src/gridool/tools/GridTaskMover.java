@@ -169,6 +169,7 @@ public final class GridTaskMover {
         @GridConfigResource
         private GridConfiguration config;
 
+        @SuppressWarnings("unused")
         public GridLocalTaskMoveJob() {
             super();
         }

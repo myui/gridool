@@ -51,7 +51,7 @@ public final class GridCommunicationManager {
     private final GridCommunicationService service;
     private final TaskSenderListener senderListener;
     private final GridNodeInfo localNodeProbe;
-    private final GridMarshaller marshaller;
+    private final GridMarshaller<GridTask> marshaller;
 
     public GridCommunicationManager(@Nonnull GridResourceRegistry resourceRegistry, @Nonnull GridCommunicationService srvc) {
         this.service = srvc;
@@ -60,7 +60,7 @@ public final class GridCommunicationManager {
         assert (senderListener != null);
         GridNode localNode = service.getLocalNode();
         this.localNodeProbe = GridNodeInfo.createInstance(localNode);
-        this.marshaller = resourceRegistry.getMarshaller();
+        this.marshaller = resourceRegistry.getTaskMarshaller();
         resourceRegistry.setCommunicationManager(this);
     }
 

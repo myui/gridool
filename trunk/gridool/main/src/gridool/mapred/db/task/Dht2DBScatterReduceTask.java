@@ -40,13 +40,15 @@ import xbird.util.collections.ArrayQueue;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public abstract class DBMapShuffleTask extends DBMapShuffleTaskBase<DBRecord> {
+public abstract class Dht2DBScatterReduceTask extends Dht2DBReduceTaskBase<DBRecord> {
+    private static final long serialVersionUID = 868218057173104016L;
 
-    private static final long serialVersionUID = -269939175231317044L;
+    protected final DBMapReduceJobConf jobConf;
 
     @SuppressWarnings("unchecked")
-    public DBMapShuffleTask(GridJob job, DBMapReduceJobConf jobConf) {
-        super(job, jobConf);
+    public Dht2DBScatterReduceTask(GridJob job, String inputDhtName, String destDhtName, boolean removeInputDhtOnFinish, DBMapReduceJobConf jobConf) {
+        super(job, inputDhtName, destDhtName, removeInputDhtOnFinish);
+        this.jobConf = jobConf;
     }
 
     @Override

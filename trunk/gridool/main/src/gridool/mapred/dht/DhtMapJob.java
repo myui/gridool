@@ -45,7 +45,7 @@ public class DhtMapJob extends GridJobBase<byte[], String> {
     private static final long serialVersionUID = -1854038331598309550L;
 
     protected transient long jobStartTime;
-    protected transient DhtMapReduceJobConf logicControl;
+    protected transient DhtMapReduceJobConf jobConf;
     protected transient String inputDhtName;
     protected transient String shuffleDestDhtName;
 
@@ -58,8 +58,8 @@ public class DhtMapJob extends GridJobBase<byte[], String> {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         DhtMapReduceJobConf logic = ObjectUtils.readObjectQuietly(rawLogic, cl);
         this.jobStartTime = System.nanoTime();
-        this.logicControl = logic;
-        String inputDhtName = logic.getInputDhtName();
+        this.jobConf = logic;
+        String inputDhtName = logic.getInputTableName();
         this.inputDhtName = inputDhtName;
         String destDhtName = generateIntermediateDhtName(inputDhtName, jobStartTime);
         this.shuffleDestDhtName = destDhtName;

@@ -26,7 +26,6 @@ import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
-import gridool.mapred.db.DBRecord;
 import gridool.routing.GridTaskRouter;
 
 import java.io.Serializable;

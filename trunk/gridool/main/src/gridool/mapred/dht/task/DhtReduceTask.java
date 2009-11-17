@@ -56,9 +56,8 @@ public abstract class DhtReduceTask extends GridTaskAdapter {
     private static final long serialVersionUID = 467335434557842030L;
     protected static final Log LOG = LogFactory.getLog(DhtReduceTask.class);
 
-    protected final String inputDhtName;
-    protected final String destDhtName;
-
+    protected final String inputTableName;
+    protected final String destTableName;
     private final boolean removeInputDhtOnFinish;
 
     @Nullable
@@ -75,8 +74,8 @@ public abstract class DhtReduceTask extends GridTaskAdapter {
     @SuppressWarnings("unchecked")
     public DhtReduceTask(@Nonnull GridJob job, @Nonnull String inputDhtName, @Nonnull String destDhtName, boolean removeInputDhtOnFinish) {
         super(job, true);
-        this.inputDhtName = inputDhtName;
-        this.destDhtName = destDhtName;
+        this.inputTableName = inputDhtName;
+        this.destTableName = destDhtName;
         this.removeInputDhtOnFinish = removeInputDhtOnFinish;
     }
 
@@ -84,7 +83,7 @@ public abstract class DhtReduceTask extends GridTaskAdapter {
     public final boolean injectResources() {
         return true;
     }
-    
+
     protected boolean collectOutputKeys() {
         return false;
     }
@@ -123,7 +122,7 @@ public abstract class DhtReduceTask extends GridTaskAdapter {
      * @return true/false to continue/stop reducing.
      */
     protected boolean process(@Nonnull byte[] key, @Nonnull Collection<byte[]> values) {
-         return process(key, values.iterator());
+        return process(key, values.iterator());
     }
 
     /**
@@ -138,7 +137,7 @@ public abstract class DhtReduceTask extends GridTaskAdapter {
     public Serializable execute() throws GridException {
         final FlushableBTreeCallback handler = getHandler();
         try {
-            directory.retrieve(inputDhtName, getQuery(), handler);
+            directory.retrieve(inputTableName, getQuery(), handler);
         } catch (DbException e) {
             LOG.error(e.getMessage(), e);
             throw new GridException(e);
@@ -148,12 +147,12 @@ public abstract class DhtReduceTask extends GridTaskAdapter {
 
         if(removeInputDhtOnFinish) {
             try {
-                directory.drop(inputDhtName);
+                directory.drop(inputTableName);
             } catch (DbException e) {
                 LOG.error(e.getMessage(), e);
                 throw new GridException(e);
             }
-            LOG.info("drop index " + inputDhtName);
+            LOG.info("drop index " + inputTableName);
         }
         return null;
     }

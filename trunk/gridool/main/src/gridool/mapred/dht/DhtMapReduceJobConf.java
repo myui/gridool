@@ -21,8 +21,8 @@
 package gridool.mapred.dht;
 
 import gridool.GridJob;
+import gridool.GridTask;
 import gridool.mapred.dht.task.DhtMapShuffleTask;
-import gridool.mapred.dht.task.DhtReduceTask;
 
 import java.io.Serializable;
 
@@ -39,36 +39,39 @@ import javax.annotation.Nullable;
  */
 public abstract class DhtMapReduceJobConf implements Serializable {
     private static final long serialVersionUID = -6387687169104905041L;
-
     public static final String OutputKeyCollectionName = "gridool#output-key-collections";
 
     @Nonnull
-    protected String inputDhtName;
+    protected String inputTableName;
 
-    public DhtMapReduceJobConf(@CheckForNull String inputDhtName) {
-        checkDhtName(inputDhtName);
-        this.inputDhtName = inputDhtName;
+    public DhtMapReduceJobConf(@CheckForNull String inputTblName) {
+        checkTableName(inputTblName);
+        this.inputTableName = inputTblName;
     }
 
-    private static void checkDhtName(final String dhtName) {
-        if(dhtName == null) {
+    private static void checkTableName(final String tblName) {
+        if(tblName == null) {
             throw new IllegalArgumentException();
         }
-        if(dhtName.startsWith("gridool#")) {
+        if(tblName.startsWith("gridool#")) {
             throw new IllegalArgumentException("DHT name starting with 'gridool#' is reserved: "
-                    + dhtName);
+                    + tblName);
         }
     }
 
-    public String getInputDhtName() {
-        return inputDhtName;
+    public String getInputTableName() {
+        return inputTableName;
     }
 
     /**
      * Used by internal system only.
      */
-    void setInputDhtName(@Nonnull String inputDhtName) {
-        this.inputDhtName = inputDhtName;
+    void setInputTableName(@Nonnull String inputTableName) {
+        this.inputTableName = inputTableName;
+    }
+
+    public String getOutputTableName() {
+        return null;
     }
 
     /**
@@ -88,10 +91,10 @@ public abstract class DhtMapReduceJobConf implements Serializable {
 
     @SuppressWarnings("unchecked")
     @Nullable
-    protected abstract DhtMapShuffleTask makeMapShuffleTask(@Nonnull GridJob job, @Nonnull String inputDhtName, @Nonnull String destDhtName);
+    protected abstract DhtMapShuffleTask makeMapShuffleTask(@Nonnull GridJob job, @Nonnull String inputTableName, @Nonnull String destTableName);
 
     @SuppressWarnings("unchecked")
     @Nullable
-    protected abstract DhtReduceTask makeReduceTask(@Nonnull GridJob job, @Nonnull String inputDhtName, @Nonnull String destDhtName);
+    protected abstract GridTask makeReduceTask(@Nonnull GridJob job, @Nonnull String inputTableName, @Nonnull String destTableName);
 
 }

@@ -42,8 +42,8 @@ public abstract class DhtReducedMapShuffleTask extends DhtMapShuffleTask {
     private static final long serialVersionUID = -3603582178622867565L;
 
     @SuppressWarnings("unchecked")
-    public DhtReducedMapShuffleTask(GridJob job, String inputDhtName, String destDhtName, boolean removeInputDhtOnFinish) {
-        super(job, inputDhtName, destDhtName, removeInputDhtOnFinish);
+    public DhtReducedMapShuffleTask(GridJob job, String inputTblName, String destTblName, boolean removeInputDhtOnFinish) {
+        super(job, inputTblName, destTblName, removeInputDhtOnFinish);
     }
 
     @Override

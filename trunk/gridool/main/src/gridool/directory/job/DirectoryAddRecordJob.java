@@ -28,12 +28,10 @@ import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
 import gridool.directory.helpers.DirectoryTaskAdapter;
 import gridool.directory.ops.AddOperation;
-import gridool.mapred.db.DBRecord;
+import gridool.lib.db.DBRecord;
+import gridool.marshaller.GridMarshaller;
 import gridool.routing.GridTaskRouter;
 
-import java.io.DataOutput;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +41,6 @@ import java.util.Map;
 
 import xbird.util.collections.ArrayQueue;
 import xbird.util.io.FastByteArrayOutputStream;
-import xbird.util.struct.Pair;
 
 /**
  * 
@@ -53,15 +50,17 @@ import xbird.util.struct.Pair;
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
 public class DirectoryAddRecordJob extends
-        GridJobBase<Pair<String, ArrayQueue<DBRecord>>, Serializable> {
+        GridJobBase<DirectoryAddRecordJob.AddRecordOps, Serializable> {
     private static final long serialVersionUID = -1739585555790175133L;
 
     public DirectoryAddRecordJob() {}
 
-    public Map<GridTask, GridNode> map(GridTaskRouter router, Pair<String, ArrayQueue<DBRecord>> ops)
+    @SuppressWarnings("unchecked")
+    public Map<GridTask, GridNode> map(GridTaskRouter router, AddRecordOps ops)
             throws GridException {
-        final String idxName = ops.getFirst();
-        final ArrayQueue<DBRecord> records = ops.getSecond();
+        final String idxName = ops.idxName;
+        final ArrayQueue<DBRecord> records = ops.records;
+        final GridMarshaller marshaller = ops.marshaller;
 
         final int totalNodes = router.getGridSize();
         final Map<GridNode, List<DBRecord>> nodeAssignMap = new HashMap<GridNode, List<DBRecord>>(totalNodes);
@@ -79,8 +78,7 @@ public class DirectoryAddRecordJob extends
         }
 
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(totalNodes);
-        FastByteArrayOutputStream buf = new FastByteArrayOutputStream(512);
-        final DataOutput out = new DataOutputStream(buf);
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(512);
         for(Map.Entry<GridNode, List<DBRecord>> entry : nodeAssignMap.entrySet()) {
             final List<DBRecord> mapped = entry.getValue();
             final int size = mapped.size();
@@ -89,13 +87,9 @@ public class DirectoryAddRecordJob extends
             for(int i = 0; i < size; i++) {
                 final DBRecord r = mapped.get(i);
                 final byte[] k = r.getKey();
-                try {
-                    r.writeFields(out);
-                } catch (IOException ioe) {
-                    throw new GridException(ioe);
-                }
-                byte[] v = buf.toByteArray();
-                buf.clear();
+                r.writeTo(marshaller, out);
+                byte[] v = out.toByteArray();
+                out.clear();
                 keys[i] = k;
                 values[i] = v;
             }
@@ -113,6 +107,22 @@ public class DirectoryAddRecordJob extends
 
     public Serializable reduce() throws GridException {
         return null;
+    }
+
+    public static final class AddRecordOps {
+
+        final String idxName;
+        final ArrayQueue<DBRecord> records;
+        @SuppressWarnings("unchecked")
+        final GridMarshaller marshaller;
+
+        @SuppressWarnings("unchecked")
+        public AddRecordOps(String idxName, ArrayQueue<DBRecord> records, GridMarshaller marshaller) {
+            this.idxName = idxName;
+            this.records = records;
+            this.marshaller = marshaller;
+        }
+
     }
 
 }
