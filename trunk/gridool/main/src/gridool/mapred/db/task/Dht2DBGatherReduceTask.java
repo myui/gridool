@@ -39,7 +39,8 @@ import xbird.util.collections.ArrayQueue;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public abstract class Dht2DBGatherReduceTask extends Dht2DBReduceTaskBase<DBRecord> {
+public abstract class Dht2DBGatherReduceTask<IN_TYPE> extends
+        Dht2DBReduceTaskBase<IN_TYPE, DBRecord> {
     private static final long serialVersionUID = 674691526635818940L;
 
     @SuppressWarnings("unchecked")

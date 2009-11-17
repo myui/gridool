@@ -26,6 +26,7 @@ import gridool.GridKernel;
 import gridool.annotation.GridKernelResource;
 import gridool.mapred.db.DBMapReduceJobConf;
 import gridool.mapred.dht.task.DhtReduceTask;
+import gridool.marshaller.GridMarshaller;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -46,12 +47,12 @@ import xbird.util.concurrent.ExecutorUtils;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public abstract class Dht2DBReduceTaskBase<OUT_TYPE> extends DhtReduceTask {
+public abstract class Dht2DBReduceTaskBase<IN_TYPE, OUT_TYPE> extends DhtReduceTask {
     private static final long serialVersionUID = -8320924089618476538L;
 
     @Nonnull
     protected final DBMapReduceJobConf jobConf;
-    
+
     // ------------------------
     // injected resources
 
@@ -101,10 +102,45 @@ public abstract class Dht2DBReduceTaskBase<OUT_TYPE> extends DhtReduceTask {
     protected boolean process(byte[] key, Iterator<byte[]> values) {
         throw new UnsupportedOperationException();
     }
-
+    
+    @SuppressWarnings("unchecked")
     @Override
     protected boolean process(byte[] key, Collection<byte[]> values) {
-        return super.process(key, values);
+        GridMarshaller<IN_TYPE> marshaller = jobConf.getMapOutputMarshaller();
+        DecodingIterator<IN_TYPE> itor = new DecodingIterator<IN_TYPE>(values.iterator(), marshaller);
+        return processRecord(key, itor);
+    }
+    
+    protected abstract boolean processRecord(byte[] key, Iterator<IN_TYPE> values);
+    
+    private static final class DecodingIterator<IN_TYPE> implements Iterator<IN_TYPE> {
+
+        private final Iterator<byte[]> delegate;
+        private final GridMarshaller<IN_TYPE> marshaller;
+        
+        public DecodingIterator(Iterator<byte[]> itor, GridMarshaller<IN_TYPE> marshaller) {
+            this.delegate = itor;
+            this.marshaller = marshaller;
+        }
+
+        public boolean hasNext() {
+            return delegate.hasNext();
+        }
+
+        public IN_TYPE next() {
+            final byte[] b = delegate.next();
+            try {
+                return marshaller.unmarshall(b, null);
+            } catch (GridException e) {
+                // avoid irregular records                
+                return null;
+            }
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
     }
 
     /**
