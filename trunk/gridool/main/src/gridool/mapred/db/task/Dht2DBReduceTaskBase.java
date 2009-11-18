@@ -35,6 +35,9 @@ import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Nonnull;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import xbird.util.collections.ArrayQueue;
 import xbird.util.collections.BoundedArrayQueue;
 import xbird.util.concurrent.ExecutorFactory;
@@ -49,6 +52,7 @@ import xbird.util.concurrent.ExecutorUtils;
  */
 public abstract class Dht2DBReduceTaskBase<IN_TYPE, OUT_TYPE> extends DhtReduceTask {
     private static final long serialVersionUID = -8320924089618476538L;
+    private static final Log LOG = LogFactory.getLog(Dht2DBReduceTaskBase.class);
 
     @Nonnull
     protected final DBMapReduceJobConf jobConf;
@@ -102,7 +106,7 @@ public abstract class Dht2DBReduceTaskBase<IN_TYPE, OUT_TYPE> extends DhtReduceT
     protected boolean process(byte[] key, Iterator<byte[]> values) {
         throw new UnsupportedOperationException();
     }
-    
+
     @SuppressWarnings("unchecked")
     @Override
     protected boolean process(byte[] key, Collection<byte[]> values) {
@@ -110,14 +114,14 @@ public abstract class Dht2DBReduceTaskBase<IN_TYPE, OUT_TYPE> extends DhtReduceT
         DecodingIterator<IN_TYPE> itor = new DecodingIterator<IN_TYPE>(values.iterator(), marshaller);
         return processRecord(key, itor);
     }
-    
+
     protected abstract boolean processRecord(byte[] key, Iterator<IN_TYPE> values);
-    
+
     private static final class DecodingIterator<IN_TYPE> implements Iterator<IN_TYPE> {
 
         private final Iterator<byte[]> delegate;
         private final GridMarshaller<IN_TYPE> marshaller;
-        
+
         public DecodingIterator(Iterator<byte[]> itor, GridMarshaller<IN_TYPE> marshaller) {
             this.delegate = itor;
             this.marshaller = marshaller;
@@ -131,8 +135,8 @@ public abstract class Dht2DBReduceTaskBase<IN_TYPE, OUT_TYPE> extends DhtReduceT
             final byte[] b = delegate.next();
             try {
                 return marshaller.unmarshall(b, null);
-            } catch (GridException e) {
-                // avoid irregular records                
+            } catch (GridException e) {// avoid irregular records
+                LOG.warn(e.getMessage());
                 return null;
             }
         }
