@@ -22,6 +22,8 @@ package gridool.mapred.db.task;
 
 import gridool.GridJob;
 import gridool.GridJobFuture;
+import gridool.GridKernel;
+import gridool.annotation.GridKernelResource;
 import gridool.lib.db.DBInsertOperation;
 import gridool.lib.db.DBInsertRecordJob;
 import gridool.lib.db.DBRecord;
@@ -43,6 +45,14 @@ import xbird.util.collections.ArrayQueue;
 public abstract class Dht2DBScatterReduceTask<IN_TYPE> extends
         Dht2DBReduceTaskBase<IN_TYPE, DBRecord> {
     private static final long serialVersionUID = 868218057173104016L;
+
+    // ------------------------
+    // injected resources
+
+    @GridKernelResource
+    protected transient GridKernel kernel;
+
+    // ------------------------
 
     @SuppressWarnings("unchecked")
     public Dht2DBScatterReduceTask(GridJob job, String inputDhtName, String destDhtName, boolean removeInputDhtOnFinish, DBMapReduceJobConf jobConf) {

@@ -22,8 +22,6 @@ package gridool.mapred.db.task;
 
 import gridool.GridException;
 import gridool.GridJob;
-import gridool.GridKernel;
-import gridool.annotation.GridKernelResource;
 import gridool.mapred.db.DBMapReduceJobConf;
 import gridool.mapred.dht.task.DhtReduceTask;
 import gridool.marshaller.GridMarshaller;
@@ -56,12 +54,6 @@ public abstract class Dht2DBReduceTaskBase<IN_TYPE, OUT_TYPE> extends DhtReduceT
 
     @Nonnull
     protected final DBMapReduceJobConf jobConf;
-
-    // ------------------------
-    // injected resources
-
-    @GridKernelResource
-    protected transient GridKernel kernel;
 
     // ------------------------
     // working resources

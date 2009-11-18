@@ -80,6 +80,11 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
         this.shuffleSink = new BoundedArrayQueue<OUT_TYPE>(shuffleUnits());
     }
 
+    @Override
+    public boolean injectResources() {
+        return true;
+    }
+
     /**
      * Override to change the number of shuffle units. 512 by the default.
      */
@@ -133,7 +138,7 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
         try {
             while(results.next()) {
                 record.readFields(results);
-                if(process(record)) {
+                if(!process(record)) {
                     break;
                 }
             }
