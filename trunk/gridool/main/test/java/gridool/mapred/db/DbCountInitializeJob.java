@@ -107,8 +107,12 @@ public class DbCountInitializeJob extends GridJobBase<DBMapReduceJobConf, Long> 
             st.executeUpdate(dropPageview);
             conn.commit();
             st.close();
-        } catch (SQLException ex) {
-            //ignore
+        } catch (SQLException ex) {//ignore
+            try {
+                conn.rollback();// required for MonetDB
+            } catch (SQLException e) {
+                ;
+            }
         }
     }
 
