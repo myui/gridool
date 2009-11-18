@@ -38,6 +38,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -47,6 +50,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class DbCountInitializeJob extends GridJobBase<DBMapReduceJobConf, Long> {
     private static final long serialVersionUID = -2291873883401731077L;
+    private static final Log LOG = LogFactory.getLog(DbCountInitializeJob.class);
 
     private transient final AtomicLong totalPageviews = new AtomicLong(0);
 
@@ -64,6 +68,7 @@ public class DbCountInitializeJob extends GridJobBase<DBMapReduceJobConf, Long> 
                     try {
                         pageview = initialize(jobConf);
                     } catch (Exception e) {
+                        LOG.error(e.getMessage(), e);
                         throw new GridException(e);
                     }
                     return pageview;
