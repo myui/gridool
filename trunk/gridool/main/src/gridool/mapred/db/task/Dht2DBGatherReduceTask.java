@@ -47,7 +47,7 @@ public abstract class Dht2DBGatherReduceTask<IN_TYPE> extends
     public Dht2DBGatherReduceTask(GridJob job, String inputDhtName, String destDhtName, boolean removeInputDhtOnFinish, DBMapReduceJobConf jobConf) {
         super(job, inputDhtName, destDhtName, removeInputDhtOnFinish, jobConf);
     }
-    
+
     protected String getReduceOutputDestinationDbUrl() {//REVIEWME
         return jobConf.getReduceOutputDestinationDbUrl();
     }
