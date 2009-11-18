@@ -89,6 +89,7 @@ public final class DBCountPageView {
         LOG.info("Ready to run a MapReduce job! Go..");
         StopWatch sw = new StopWatch();
         runJob(grid, jobConf);
+        sw.stop();
 
         boolean correct = verify(jobConf, totalPageview);
         if(correct) {
