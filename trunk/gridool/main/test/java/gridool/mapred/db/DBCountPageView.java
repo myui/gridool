@@ -84,7 +84,7 @@ public final class DBCountPageView {
         do {
             System.out.println("Are you ready to run a Job? Type 'yes' to proceed.");
             answer = kbd.nextLine();
-        } while("yes".equalsIgnoreCase(answer));
+        } while(!"yes".equalsIgnoreCase(answer));
 
         LOG.info("Ready to run a MapReduce job! Go..");
         StopWatch sw = new StopWatch();

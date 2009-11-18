@@ -57,7 +57,7 @@ public abstract class DBMapShuffleTask extends DBMapShuffleTaskBase<DBRecord> {
                 String connectUrl = jobConf.getConnectUrl();
                 String mapOutputTableName = jobConf.getMapOutputTableName();
                 String[] fieldNames = jobConf.getMapOutputFieldNames();
-                DBRecord[] records = queue.toArray();
+                DBRecord[] records = queue.toArray(DBRecord.class);
                 DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, mapOutputTableName, fieldNames, records);
                 ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
                 final GridJobFuture<Serializable> future = kernel.execute(DBInsertRecordJob.class, ops);

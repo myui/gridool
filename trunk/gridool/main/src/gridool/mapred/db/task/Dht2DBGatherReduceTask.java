@@ -70,7 +70,7 @@ public abstract class Dht2DBGatherReduceTask<IN_TYPE> extends
         String connectUrl = getReduceOutputDestinationDbUrl();
         String mapOutputTableName = jobConf.getReduceOutputTableName();
         String[] fieldNames = jobConf.getReduceOutputFieldNames();
-        DBRecord[] records = queue.toArray();
+        DBRecord[] records = queue.toArray(DBRecord.class);
         final DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, mapOutputTableName, fieldNames, records);
         ops.setAuth(getUserName(), getPassword());
         try {
