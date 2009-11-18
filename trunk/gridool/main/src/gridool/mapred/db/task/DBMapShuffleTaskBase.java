@@ -134,9 +134,9 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
 
         // Iterate over records
         // process -> shuffle is consequently called
-        final DBRecord record = jobConf.createMapInputRecord();
         try {
             while(results.next()) {
+                DBRecord record = jobConf.createMapInputRecord();
                 record.readFields(results);
                 if(!process(record)) {
                     break;
