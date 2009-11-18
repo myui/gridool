@@ -47,10 +47,17 @@ public abstract class DBMapReduceJobConf implements Serializable {
 
     protected String mapOutputTableName = null;
     protected String reduceOutputTableName = null;
+    protected String reduceOutputDestinationDbUrl;
 
     public DBMapReduceJobConf() {}
 
     public final Connection getConnection() throws ClassNotFoundException, SQLException {
+        final String url = getConnectUrl();
+        return getConnection(url);
+    }
+
+    public final Connection getConnection(String connectUrl) throws ClassNotFoundException,
+            SQLException {
         Class.forName(getDriverClassName());
         final String url = getConnectUrl();
         final String user = getUserName();
@@ -86,7 +93,7 @@ public abstract class DBMapReduceJobConf implements Serializable {
 
     public abstract DBRecord createMapInputRecord();
 
-    public final String getMapOutputTableName() {
+    public String getMapOutputTableName() {
         return mapOutputTableName;
     }
 
@@ -99,14 +106,14 @@ public abstract class DBMapReduceJobConf implements Serializable {
         return null;
     }
 
-    public final String getReduceOutputTableName() {
+    public String getReduceOutputTableName() {
         return reduceOutputTableName;
     }
-    
+
     public final void setReduceOutputTableName(@Nonnull String reduceOutputTableName) {
         this.reduceOutputTableName = reduceOutputTableName;
     }
-    
+
     @Nullable
     public String[] getReduceOutputFieldNames() {
         return null;
@@ -115,6 +122,10 @@ public abstract class DBMapReduceJobConf implements Serializable {
     @SuppressWarnings("unchecked")
     public GridMarshaller getMapOutputMarshaller() {
         return new JdkMarshaller();
+    }
+
+    public String getReduceOutputDestinationDbUrl() {
+        return getConnectUrl();
     }
 
     @SuppressWarnings("unchecked")

@@ -52,7 +52,7 @@ import xbird.util.concurrent.ExecutorUtils;
  */
 public abstract class Dht2DBReduceTaskBase<IN_TYPE, OUT_TYPE> extends DhtReduceTask {
     private static final long serialVersionUID = -8320924089618476538L;
-    private static final Log LOG = LogFactory.getLog(Dht2DBReduceTaskBase.class);
+    protected static final Log LOG = LogFactory.getLog(Dht2DBReduceTaskBase.class);
 
     @Nonnull
     protected final DBMapReduceJobConf jobConf;
