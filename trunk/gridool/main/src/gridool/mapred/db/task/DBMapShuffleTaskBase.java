@@ -43,6 +43,7 @@ import org.apache.commons.logging.LogFactory;
 import xbird.util.collections.ArrayQueue;
 import xbird.util.collections.BoundedArrayQueue;
 import xbird.util.concurrent.ExecutorFactory;
+import xbird.util.concurrent.ExecutorUtils;
 
 /**
  * 
@@ -151,6 +152,7 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
                 LOG.debug("failed closing a connection", e);
             }
         }
+        postShuffle();
         return null;
     }
 
@@ -181,4 +183,10 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
 
     protected abstract void invokeShuffle(@Nonnull final ExecutorService shuffleExecPool, @Nonnull final ArrayQueue<OUT_TYPE> queue);
 
+    protected void postShuffle() {
+        if(!shuffleSink.isEmpty()) {
+            invokeShuffle(shuffleExecPool, shuffleSink);
+        }
+        ExecutorUtils.shutdownAndAwaitTermination(shuffleExecPool);
+    }
 }
