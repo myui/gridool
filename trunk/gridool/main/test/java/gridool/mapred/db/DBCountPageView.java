@@ -38,6 +38,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Iterator;
+import java.util.Scanner;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -45,6 +46,7 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
+import xbird.util.datetime.StopWatch;
 import xbird.util.lang.ObjectUtils;
 import xbird.util.net.NetUtils;
 import xbird.util.string.StringUtils;
@@ -74,14 +76,28 @@ public final class DBCountPageView {
         processArgs(args, jobConf);
 
         GridClient grid = new GridClient();
-        long tatalPageview = initialize(grid, jobConf);
+        long totalPageview = initialize(grid, jobConf);
+        LOG.info("Initialized... totalPageview: " + totalPageview);
 
+        Scanner kbd = new Scanner(System.in);
+        String answer;
+        do {
+            System.out.println("Are you ready to run a Job? Type 'yes' to proceed.");
+            answer = kbd.nextLine();
+        } while("yes".equalsIgnoreCase(answer));
+
+        LOG.info("Ready to run a MapReduce job! Go..");
+        StopWatch sw = new StopWatch();
         runJob(grid, jobConf);
 
-        boolean correct = verify(jobConf, tatalPageview);
-        if(!correct) {
+        boolean correct = verify(jobConf, totalPageview);
+        if(correct) {
+            LOG.info("Finished successfully in " + sw.toString() + "  :-)");
+        } else {
+            LOG.info("Finished abnormally in " + sw.toString() + "  ;-(");
             throw new RuntimeException("Evaluation was not correct!");
         }
+
     }
 
     private static void runJob(GridClient grid, DBCountJobConf jobConf) throws RemoteException {
@@ -267,7 +283,7 @@ public final class DBCountPageView {
         } catch (CmdLineException e) {
             System.err.println(e.getMessage());
             parser.printUsage(System.err);
-            return;
+            System.exit(1);
         }
     }
 
