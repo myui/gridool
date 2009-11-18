@@ -40,6 +40,8 @@ import javax.annotation.Nonnull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import sun.misc.IOUtils;
+
 import xbird.util.collections.ArrayQueue;
 import xbird.util.collections.BoundedArrayQueue;
 import xbird.util.concurrent.ExecutorFactory;
@@ -99,20 +101,34 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
     public final Serializable execute() throws GridException {
         // execute a query
         final Connection conn;
-        final ResultSet results;
         try {
             conn = jobConf.getConnection(false);
-            results = executeQuery(conn, jobConf);
+            configureConnection(conn);      
         } catch (ClassNotFoundException e) {
+        	LOG.error(e);
             throw new GridException(e);
         } catch (SQLException e) {
+        	LOG.error(e);
             throw new GridException(e);
         }
-        try {
-            configureConnection(conn);
-        } catch (SQLException e) {
-            LOG.warn("failed to configure a connection", e);
-        }
+        
+        assert (conn != null);
+        
+        final String query = jobConf.getInputQuery();
+        final Statement statement;
+        final ResultSet results;
+		try {
+			statement = conn.createStatement(ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
+			results = statement.executeQuery(query);
+		} catch (SQLException e) {
+			try {
+				conn.close();
+			} catch (SQLException sqle) {// avoid
+				LOG.debug(sqle.getMessage());
+			}
+			LOG.error(e);
+			throw new GridException(e);
+		} 
 
         // Iterate over records
         // process -> shuffle is consequently called
@@ -125,8 +141,14 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
                 }
             }
         } catch (SQLException e) {
+        	LOG.error(e);
             throw new GridException(e);
         } finally {
+        	try {
+				statement.close();
+			} catch (SQLException e) {
+				LOG.debug("failed closing a statement", e);
+			}
             try {
                 conn.close();
             } catch (SQLException e) {
@@ -136,18 +158,13 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
         return null;
     }
 
-    private static void configureConnection(final Connection conn) throws SQLException {
-        conn.setReadOnly(true); // should *not* call setReadOnly in a transaction (for MonetDB)
-        conn.setAutoCommit(false);
-    }
-
-    private static final ResultSet executeQuery(final Connection conn, final DBMapReduceJobConf jobConf)
-            throws ClassNotFoundException, SQLException {
-        Statement statement = conn.createStatement(ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
-        String query = jobConf.getInputQuery();
-        ResultSet results = statement.executeQuery(query);
-        statement.close();
-        return results;
+    private static void configureConnection(final Connection conn) {
+        try {
+			conn.setReadOnly(true);	// should *not* call setReadOnly in a transaction (for MonetDB)
+			conn.setAutoCommit(false);
+		} catch (SQLException e) {
+			LOG.warn("failed to configure a connection", e);
+		}       
     }
 
     /**
