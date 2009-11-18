@@ -89,7 +89,7 @@ public class DirectoryAddRecordJob extends
                 final byte[] k = r.getKey();
                 r.writeTo(marshaller, out);
                 byte[] v = out.toByteArray();
-                out.clear();
+                out.reset();
                 keys[i] = k;
                 values[i] = v;
             }
