@@ -299,11 +299,10 @@ public final class DBCountPageView {
         String dbUrl = jobConf.getReduceOutputDestinationDbUrl();
         final Connection conn;
         try {
-            conn = jobConf.getConnection(dbUrl);
+            conn = jobConf.getConnection(dbUrl, true);
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException(e);
         }
-
         String sumPageviewQuery = "SELECT SUM(pageview) FROM Pageview";
         Statement st = null;
         ResultSet rs = null;
@@ -323,7 +322,8 @@ public final class DBCountPageView {
             }
             if(rs != null) {
                 rs.close();
-            }
+            }            
+            conn.close();
         }
     }
 

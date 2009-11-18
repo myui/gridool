@@ -101,12 +101,17 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
         final Connection conn;
         final ResultSet results;
         try {
-            conn = jobConf.getConnection();
+            conn = jobConf.getConnection(false);
             results = executeQuery(conn, jobConf);
         } catch (ClassNotFoundException e) {
             throw new GridException(e);
         } catch (SQLException e) {
             throw new GridException(e);
+        }
+        try {
+            configureConnection(conn);
+        } catch (SQLException e) {
+            LOG.warn("failed to configure a connection", e);
         }
 
         // Iterate over records
@@ -128,8 +133,12 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
                 LOG.debug("failed closing a connection", e);
             }
         }
-
         return null;
+    }
+
+    private static void configureConnection(final Connection conn) throws SQLException {
+        conn.setReadOnly(true); // should *not* call setReadOnly in a transaction (for MonetDB)
+        conn.setAutoCommit(false);
     }
 
     private static final ResultSet executeQuery(final Connection conn, final DBMapReduceJobConf jobConf)

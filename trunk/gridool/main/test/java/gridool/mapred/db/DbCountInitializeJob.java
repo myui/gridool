@@ -87,7 +87,7 @@ public class DbCountInitializeJob extends GridJobBase<DBMapReduceJobConf, Long> 
     }
 
     private int initialize(DBMapReduceJobConf jobConf) throws ClassNotFoundException, SQLException {
-        Connection conn = jobConf.getConnection();
+        Connection conn = jobConf.getConnection(true);
         dropTables(conn);
         createTables(conn);
         return populateAccess(conn);
