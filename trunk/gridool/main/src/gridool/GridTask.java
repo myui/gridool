@@ -86,7 +86,8 @@ public interface GridTask extends GridLocatable, GridAnnotatable {
 
     boolean isFailoverActive();
 
-    @Nonnull
+    // TODO REVIEWME
+    @Nonnull    
     List<GridNode> listFailoverCandidates(@Nonnull GridTask task, @Nonnull GridTaskRouter router);
 
 }

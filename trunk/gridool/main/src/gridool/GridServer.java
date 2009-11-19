@@ -150,7 +150,7 @@ public final class GridServer extends RemoteBase implements Grid {
 
         GridNodeSelector selector = GridNodeSelectorFactory.createSelector();
         GridConfiguration config = kernel.getConfiguration();
-        GridNode node = selector.selectNode(nodeList, null, config);
+        GridNode node = selector.selectNode(nodeList, config);
         return node;
     }
 

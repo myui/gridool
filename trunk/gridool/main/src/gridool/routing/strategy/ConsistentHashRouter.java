@@ -21,17 +21,13 @@
 package gridool.routing.strategy;
 
 import gridool.GridConfiguration;
-import gridool.GridErrorDescription;
 import gridool.GridNode;
-import gridool.GridRuntimeException;
 import gridool.discovery.DiscoveryEvent;
 import gridool.routing.GridNodeSelector;
 import gridool.routing.GridTaskRouter;
 import gridool.util.ConsistentHash;
 import gridool.util.HashFunction;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -40,8 +36,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
-
-import xbird.util.iterator.IteratorUtils;
 
 /**
  * 
@@ -90,14 +84,14 @@ public final class ConsistentHashRouter implements GridTaskRouter {
             case join:
                 wlock.lock();
                 consistentHash.add(node);
-                wlock.unlock();
                 gridSize++;
+                wlock.unlock();
                 break;
             case leave:
                 wlock.lock();
                 consistentHash.remove(node);
-                wlock.unlock();
                 gridSize--;
+                wlock.unlock();
                 break;
             case dropout:
                 // TODO
@@ -110,42 +104,21 @@ public final class ConsistentHashRouter implements GridTaskRouter {
         final Lock rlock = rwLock.readLock();
         rlock.lock();
         try {
-            return consistentHash.getNodes();
+            return consistentHash.getAll();
         } finally {
             rlock.unlock();
         }
-    }
-
-    public List<GridNode> getNodes(int maxNodesToSelect) {
-        GridNode[] nodes = getAllNodes();
-        List<GridNode> nodeList = Arrays.asList(nodes);
-        List<GridNode> uniqList = IteratorUtils.toListUnique(nodeList.iterator());
-        final int count = uniqList.size();
-        if(count > maxNodesToSelect) {
-            uniqList = uniqList.subList(0, maxNodesToSelect);
-        }
-        GridNodeSelector selector = config.getNodeSelector();
-        List<GridNode> sortedNodes = selector.sortNodes(uniqList, null, config);
-        return sortedNodes;
     }
 
     @Nonnull
     public GridNode selectNode(@Nonnull byte[] key) {
-        final GridNodeSelector selector = config.getNodeSelector();
-
-        final List<GridNode> nodes;
+        final GridNode node;
         final Lock rlock = rwLock.readLock();
         rlock.lock();
         try {
-            Iterator<GridNode> itor = consistentHash.getAll(key);
-            nodes = IteratorUtils.toListUnique(itor);
+            node = consistentHash.get(key);
         } finally {
             rlock.unlock();
-        }
-
-        final GridNode node = selector.selectNode(nodes, key, config);
-        if(node == null) {// There should be at least one node, i.e., local node, in the gird.
-            throw new GridRuntimeException(GridErrorDescription.NODE_NOT_FOUND);
         }
         return node;
     }
@@ -155,30 +128,9 @@ public final class ConsistentHashRouter implements GridTaskRouter {
     }
 
     public List<GridNode> selectNodes(byte[] key, int maxNumSelect) {
-        final GridNodeSelector selector = config.getNodeSelector();
-        final int replicas = consistentHash.getNumberOfVirtualNodes();
-        final int numSelect = Math.min(maxNumSelect, replicas);
-
-        List<GridNode> nodes;
-        final Lock rlock = rwLock.readLock();
-        rlock.lock();
-        try {
-            Iterator<GridNode> itor = consistentHash.getAll(key);
-            nodes = IteratorUtils.toListUnique(itor);
-        } finally {
-            rlock.unlock();
-        }
-        if(nodes.isEmpty()) {
-            throw new GridRuntimeException(GridErrorDescription.NODE_NOT_FOUND);
-        }
-
-        final int count = nodes.size();
-        if(count > maxNumSelect) {
-            nodes = nodes.subList(0, numSelect);
-        }
-
-        List<GridNode> sortedNodes = selector.sortNodes(nodes, key, config);
-        return sortedNodes;
+        GridNode node = selectNode(key);
+        GridNodeSelector selector = config.getNodeSelector();
+        return selector.selectNodesSorted(node, maxNumSelect, config);
     }
 
     public void onChannelClosed() {
@@ -186,6 +138,7 @@ public final class ConsistentHashRouter implements GridTaskRouter {
         wlock.lock();
         try {
             consistentHash.clear();
+            this.gridSize = 0;
         } finally {
             wlock.unlock();
         }

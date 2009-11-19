@@ -38,9 +38,12 @@ import javax.annotation.Nullable;
 public interface GridNodeSelector {
 
     @Nullable
-    GridNode selectNode(@Nonnull List<GridNode> nodeList, @Nullable byte[] key, @Nonnull GridConfiguration config);
+    GridNode selectNode(@Nonnull List<GridNode> nodeList, @Nonnull GridConfiguration config);
+
+    @Nullable
+    GridNode selectNode(@Nonnull GridNode primaryNode, @Nonnull GridConfiguration config);
 
     @Nonnull
-    List<GridNode> sortNodes(@Nonnull List<GridNode> nodeList, @Nonnull byte[] key, @Nonnull GridConfiguration config);
+    List<GridNode> selectNodesSorted(@Nonnull GridNode primaryNode, int maxNumSelect, @Nonnull GridConfiguration config);
 
 }

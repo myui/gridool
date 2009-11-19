@@ -20,9 +20,11 @@
  */
 package gridool.routing;
 
+import gridool.routing.selector.PrimaryNodeSelector;
+
+import org.apache.commons.logging.LogFactory;
+
 import xbird.config.Settings;
-import gridool.routing.selector.LoadBalancingNodeSelector;
-import gridool.routing.selector.RandomNodeSelector;
 
 /**
  * 
@@ -37,11 +39,12 @@ public final class GridNodeSelectorFactory {
 
     public static GridNodeSelector createSelector() {
         final String selectorName = Settings.get("gridool.router.nodeselector");
-        if(LoadBalancingNodeSelector.class.getName().equals(selectorName)) {
-            return new LoadBalancingNodeSelector();
-        } else if(RandomNodeSelector.class.getName().equals(selectorName)) {
-            return new RandomNodeSelector();
+        if(PrimaryNodeSelector.class.getName().equals(selectorName)) {
+            new PrimaryNodeSelector();
+        } else {
+            LogFactory.getLog(GridNodeSelectorFactory.class).warn("GridNodeSelector '"
+                    + selectorName + "' not found. Use the default PrimaryNodeSelector.");
         }
-        return new LoadBalancingNodeSelector();
+        return new PrimaryNodeSelector();
     }
 }

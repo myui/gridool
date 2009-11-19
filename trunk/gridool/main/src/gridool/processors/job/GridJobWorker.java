@@ -39,7 +39,6 @@ import gridool.processors.task.GridTaskProcessor;
 import gridool.routing.GridNodeSelector;
 import gridool.routing.GridTaskRouter;
 import gridool.taskqueue.sender.SenderResponseTaskQueue;
-import gridool.util.GridUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -285,8 +284,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
                     + job + ", task:" + task + ']');
         }
         GridNodeSelector selector = config.getNodeSelector();
-        byte[] taskKey = GridUtils.getTaskKey(task);
-        GridNode node = selector.selectNode(candidates, taskKey, config);
+        GridNode node = selector.selectNode(candidates, config);
         assert (node != null);
         if(LOG.isWarnEnabled()) {
             LOG.warn("[Failover] Assigned a job [" + job + "] to node [" + node + "]");

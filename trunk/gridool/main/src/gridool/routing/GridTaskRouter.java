@@ -44,9 +44,6 @@ public interface GridTaskRouter extends GridDiscoveryListener {
     GridNode[] getAllNodes();
 
     @Nonnull
-    List<GridNode> getNodes(int maxNodesToSelect);
-
-    @Nonnull
     GridNode selectNode(@Nonnull byte[] key);
 
     @Nonnull

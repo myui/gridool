@@ -36,7 +36,6 @@ import gridool.loadblancing.workstealing.GridTaskStealingTask;
 import gridool.routing.GridNodeSelector;
 import gridool.routing.GridTaskRouter;
 import gridool.taskqueue.sender.SenderResponseTaskQueue;
-import gridool.util.GridUtils;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -203,7 +202,7 @@ public final class GridTaskMover {
                     continue;
                 }
                 if(task.cancel()) {
-                    GridNode node = selector.selectNode(destNodes, GridUtils.getTaskKey(task), conf);
+                    GridNode node = selector.selectNode(destNodes, conf);
                     map.put(task, node);
                 }
             }
