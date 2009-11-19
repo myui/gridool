@@ -101,10 +101,12 @@ public class DbCountInitializeJob extends GridJobBase<DBMapReduceJobConf, Long> 
     private void dropTables(final Connection conn) {
         String dropAccess = "DROP TABLE Access";
         String dropPageview = "DROP TABLE Pageview";
+        String dropview = "DROP VIEW Pageview";
         try {
             Statement st = conn.createStatement();
             st.executeUpdate(dropAccess);
             st.executeUpdate(dropPageview);
+            st.executeUpdate(dropview);
             conn.commit();
             st.close();
         } catch (SQLException ex) {// ignore
