@@ -21,14 +21,9 @@
 package gridool.mapred.db;
 
 import gridool.GridException;
-import gridool.GridJob;
 import gridool.GridJobFuture;
 import gridool.GridKernel;
-import gridool.GridTask;
 import gridool.annotation.GridKernelResource;
-import gridool.mapred.dht.DhtMapReduceJobConf;
-import gridool.mapred.dht.DhtReduceJob;
-import gridool.mapred.dht.task.DhtMapShuffleTask;
 
 import java.util.concurrent.ExecutionException;
 
@@ -56,8 +51,7 @@ public final class DBMapReduceJob extends DBMapJob {
 
     @Override
     public String reduce() throws GridException {
-        DhtMapReduceJobConf reduceJobConf = new ReduceOnDhtJobConf(mapOutputTableName, jobConf);
-        final GridJobFuture<String> result = kernel.execute(DhtReduceJob.class, reduceJobConf);
+        final GridJobFuture<String> result = kernel.execute(DBReduceJob.class, jobConf);
         try {
             return result.get();
         } catch (InterruptedException ie) {
@@ -67,40 +61,6 @@ public final class DBMapReduceJob extends DBMapJob {
             LogFactory.getLog(getClass()).error(ee.getMessage(), ee);
             throw new GridException(ee);
         }
-    }
-
-    private static final class ReduceOnDhtJobConf extends DhtMapReduceJobConf {
-        private static final long serialVersionUID = 1129731669391900133L;
-
-        private final DBMapReduceJobConf jobConf;
-
-        public ReduceOnDhtJobConf(String inputTableName, DBMapReduceJobConf jobConf) {
-            super(inputTableName);
-            this.jobConf = jobConf;
-        }
-
-        @Override
-        public String getInputTableName() {
-            return jobConf.getMapOutputTableName();
-        }
-
-        @Override
-        public String getOutputTableName() {
-            return jobConf.getReduceOutputTableName();
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        protected DhtMapShuffleTask makeMapShuffleTask(GridJob job, String inputTableName, String destTableName) {
-            throw new IllegalStateException();
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        protected GridTask makeReduceTask(GridJob job, String inputTableName, String destTableName) {
-            return jobConf.makeReduceTask(job, inputTableName, destTableName);
-        }
-
     }
 
 }

@@ -24,6 +24,7 @@ import gridool.GridJob;
 import gridool.lib.db.DBInsertOperation;
 import gridool.lib.db.DBRecord;
 import gridool.mapred.db.DBMapReduceJobConf;
+import gridool.util.GridUtils;
 
 import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
@@ -56,6 +57,14 @@ public abstract class Dht2DBGatherReduceTask<IN_TYPE> extends
         return jobConf.getDriverClassName();
     }
 
+    protected String getReduceOutputTableName() {
+        final String tblName = jobConf.getReduceOutputTableName();
+        if(jobConf.getQueryTemplateForCreatingViewComposite() != null) {
+            return GridUtils.generateTableName(tblName, this);
+        }
+        return tblName;
+    }
+
     protected String getPassword() {
         return jobConf.getPassword();
     }
@@ -68,7 +77,7 @@ public abstract class Dht2DBGatherReduceTask<IN_TYPE> extends
     protected void invokeShuffle(ExecutorService shuffleExecPool, ArrayQueue<DBRecord> queue) {
         String driverClassName = getDriverClassName();
         String connectUrl = getReduceOutputDestinationDbUrl();
-        String mapOutputTableName = jobConf.getReduceOutputTableName();
+        String mapOutputTableName = getReduceOutputTableName();
         String[] fieldNames = jobConf.getReduceOutputFieldNames();
         DBRecord[] records = queue.toArray(DBRecord.class);
         final DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, mapOutputTableName, fieldNames, records);

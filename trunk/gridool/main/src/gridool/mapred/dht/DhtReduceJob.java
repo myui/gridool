@@ -50,7 +50,7 @@ public final class DhtReduceJob extends GridJobBase<DhtMapReduceJobConf, String>
         final String inputTableName = jobConf.getInputTableName();
         String destTableName = jobConf.getOutputTableName();
         if(destTableName == null) {
-            destTableName = generateOutputDhtName(inputTableName, System.nanoTime());
+            destTableName = generateOutputTableName(inputTableName, System.nanoTime());
         }
         this.destTableName = destTableName;
 
@@ -71,13 +71,13 @@ public final class DhtReduceJob extends GridJobBase<DhtMapReduceJobConf, String>
         return destTableName;
     }
 
-    private static String generateOutputDhtName(final String inputDhtName, final long time) {
-        final int endIndex = inputDhtName.indexOf("#output-");
+    private static String generateOutputTableName(final String inputTableName, final long time) {
+        final int endIndex = inputTableName.indexOf("#output-");
         if(endIndex != -1) {
-            String baseName = inputDhtName.substring(0, endIndex);
+            String baseName = inputTableName.substring(0, endIndex);
             return baseName + "#output-" + time;
         }
-        return inputDhtName + "#output-" + time;
+        return inputTableName + "#output-" + time;
     }
 
 }

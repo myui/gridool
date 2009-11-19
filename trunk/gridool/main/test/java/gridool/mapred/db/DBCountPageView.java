@@ -179,6 +179,12 @@ public final class DBCountPageView {
         protected GridTask makeReduceTask(GridJob job, String inputTableName, String destTableName) {
             return new PageviewReducer(job, inputTableName, destTableName, true, this);
         }
+
+        @Override
+        public String getQueryTemplateForCreatingViewComposite() {
+            return "CREATE TABLE ?(url VARCHAR(100) NOT NULL, pageview BIGINT NOT NULL, PRIMARY KEY (url))";
+        }
+
     }
 
     private static final class AccessRecord implements DBRecord {
@@ -322,7 +328,7 @@ public final class DBCountPageView {
             }
             if(rs != null) {
                 rs.close();
-            }            
+            }
             conn.close();
         }
     }

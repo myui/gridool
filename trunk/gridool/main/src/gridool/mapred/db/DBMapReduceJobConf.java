@@ -51,13 +51,14 @@ public abstract class DBMapReduceJobConf implements Serializable {
 
     public DBMapReduceJobConf() {}
 
-    public final Connection getConnection(boolean configure) throws ClassNotFoundException, SQLException {
+    public final Connection getConnection(boolean configure) throws ClassNotFoundException,
+            SQLException {
         final String url = getConnectUrl();
         return getConnection(url, configure);
     }
 
-    public final Connection getConnection(String connectUrl, boolean configure) throws ClassNotFoundException,
-            SQLException {
+    public final Connection getConnection(String connectUrl, boolean configure)
+            throws ClassNotFoundException, SQLException {
         Class.forName(getDriverClassName());
         final String url = getConnectUrl();
         final String user = getUserName();
@@ -109,6 +110,10 @@ public abstract class DBMapReduceJobConf implements Serializable {
 
     public String getReduceOutputTableName() {
         return reduceOutputTableName;
+    }
+
+    public String getQueryTemplateForCreatingViewComposite() {
+        return null;
     }
 
     public final void setReduceOutputTableName(@Nonnull String reduceOutputTableName) {
