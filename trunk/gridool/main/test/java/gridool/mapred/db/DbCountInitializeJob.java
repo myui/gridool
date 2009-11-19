@@ -93,20 +93,24 @@ public class DbCountInitializeJob extends GridJobBase<DBMapReduceJobConf, Long> 
 
     private int initialize(DBMapReduceJobConf jobConf) throws ClassNotFoundException, SQLException {
         Connection conn = jobConf.getConnection(true);
-        dropTables(conn);
-        createTables(conn);
+        boolean useView = jobConf.getQueryTemplateForCreatingViewComposite() != null;
+        dropTables(conn, useView);
+        createTables(conn, useView);
         return populateAccess(conn);
     }
 
-    private void dropTables(final Connection conn) {
-        String dropAccess = "DROP TABLE Access";
-        String dropPageview = "DROP TABLE Pageview";
-        String dropview = "DROP VIEW Pageview";
+    private void dropTables(final Connection conn, final boolean useView) {
+        final String dropAccess = "DROP TABLE Access";
+        final String dropPageview = "DROP TABLE Pageview";
+        final String dropview = "DROP VIEW Pageview";
         try {
             Statement st = conn.createStatement();
             st.executeUpdate(dropAccess);
-            st.executeUpdate(dropPageview);
-            st.executeUpdate(dropview);
+            if(useView) {
+                st.executeUpdate(dropview);
+            } else {
+                st.executeUpdate(dropPageview);
+            }
             conn.commit();
             st.close();
         } catch (SQLException ex) {// ignore
@@ -118,18 +122,19 @@ public class DbCountInitializeJob extends GridJobBase<DBMapReduceJobConf, Long> 
         }
     }
 
-    private void createTables(final Connection conn) throws SQLException {
-        String createAccess = "CREATE TABLE " + "Access(url VARCHAR(100) NOT NULL,"
+    private void createTables(final Connection conn, final boolean useView) throws SQLException {
+        final String createAccess = "CREATE TABLE " + "Access(url VARCHAR(100) NOT NULL,"
                 + " referrer VARCHAR(100)," + " time BIGINT NOT NULL,"
                 + " PRIMARY KEY (url, time))";
-
-        String createPageview = "CREATE TABLE " + "Pageview(url VARCHAR(100) NOT NULL,"
+        final String createPageview = "CREATE TABLE " + "Pageview(url VARCHAR(100) NOT NULL,"
                 + " pageview BIGINT NOT NULL," + " PRIMARY KEY (url))";
 
         Statement st = conn.createStatement();
         try {
             st.executeUpdate(createAccess);
-            st.executeUpdate(createPageview);
+            if(!useView) {
+                st.executeUpdate(createPageview);
+            }
             conn.commit();
         } finally {
             st.close();
