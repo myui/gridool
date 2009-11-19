@@ -68,7 +68,7 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
     // ------------------------
     // working resources
 
-    private transient final ExecutorService shuffleExecPool;
+    private transient ExecutorService shuffleExecPool;
     private transient BoundedArrayQueue<OUT_TYPE> shuffleSink;
 
     @SuppressWarnings("unchecked")
@@ -76,8 +76,6 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
         super(job, true);
         assert (jobConf != null);
         this.jobConf = jobConf;
-        this.shuffleExecPool = ExecutorFactory.newFixedThreadPool(shuffleThreads(), "Gridool#Shuffle", true);
-        this.shuffleSink = new BoundedArrayQueue<OUT_TYPE>(shuffleUnits());
     }
 
     @Override
@@ -103,6 +101,9 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
     }
 
     public final Serializable execute() throws GridException {
+        this.shuffleExecPool = ExecutorFactory.newFixedThreadPool(shuffleThreads(), "Gridool#Shuffle", true);
+        this.shuffleSink = new BoundedArrayQueue<OUT_TYPE>(shuffleUnits());
+
         // execute a query
         final Connection conn;
         try {
