@@ -272,11 +272,9 @@ public final class GridUtils {
         String key = task.getKey();
         return StringUtils.getBytes(key);
     }
-    
+
     @Nonnull
     public static String generateTableName(@Nonnull final String baseName, @Nonnull final GridTask task) {
-        String taskId = task.getTaskId();
-        String escaped = taskId.replaceAll("#/", "_");
-        return baseName + '_' + escaped;
+        return baseName + task.getTaskNumber();
     }
 }

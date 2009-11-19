@@ -150,4 +150,12 @@ public final class GridTaskInfo implements GridTask {
         throw new UnsupportedOperationException();
     }
 
+    public int getTaskNumber() {
+        throw new UnsupportedOperationException();
+    }
+
+    public void setTaskNumber(int i) {
+        throw new UnsupportedOperationException();
+    }
+
 }

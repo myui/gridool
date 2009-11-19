@@ -61,8 +61,9 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
     @Nonnull
     protected final String taskId;
     @Nonnull
-    protected final GridNode senderNode;
-
+    protected final GridNode senderNode;    
+    protected int taskNumber = -1;
+    
     protected long startedTime = -1L;
     protected long finishedTime = -1L;
 
@@ -112,6 +113,14 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
 
     public final String getJobId() {
         return jobId;
+    }
+
+    public int getTaskNumber() {
+        return taskNumber;
+    }
+    
+    public void setTaskNumber(int i) {
+        this.taskNumber = i;
     }
 
     public String getKey() {

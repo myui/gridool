@@ -69,6 +69,13 @@ public interface GridTask extends GridLocatable, GridAnnotatable {
     GridNode getSenderNode();
 
     // ----------------------
+    // optional task information
+
+    void setTaskNumber(int i);
+
+    int getTaskNumber();
+
+    // ----------------------
     // controls
 
     Serializable invokeTask() throws GridException;
@@ -87,7 +94,7 @@ public interface GridTask extends GridLocatable, GridAnnotatable {
     boolean isFailoverActive();
 
     // TODO REVIEWME
-    @Nonnull    
+    @Nonnull
     List<GridNode> listFailoverCandidates(@Nonnull GridTask task, @Nonnull GridTaskRouter router);
 
 }

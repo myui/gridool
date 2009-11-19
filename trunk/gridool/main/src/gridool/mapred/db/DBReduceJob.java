@@ -81,6 +81,7 @@ public class DBReduceJob extends GridJobBase<DBMapReduceJobConf, String> {
                     createViewQuery.append(" UNION ALL");
                 }
                 GridTask task = jobConf.makeReduceTask(this, inputTableName, destTableName);
+                task.setTaskNumber(i+1);
                 map.put(task, nodes[i]);
                 String newTableName = GridUtils.generateTableName(outputTblName, task);
                 String createTableQuery = createTableTemplate.replace("?", newTableName);
