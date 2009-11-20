@@ -85,10 +85,12 @@ public class GenericDBRecord implements DBRecord {
             int[] types = null;
             for(int i = 0; i < cols; i++) {
                 final Object col = resultSet.getObject(i + 1);
-                if(i == 0 && col instanceof String) {
-                    this.key = StringUtils.getBytes((String) col);
-                } else {
-                    this.key = resultSet.getBytes(1);
+                if(i == 0) {
+                    if(col instanceof String) {
+                        this.key = StringUtils.getBytes((String) col);
+                    } else {
+                        this.key = resultSet.getBytes(1);
+                    }
                 }
                 columns[i] = col;
                 if(col == null) {
