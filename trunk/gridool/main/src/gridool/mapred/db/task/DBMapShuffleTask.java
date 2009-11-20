@@ -25,11 +25,14 @@ import gridool.GridJobFuture;
 import gridool.lib.db.DBInsertOperation;
 import gridool.lib.db.DBInsertRecordJob;
 import gridool.lib.db.DBRecord;
+import gridool.lib.db.GenericDBRecord;
 import gridool.mapred.db.DBMapReduceJobConf;
 
 import java.io.Serializable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+
+import javax.annotation.Nonnull;
 
 import xbird.util.collections.ArrayQueue;
 
@@ -40,14 +43,28 @@ import xbird.util.collections.ArrayQueue;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public abstract class DBMapShuffleTask extends DBMapShuffleTaskBase<DBRecord> {
+public class DBMapShuffleTask extends DBMapShuffleTaskBase<DBRecord> {
     private static final long serialVersionUID = -269939175231317044L;
 
     @SuppressWarnings("unchecked")
     public DBMapShuffleTask(GridJob job, DBMapReduceJobConf jobConf) {
         super(job, jobConf);
     }
+    
+    @Override
+    protected boolean process(final DBRecord record) {
+        shuffle(record);
+        return true;
+    }
 
+    protected final void shuffle(@Nonnull final byte[] key, @Nonnull final Object... columns) {
+        shuffle(new GenericDBRecord(key, columns));
+    }
+
+    protected final void shuffle(@Nonnull final byte[] key, @Nonnull final Object[] columns, @Nonnull final int[] sqlTypes) {
+        shuffle(new GenericDBRecord(key, columns, sqlTypes));
+    }
+    
     @Override
     protected void invokeShuffle(final ExecutorService shuffleExecPool, final ArrayQueue<DBRecord> queue) {
         assert (kernel != null);

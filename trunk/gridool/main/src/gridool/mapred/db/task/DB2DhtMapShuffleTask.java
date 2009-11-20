@@ -25,11 +25,14 @@ import gridool.GridJobFuture;
 import gridool.directory.job.DirectoryAddRecordJob;
 import gridool.directory.job.DirectoryAddRecordJob.AddRecordOps;
 import gridool.lib.db.DBRecord;
+import gridool.lib.db.GenericDBRecord;
 import gridool.mapred.db.DBMapReduceJobConf;
 
 import java.io.Serializable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+
+import javax.annotation.Nonnull;
 
 import xbird.util.collections.ArrayQueue;
 
@@ -49,9 +52,17 @@ public class DB2DhtMapShuffleTask extends DBMapShuffleTaskBase<DBRecord> {
     }
 
     @Override
-    protected boolean process(DBRecord record) {
+    protected boolean process(final DBRecord record) {
         shuffle(record);
         return true;
+    }
+
+    protected final void shuffle(@Nonnull final byte[] key, @Nonnull final Object... columns) {
+        shuffle(new GenericDBRecord(key, columns));
+    }
+
+    protected final void shuffle(@Nonnull final byte[] key, @Nonnull final Object[] columns, @Nonnull final int[] sqlTypes) {
+        shuffle(new GenericDBRecord(key, columns, sqlTypes));
     }
 
     @Override

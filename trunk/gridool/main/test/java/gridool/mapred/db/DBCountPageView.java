@@ -121,14 +121,14 @@ public final class DBCountPageView {
         String reduceOutputDestinationDbUrl = "jdbc:monetdb://" + NetUtils.getLocalHostAddress()
                 + "/URLAccess";
         @Option(name = "-inputQuery", usage = "The query used for the input of mappers")
-        String inputQuery = "SELECT url, referrer, time FROM Access ORDER BY url";        
+        String inputQuery = "SELECT url, referrer, time FROM Access ORDER BY url";
         @Option(name = "-reduceTable", usage = "Table name for the outputs of reducers")
         String reduceOutputTableName = "Pageview";
         @Option(name = "-reduceFields", usage = "Field names of the output table of reducers, seperated by comma")
         String reduceOutputFieldNames = "url,pageview";
         @Option(name = "-viewTmpl", usage = "Query used for creating a view")
         String createViewTemplate = "CREATE TABLE ?(url VARCHAR(100) NOT NULL, pageview BIGINT NOT NULL, PRIMARY KEY (url))";
-        
+
         public DBCountJobConf() {
             super();
         }
@@ -160,7 +160,7 @@ public final class DBCountPageView {
 
         @Override
         public DBRecord createMapInputRecord() {
-            return new GenericDBRecord();//new AccessRecord();
+            return new GenericDBRecord(); //new EmitDummyValueRecord(1); //new AccessRecord();
         }
 
         @Override

@@ -35,7 +35,13 @@ import java.io.OutputStream;
 public final class EmitDummyValueRecord extends GenericDBRecord {
     private static final long serialVersionUID = -2852866152889505711L;
 
+    private transient Object value = new Integer(1);
+
     public EmitDummyValueRecord() {}
+
+    public EmitDummyValueRecord(Object emitObj) {
+        this.value = emitObj;
+    }
 
     public EmitDummyValueRecord(byte[] key, Object... results) {
         super(key, results);
@@ -48,7 +54,7 @@ public final class EmitDummyValueRecord extends GenericDBRecord {
     @SuppressWarnings("unchecked")
     @Override
     public void writeTo(GridMarshaller marshaller, OutputStream out) throws GridException {
-        marshaller.marshall(1, out);
+        marshaller.marshall(value, out);
     }
 
 }
