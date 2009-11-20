@@ -25,7 +25,7 @@ import gridool.GridException;
 import gridool.GridJob;
 import gridool.GridTask;
 import gridool.lib.db.DBRecord;
-import gridool.lib.db.GenericDBRecord;
+import gridool.lib.db.EmitDummyValueRecord;
 import gridool.mapred.db.task.DB2DhtMapShuffleTask;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
 import gridool.mapred.db.task.Dht2DBGatherReduceTask;
@@ -160,7 +160,7 @@ public final class DBCountPageView {
 
         @Override
         public DBRecord createMapInputRecord() {
-            return new GenericDBRecord(); //new EmitDummyValueRecord(1); //new AccessRecord();
+            return new EmitDummyValueRecord(1); //new GenericDBRecord(); //new AccessRecord();
         }
 
         @Override
