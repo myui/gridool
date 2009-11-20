@@ -25,6 +25,7 @@ import gridool.GridException;
 import gridool.GridJob;
 import gridool.GridTask;
 import gridool.lib.db.DBRecord;
+import gridool.lib.db.GenericDBRecord;
 import gridool.mapred.db.task.DB2DhtMapShuffleTask;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
 import gridool.mapred.db.task.Dht2DBGatherReduceTask;
@@ -119,7 +120,15 @@ public final class DBCountPageView {
         @Option(name = "-dstDbUrl", usage = "database connect url in which recuce outputs are collected")
         String reduceOutputDestinationDbUrl = "jdbc:monetdb://" + NetUtils.getLocalHostAddress()
                 + "/URLAccess";
-
+        @Option(name = "-inputQuery", usage = "The query used for the input of mappers")
+        String inputQuery = "SELECT url, referrer, time FROM Access ORDER BY url";        
+        @Option(name = "-reduceTable", usage = "Table name for the outputs of reducers")
+        String reduceOutputTableName = "Pageview";
+        @Option(name = "-reduceFields", usage = "Field names of the output table of reducers, seperated by comma")
+        String reduceOutputFieldNames = "url,pageview";
+        @Option(name = "-viewTmpl", usage = "Query used for creating a view")
+        String createViewTemplate = "CREATE TABLE ?(url VARCHAR(100) NOT NULL, pageview BIGINT NOT NULL, PRIMARY KEY (url))";
+        
         public DBCountJobConf() {
             super();
         }
@@ -146,27 +155,32 @@ public final class DBCountPageView {
 
         @Override
         public String getInputQuery() {
-            return "SELECT url, referrer, time FROM Access ORDER BY url";
+            return inputQuery;
         }
 
         @Override
         public DBRecord createMapInputRecord() {
-            return new AccessRecord();
+            return new GenericDBRecord();//new AccessRecord();
         }
 
         @Override
         public String getReduceOutputTableName() {
-            return "Pageview";
+            return reduceOutputTableName;
         }
 
         @Override
         public String[] getReduceOutputFieldNames() {
-            return new String[] { "url", "pageview" };
+            return reduceOutputFieldNames.split(",");
         }
 
         @Override
         public String getReduceOutputDestinationDbUrl() {
             return reduceOutputDestinationDbUrl;
+        }
+
+        @Override
+        public String getQueryTemplateForCreatingViewComposite() {
+            return createViewTemplate;
         }
 
         @Override
@@ -180,13 +194,9 @@ public final class DBCountPageView {
             return new PageviewReducer(job, inputTableName, destTableName, true, this);
         }
 
-        @Override
-        public String getQueryTemplateForCreatingViewComposite() {
-            return "CREATE TABLE ?(url VARCHAR(100) NOT NULL, pageview BIGINT NOT NULL, PRIMARY KEY (url))";
-        }
-
     }
 
+    @SuppressWarnings("unused")
     private static final class AccessRecord implements DBRecord {
         private static final long serialVersionUID = -1192579060515200773L;
 
@@ -247,6 +257,7 @@ public final class DBCountPageView {
         }
     }
 
+    @Deprecated
     private static final class PageviewMapper extends DB2DhtMapShuffleTask {
         private static final long serialVersionUID = 6919810831471575121L;
 
