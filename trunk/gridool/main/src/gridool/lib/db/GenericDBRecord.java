@@ -83,7 +83,7 @@ public class GenericDBRecord implements DBRecord {
             int[] types = null;
             for(int i = 0; i < cols; i++) {
                 Object col = resultSet.getObject(i + 1);
-                results[i] = col;
+                columns[i] = col;
                 if(col == null) {
                     if(types == null) {
                         types = new int[cols];
