@@ -105,7 +105,7 @@ public class DbCountInitializeJob extends GridJobBase<DBMapReduceJobConf, Long> 
         try {
             Statement st = conn.createStatement();
             st.executeUpdate(dropAccess);
-            if(useView) {
+            if(!useView) {
                 st.executeUpdate(dropPageview);
             }
             conn.commit();
