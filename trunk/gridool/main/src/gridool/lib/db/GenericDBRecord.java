@@ -33,6 +33,8 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import xbird.util.string.StringUtils;
+
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -82,7 +84,12 @@ public class GenericDBRecord implements DBRecord {
             final Object[] columns = new Object[cols];
             int[] types = null;
             for(int i = 0; i < cols; i++) {
-                Object col = resultSet.getObject(i + 1);
+                final Object col = resultSet.getObject(i + 1);
+                if(i == 0 && col instanceof String) {
+                    this.key = StringUtils.getBytes((String) col);
+                } else {
+                    this.key = resultSet.getBytes(1);
+                }
                 columns[i] = col;
                 if(col == null) {
                     if(types == null) {
@@ -92,7 +99,6 @@ public class GenericDBRecord implements DBRecord {
                     types[i] = meta.getColumnType(i + 1);
                 }
             }
-            this.key = resultSet.getBytes(1);
             this.results = columns;
         }
     }
