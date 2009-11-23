@@ -23,6 +23,10 @@ package gridool.lib.db;
 import gridool.GridException;
 import gridool.marshaller.GridMarshaller;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.OutputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -33,6 +37,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import xbird.util.io.IOUtils;
 import xbird.util.string.StringUtils;
 
 /**
@@ -42,7 +47,7 @@ import xbird.util.string.StringUtils;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public class GenericDBRecord implements DBRecord {
+public class GenericDBRecord implements DBRecord, Externalizable {
     private static final long serialVersionUID = 8660692786480530500L;
 
     private byte[] key;
@@ -124,6 +129,45 @@ public class GenericDBRecord implements DBRecord {
     public void writeTo(GridMarshaller marshaller, OutputStream out) throws GridException {
         for(Object obj : results) {
             marshaller.marshall(obj, out);
+        }
+    }
+
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        this.key = IOUtils.readBytes(in);
+        int numResults = in.readInt();
+        final Object[] objects = new Object[numResults];
+        for(int i = 0; i < numResults; i++) {
+            objects[i] = in.readObject();
+        }
+        this.results = objects;
+        if(in.readBoolean()) {
+            final int numTypes = in.readInt();
+            final int[] types = new int[numTypes];
+            for(int i = 0; i < numTypes; i++) {
+                types[i] = in.readInt();
+            }
+            this.columnTypes = types;
+        }
+    }
+
+    public void writeExternal(ObjectOutput out) throws IOException {
+        IOUtils.writeBytes(key, out);
+        final Object[] objects = results;
+        final int numResults = objects.length;
+        out.writeInt(numResults);
+        for(int i = 0; i < numResults; i++) {
+            out.writeObject(objects[i]);
+        }
+        final int[] types = columnTypes;
+        if(types == null) {
+            out.writeBoolean(false);
+        } else {
+            out.writeBoolean(true);
+            final int numTypes = types.length;
+            out.writeInt(numTypes);
+            for(int i = 0; i < numResults; i++) {
+                out.writeInt(types[i]);
+            }
         }
     }
 

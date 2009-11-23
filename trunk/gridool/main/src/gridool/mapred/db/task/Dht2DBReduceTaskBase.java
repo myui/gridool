@@ -95,7 +95,7 @@ public abstract class Dht2DBReduceTaskBase<IN_TYPE, OUT_TYPE> extends DhtReduceT
     }
 
     @Override
-    protected boolean process(byte[] key, Iterator<byte[]> values) {
+    protected final boolean process(byte[] key, Iterator<byte[]> values) {
         throw new UnsupportedOperationException();
     }
 

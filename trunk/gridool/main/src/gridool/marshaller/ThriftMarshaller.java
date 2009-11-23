@@ -26,7 +26,7 @@ import java.io.OutputStream;
 
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.transport.TIOStreamTransport;
 
 import xbird.util.io.FastByteArrayInputStream;
@@ -46,7 +46,7 @@ public abstract class ThriftMarshaller extends MarshallerBase<TBase> {
     public <T extends TBase> void marshall(final T obj, final OutputStream out)
             throws GridException {
         TIOStreamTransport trans = new TIOStreamTransport(out);
-        final TBinaryProtocol prot = new TBinaryProtocol(trans);
+        final TCompactProtocol prot = new TCompactProtocol(trans);
         try {
             obj.write(prot);
         } catch (TException e) {
@@ -58,7 +58,7 @@ public abstract class ThriftMarshaller extends MarshallerBase<TBase> {
             throws GridException {
         FastByteArrayInputStream bais = new FastByteArrayInputStream(ary);
         TIOStreamTransport trans = new TIOStreamTransport(bais);
-        final TBinaryProtocol prot = new TBinaryProtocol(trans);
+        final TCompactProtocol prot = new TCompactProtocol(trans);
         final T obj = createObject();
         try {
             obj.read(prot);
