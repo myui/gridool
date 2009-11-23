@@ -43,10 +43,10 @@ import xbird.util.lang.ObjectUtils;
 public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
     private static final long serialVersionUID = 6329395278348057576L;
 
-    @Option(name = "-driver", usage = "Class name of the database driver", required = true)
+    @Option(name = "-driver", usage = "Class name of the database driver (Required)", required = true)
     private String driverClassName;
 
-    @Option(name = "-connectUrl", usage = "database connect Url", required = true)
+    @Option(name = "-connectUrl", usage = "database connect Url (Required)", required = true)
     private String dbConnectUrl;
 
     @Option(name = "-user", usage = "database user name")
@@ -73,7 +73,7 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
     @Option(name = "-viewTmpl", usage = "Query used for creating a view")
     private String createViewTemplate = null;
 
-    @Option(name = "-inputQuery", usage = "The query used for the input of mappers", required = true)
+    @Option(name = "-inputQuery", usage = "The query used for the input of mappers (Required)", required = true)
     private String inputQuery;
 
     @Option(name = "-mapInputClass", usage = "Class name of map input records")
@@ -158,7 +158,8 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
         try {
             parser.parseArgument(args);
         } catch (CmdLineException e) {
-            throw new IllegalArgumentException(e.getMessage());
+            parser.printUsage(System.err);
+            throw new IllegalArgumentException(e);
         }
     }
 

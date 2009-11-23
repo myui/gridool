@@ -48,7 +48,6 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 import xbird.util.datetime.StopWatch;
-import xbird.util.lang.ObjectUtils;
 import xbird.util.net.NetUtils;
 import xbird.util.string.StringUtils;
 
@@ -103,7 +102,7 @@ public final class DBCountPageView {
     }
 
     private static void runJob(GridClient grid, DBCountJobConf jobConf) throws RemoteException {
-        grid.execute(DBMapReduceJob.class, ObjectUtils.toBytes(jobConf));
+        grid.execute(DBMapReduceJob.class, jobConf);
     }
 
     private static final class DBCountJobConf extends DBMapReduceJobConf {

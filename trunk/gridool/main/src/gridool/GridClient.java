@@ -76,20 +76,14 @@ public final class GridClient implements Grid {
         }
     }
 
-    /**
-     * Note that method local classes are not deployed.
-     * Both static and normal inner classes are deployed when <code>includeInnerClasses</code> is true.
-     */
-    @Deprecated
-    public void deployJob(@Nonnull Class<? extends GridJob<?, ?>> jobClass, boolean includeInnerClasses)
-            throws RemoteException {
-        deployClass(jobClass, includeInnerClasses);
-    }
-
     public void deployClass(@Nonnull Class<?> clazz) throws RemoteException {
         deployClass(clazz, true);
     }
 
+    /**
+     * Note that method local classes are not deployed.
+     * Both static and normal inner classes are deployed when <code>includeInnerClasses</code> is true.
+     */
     public void deployClass(@Nonnull Class<?> clazz, boolean includeInnerClasses)
             throws RemoteException {
         final String clsName = clazz.getName();

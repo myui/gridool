@@ -33,8 +33,6 @@ import java.util.Map;
 
 import javax.annotation.Nonnull;
 
-import xbird.util.lang.ObjectUtils;
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -42,7 +40,7 @@ import xbird.util.lang.ObjectUtils;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public class DBMapJob extends GridJobBase<byte[], String> {
+public class DBMapJob extends GridJobBase<DBMapReduceJobConf, String> {
     private static final long serialVersionUID = 1965382841993527705L;
 
     protected transient DBMapReduceJobConf jobConf;
@@ -52,22 +50,21 @@ public class DBMapJob extends GridJobBase<byte[], String> {
         super();
     }
 
-    public Map<GridTask, GridNode> map(GridTaskRouter router, byte[] rawLogic) throws GridException {
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        DBMapReduceJobConf logic = ObjectUtils.readObjectQuietly(rawLogic, cl);
-        this.jobConf = logic;
+    public Map<GridTask, GridNode> map(GridTaskRouter router, DBMapReduceJobConf jobConf)
+            throws GridException {
+        this.jobConf = jobConf;
 
-        String destTableName = logic.getMapOutputTableName();
+        String destTableName = jobConf.getMapOutputTableName();
         if(destTableName == null) {
             destTableName = generateMapOutputTableName();
-            logic.setMapOutputTableName(destTableName);
+            jobConf.setMapOutputTableName(destTableName);
         }
         this.mapOutputTableName = destTableName;
 
         final GridNode[] nodes = router.getAllNodes();
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(nodes.length);
         for(GridNode node : nodes) {
-            GridTask task = logic.makeMapShuffleTask(this, destTableName);
+            GridTask task = jobConf.makeMapShuffleTask(this, destTableName);
             map.put(task, node);
         }
         return map;
