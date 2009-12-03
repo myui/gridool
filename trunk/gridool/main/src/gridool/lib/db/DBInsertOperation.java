@@ -20,7 +20,6 @@
  */
 package gridool.lib.db;
 
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -77,8 +76,14 @@ public final class DBInsertOperation extends DBOperation {
         }
     }
 
-    public DBRecord[] getRecords() {
-        return records;
+    @Nonnull
+    public String getTableName() {
+        return tableName;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends DBRecord> T[] getRecords() {
+        return (T[]) records;
     }
 
     public Serializable execute() throws SQLException {

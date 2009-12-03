@@ -108,6 +108,7 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
         return inputQuery;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public DBRecord createMapInputRecord() {
         if(mapInputRecordClass == null) {

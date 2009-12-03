@@ -157,6 +157,7 @@ public final class DBCountPageView {
             return inputQuery;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public DBRecord createMapInputRecord() {
             return new EmitDummyValueRecord(1); //new GenericDBRecord(); //new AccessRecord();
@@ -183,7 +184,7 @@ public final class DBCountPageView {
         }
 
         @Override
-        public DBMapShuffleTaskBase<DBRecord> makeMapShuffleTask(DBMapJob dbMapJob, String destTableName) {
+        public DBMapShuffleTaskBase<DBRecord, DBRecord> makeMapShuffleTask(DBMapJob dbMapJob, String destTableName) {
             return new PageviewMapper(dbMapJob, this);
         }
 

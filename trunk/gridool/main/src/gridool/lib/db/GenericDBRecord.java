@@ -37,7 +37,6 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import xbird.util.io.IOUtils;
 import xbird.util.string.StringUtils;
 
 /**
@@ -50,10 +49,10 @@ import xbird.util.string.StringUtils;
 public class GenericDBRecord implements DBRecord, Externalizable {
     private static final long serialVersionUID = 8660692786480530500L;
 
-    private byte[] key;
-    private Object[] results;
+    private transient byte[] key;
+    protected Object[] results;
     @Nullable
-    private int[] columnTypes = null;
+    protected int[] columnTypes = null;
 
     public GenericDBRecord() {}
 
@@ -133,7 +132,6 @@ public class GenericDBRecord implements DBRecord, Externalizable {
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        this.key = IOUtils.readBytes(in);
         int numResults = in.readInt();
         final Object[] objects = new Object[numResults];
         for(int i = 0; i < numResults; i++) {
@@ -151,7 +149,6 @@ public class GenericDBRecord implements DBRecord, Externalizable {
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
-        IOUtils.writeBytes(key, out);
         final Object[] objects = results;
         final int numResults = objects.length;
         out.writeInt(numResults);

@@ -52,7 +52,8 @@ import xbird.util.concurrent.ExecutorUtils;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
+public abstract class DBMapShuffleTaskBase<IN_TYPE extends DBRecord, OUT_TYPE> extends
+        GridTaskAdapter {
     private static final long serialVersionUID = -4028443291695700765L;
     protected static final Log LOG = LogFactory.getLog(DBMapShuffleTaskBase.class);
 
@@ -133,12 +134,19 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
             throw new GridException(e);
         }
 
+        try {
+            preprocess(conn, results);
+        } catch (SQLException e) {
+            LOG.error(e);
+            throw new GridException(e);
+        }
+
         // Iterate over records
         // process -> shuffle is consequently called
         try {
             while(results.next()) {
-                DBRecord record = jobConf.createMapInputRecord();
-                record.readFields(results);
+                IN_TYPE record = jobConf.createMapInputRecord();
+                readFields(record, results);
                 if(!process(record)) {
                     break;
                 }
@@ -171,12 +179,18 @@ public abstract class DBMapShuffleTaskBase<OUT_TYPE> extends GridTaskAdapter {
         }
     }
 
+    protected void preprocess(Connection conn, ResultSet results) throws SQLException {}
+
+    protected void readFields(IN_TYPE record, ResultSet results) throws SQLException {
+        record.readFields(results);
+    }
+
     /**
      * Process a record. This is the map function.
      * 
      * @return true/false to continue/stop mapping.
      */
-    protected abstract boolean process(@Nonnull DBRecord record);
+    protected abstract boolean process(@Nonnull IN_TYPE record);
 
     protected final void shuffle(@Nonnull final OUT_TYPE record) {
         assert (shuffleSink != null);
