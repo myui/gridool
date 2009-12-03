@@ -37,6 +37,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -46,6 +49,7 @@ import java.util.Set;
  */
 public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperation, Serializable> {
     private static final long serialVersionUID = -8446997971270275539L;
+    private static final Log LOG = LogFactory.getLog(DBInsertMultiKeyRecordJob.class);
 
     public DBInsertMultiKeyRecordJob() {}
 
@@ -58,6 +62,7 @@ public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperati
         int overlappingRecords = 0;
         for(MultiKeyGenericDBRecord rec : records) {
             final byte[][] keys = rec.getKeys();
+            boolean hasOverlap = false;
             for(byte[] key : keys) {
                 final GridNode node = router.selectNode(key);
                 if(node == null) {
@@ -71,10 +76,18 @@ public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperati
                     }
                     mappedRecords.add(rec);
                 } else {
-                    overlappingRecords++;
+                    hasOverlap = true;
                 }
             }
+            if(hasOverlap) {
+                overlappingRecords++;
+            }
             mappedNodes.clear();
+        }
+
+        if(LOG.isInfoEnabled()) {
+            LOG.info("overlapping records / shuffling records = " + overlappingRecords + " / "
+                    + records.length + "(" + ((overlappingRecords / records.length) * 100) + "%)");
         }
 
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
