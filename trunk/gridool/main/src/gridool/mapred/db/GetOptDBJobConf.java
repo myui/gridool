@@ -26,6 +26,7 @@ import gridool.mapred.db.task.DB2DhtMapShuffleTask;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -50,40 +51,51 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
     private String dbConnectUrl;
 
     @Option(name = "-user", usage = "database user name")
-    private String dbUserName = null;
+    @Nullable
+    private String dbUserName;
 
     @Option(name = "-passwd", usage = "database password")
-    private String dbPassword = null;
+    @Nullable
+    private String dbPassword;
 
     @Option(name = "-createMapOutputTbl", usage = "DDL for creating a map output table")
-    private String createMapOutputTableDDL = null;
+    @Nullable
+    private String createMapOutputTableDDL;
 
     @Option(name = "-mapTable", usage = "Table name for the outputs of mappers")
-    private String mapOutputTableName = null;
+    @Nullable
+    private String mapOutputTableName;
 
     @Option(name = "-mapFields", usage = "Field names of the output table of mappers, seperated by comma")
-    private String mapOutputFieldNames = null;
+    @Nullable
+    private String mapOutputFieldNames;
 
     @Option(name = "-dstDbUrl", usage = "database connect url in which recuce outputs are collected")
-    private String reduceOutputDestinationDbUrl = null;
+    @Nullable
+    private String reduceOutputDestinationDbUrl;
 
     @Option(name = "-reduceTable", usage = "Table name for the outputs of reducers")
-    private String reduceOutputTableName = null;
+    @Nullable
+    private String reduceOutputTableName;
 
     @Option(name = "-reduceFields", usage = "Field names of the output table of reducers, seperated by comma")
-    private String reduceOutputFieldNames = null;
+    @Nullable
+    private String reduceOutputFieldNames;
 
     @Option(name = "-viewTmpl", usage = "Query used for creating a view")
-    private String createViewTemplate = null;
+    @Nullable
+    private String createViewTemplate;
 
     @Option(name = "-inputTable", usage = "The partitioning table name (input table for mappers)")
-    private String inputTable = null;
+    @Nullable
+    private String inputTable;
 
     @Option(name = "-inputQuery", usage = "The query used for the input of mappers (Required)", required = true)
     private String inputQuery;
 
     @Option(name = "-mapInputClass", usage = "Class name of map input records")
-    private String mapInputRecordClass = null;
+    @Nullable
+    private String mapInputRecordClass;
 
     public GetOptDBJobConf(@Nonnull String[] argv) {
         processArgs(argv, this);
