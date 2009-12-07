@@ -76,6 +76,9 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
     @Option(name = "-viewTmpl", usage = "Query used for creating a view")
     private String createViewTemplate = null;
 
+    @Option(name = "-inputTable", usage = "The partitioning table name (input table for mappers)")
+    private String inputTable = null;
+    
     @Option(name = "-inputQuery", usage = "The query used for the input of mappers (Required)", required = true)
     private String inputQuery;
 
@@ -104,6 +107,11 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
     @Override
     public String getPassword() {
         return dbPassword;
+    }
+
+    @Override
+    public String getInputTable() {
+        return inputTable;
     }
 
     @Override
