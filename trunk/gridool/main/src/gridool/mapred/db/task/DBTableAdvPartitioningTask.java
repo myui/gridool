@@ -66,7 +66,7 @@ public final class DBTableAdvPartitioningTask extends
         final String catalog = conn.getCatalog();
 
         // primary key
-        final ResultSet rs1 = meta.getImportedKeys(catalog, null, inputTable);
+        final ResultSet rs1 = meta.getPrimaryKeys(catalog, null, inputTable);
         try {
             while(rs1.next()) {
                 String pk = rs1.getString("PKCOLUMN_NAME");
