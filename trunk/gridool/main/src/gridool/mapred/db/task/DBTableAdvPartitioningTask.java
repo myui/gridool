@@ -69,7 +69,7 @@ public final class DBTableAdvPartitioningTask extends
         final ResultSet rs1 = meta.getPrimaryKeys(catalog, null, inputTable);
         try {
             while(rs1.next()) {
-                String pk = rs1.getString("PKCOLUMN_NAME");
+                String pk = rs1.getString("COLUMN_NAME");
                 keys.add(pk);
             }
         } finally {
