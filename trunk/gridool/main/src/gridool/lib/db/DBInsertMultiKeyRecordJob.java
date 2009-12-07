@@ -31,7 +31,6 @@ import gridool.routing.GridTaskRouter;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +38,8 @@ import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import xbird.util.collections.IdentityHashSet;
 
 /**
  * 
@@ -58,7 +59,7 @@ public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperati
         final MultiKeyGenericDBRecord[] records = ops.getRecords();
         final int numNodes = router.getGridSize();
         final Map<GridNode, List<DBRecord>> nodeAssignMap = new HashMap<GridNode, List<DBRecord>>(numNodes);
-        final Set<GridNode> mappedNodes = new HashSet<GridNode>();
+        final Set<GridNode> mappedNodes = new IdentityHashSet<GridNode>();
         int overlappingRecords = 0;
         for(MultiKeyGenericDBRecord rec : records) {
             final byte[][] keys = rec.getKeys();
