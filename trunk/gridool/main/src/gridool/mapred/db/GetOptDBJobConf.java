@@ -55,6 +55,9 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
     @Option(name = "-passwd", usage = "database password")
     private String dbPassword = null;
 
+    @Option(name = "-createMapOutputTbl", usage = "DDL for creating a map output table")
+    private String createMapOutputTableDDL = null;
+
     @Option(name = "-mapTable", usage = "Table name for the outputs of mappers")
     private String mapOutputTableName = null;
 
@@ -116,6 +119,11 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
         } else {
             return ObjectUtils.instantiate(mapInputRecordClass);
         }
+    }
+
+    @Override
+    public String getCreateMapOutputTableDDL() {
+        return createMapOutputTableDDL;
     }
 
     @Override

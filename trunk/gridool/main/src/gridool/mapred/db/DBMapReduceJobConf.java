@@ -99,6 +99,10 @@ public abstract class DBMapReduceJobConf implements Serializable {
 
     public abstract <T extends DBRecord> T createMapInputRecord();
 
+    public String getCreateMapOutputTableDDL() {
+        return null;
+    }
+
     public String getMapOutputTableName() {
         return mapOutputTableName;
     }

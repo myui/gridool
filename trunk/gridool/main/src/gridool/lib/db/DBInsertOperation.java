@@ -27,6 +27,7 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -48,6 +49,8 @@ public final class DBInsertOperation extends DBOperation {
     private static final long serialVersionUID = -6835320411487501293L;
     private static final Log LOG = LogFactory.getLog(DBInsertOperation.class);
 
+    @Nullable
+    private/* final */String createTableDDL;
     @Nonnull
     private/* final */String tableName;
     @Nullable
@@ -60,8 +63,13 @@ public final class DBInsertOperation extends DBOperation {
     } // for Externalizable
 
     public DBInsertOperation(String driverClassName, String connectUrl, @CheckForNull String tableName, @CheckForNull String[] fieldNames, @CheckForNull DBRecord[] records) {
+        this(driverClassName, connectUrl, null, tableName, fieldNames, records);
+    }
+
+    public DBInsertOperation(String driverClassName, String connectUrl, @Nullable String createTableDDL, @CheckForNull String tableName, @CheckForNull String[] fieldNames, @CheckForNull DBRecord[] records) {
         super(driverClassName, connectUrl);
         checkParameters(tableName, fieldNames, records);
+        this.createTableDDL = createTableDDL;
         this.tableName = tableName;
         this.fieldNames = fieldNames;
         this.records = records;
@@ -94,9 +102,12 @@ public final class DBInsertOperation extends DBOperation {
             LOG.error(e);
             throw new SQLException(e.getMessage());
         }
-        final String sql = constructQuery(tableName, fieldNames);
+        if(createTableDDL != null) {
+            executeDDL(conn, createTableDDL);
+        }
+        final String insertSql = constructQuery(tableName, fieldNames);
         try {
-            executeQuery(conn, sql, records);
+            executeInsertQuery(conn, insertSql, records);
             conn.commit();
         } catch (SQLException e) {
             LOG.error("rollback a transaction", e);
@@ -108,7 +119,18 @@ public final class DBInsertOperation extends DBOperation {
         return Boolean.TRUE;
     }
 
-    private static void executeQuery(final Connection conn, final String sql, final DBRecord[] records)
+    private static void executeDDL(@Nonnull final Connection conn, @Nonnull final String sql)
+            throws SQLException {
+        final Statement st = conn.createStatement();
+        try {
+            st.executeUpdate(sql);
+            conn.commit();
+        } finally {
+            st.close();
+        }
+    }
+
+    private static void executeInsertQuery(@Nonnull final Connection conn, @Nonnull final String sql, @Nonnull final DBRecord[] records)
             throws SQLException {
         final PreparedStatement stmt = conn.prepareStatement(sql);
         try {
@@ -151,6 +173,7 @@ public final class DBInsertOperation extends DBOperation {
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
+        this.createTableDDL = IOUtils.readString(in);
         this.tableName = IOUtils.readString(in);
         final int numFields = in.readInt();
         final String[] fn = new String[numFields];
@@ -169,6 +192,7 @@ public final class DBInsertOperation extends DBOperation {
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
+        IOUtils.writeString(createTableDDL, out);
         IOUtils.writeString(tableName, out);
         final String[] fn = fieldNames;
         final int numFields = (fn == null) ? 0 : fn.length;
@@ -185,7 +209,7 @@ public final class DBInsertOperation extends DBOperation {
     }
 
     public DBInsertOperation makeOperation(@Nonnull final DBRecord[] shrinkedRecords) {
-        return new DBInsertOperation(tableName, tableName, tableName, fieldNames, shrinkedRecords);
+        return new DBInsertOperation(driverClassName, connectUrl, createTableDDL, tableName, fieldNames, shrinkedRecords);
     }
 
 }

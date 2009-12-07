@@ -129,10 +129,11 @@ public final class DBTableAdvPartitioningTask extends
             public void run() {
                 String driverClassName = jobConf.getDriverClassName();
                 String connectUrl = jobConf.getConnectUrl();
+                String createTableDDL = jobConf.getCreateMapOutputTableDDL();
                 String mapOutputTableName = jobConf.getMapOutputTableName();
                 String[] fieldNames = jobConf.getMapOutputFieldNames();
                 MultiKeyGenericDBRecord[] records = queue.toArray(MultiKeyGenericDBRecord.class);
-                DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, mapOutputTableName, fieldNames, records);
+                DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, createTableDDL, mapOutputTableName, fieldNames, records);
                 ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
                 final GridJobFuture<Serializable> future = kernel.execute(DBInsertMultiKeyRecordJob.class, ops);
                 try {
