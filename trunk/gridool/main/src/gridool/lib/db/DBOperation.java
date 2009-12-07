@@ -93,28 +93,14 @@ public abstract class DBOperation implements Externalizable {
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeString(driverClassName, out);
         IOUtils.writeString(connectUrl, out);
-        if(userName == null) {
-            out.writeBoolean(false);
-        } else {
-            out.writeBoolean(true); // has user name
-            IOUtils.writeString(userName, out);
-        }
-        if(password == null) {
-            out.writeBoolean(false);
-        } else {
-            out.writeBoolean(true); // has password
-            IOUtils.writeString(password, out);
-        }
+        IOUtils.writeString(userName, out);
+        IOUtils.writeString(password, out);
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.driverClassName = IOUtils.readString(in);
         this.connectUrl = IOUtils.readString(in);
-        if(in.readBoolean()) {//has user name
-            this.userName = IOUtils.readString(in);
-        }
-        if(in.readBoolean()) {//has password
-            this.password = IOUtils.readString(in);
-        }
+        this.userName = IOUtils.readString(in);
+        this.password = IOUtils.readString(in);
     }
 }
