@@ -208,6 +208,10 @@ public final class DBCountPageView {
             return StringUtils.getBytes(url);
         }
 
+        public int getNumFields() {
+            return 3;
+        }
+
         public void readFields(ResultSet resultSet) throws SQLException {
             this.url = resultSet.getString(1);
             this.referrer = resultSet.getString(2);
@@ -239,6 +243,10 @@ public final class DBCountPageView {
 
         public byte[] getKey() {
             throw new IllegalStateException();
+        }
+
+        public int getNumFields() {
+            return 2;
         }
 
         public void readFields(ResultSet resultSet) throws SQLException {

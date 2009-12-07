@@ -79,7 +79,7 @@ public final class DBInsertOperation extends DBOperation {
         if(tableName == null) {
             throw new IllegalArgumentException("Table name must be specified");
         }
-        if(records == null) {
+        if(records == null || records.length == 0) {
             throw new IllegalArgumentException("No insert record is not allowed");
         }
     }
@@ -105,7 +105,7 @@ public final class DBInsertOperation extends DBOperation {
         if(createTableDDL != null) {
             executeDDL(conn, createTableDDL);
         }
-        final String insertSql = constructQuery(tableName, fieldNames);
+        final String insertSql = constructQuery(tableName, fieldNames, records);
         try {
             executeInsertQuery(conn, insertSql, records);
             conn.commit();
@@ -144,12 +144,12 @@ public final class DBInsertOperation extends DBOperation {
         }
     }
 
-    private static String constructQuery(@Nonnull final String tableName, final String[] fieldNames) {
+    private static String constructQuery(@Nonnull final String tableName, @Nullable final String[] fieldNames, @Nonnull final DBRecord[] records) {
         final StringBuilder query = new StringBuilder(256);
         query.append("INSERT INTO ").append(tableName);
-        final int numFields = fieldNames.length;
+        final int numFields = (fieldNames == null) ? records[0].getNumFields() : fieldNames.length;
         final int last = numFields - 1;
-        if(numFields > 0) {
+        if(fieldNames != null && numFields > 0) {
             query.append(" (");
             for(int i = 0; i < numFields; i++) {
                 query.append(fieldNames[i]);

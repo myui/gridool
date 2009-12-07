@@ -78,7 +78,7 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
 
     @Option(name = "-inputTable", usage = "The partitioning table name (input table for mappers)")
     private String inputTable = null;
-    
+
     @Option(name = "-inputQuery", usage = "The query used for the input of mappers (Required)", required = true)
     private String inputQuery;
 
@@ -141,7 +141,7 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
 
     @Override
     public String[] getMapOutputFieldNames() {
-        return mapOutputFieldNames.split(",");
+        return mapOutputFieldNames == null ? null : mapOutputFieldNames.split(",");
     }
 
     @Override
@@ -151,7 +151,7 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
 
     @Override
     public String[] getReduceOutputFieldNames() {
-        return reduceOutputFieldNames.split(",");
+        return reduceOutputFieldNames == null ? null : reduceOutputFieldNames.split(",");
     }
 
     @Override

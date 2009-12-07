@@ -81,6 +81,10 @@ public class GenericDBRecord implements DBRecord, Externalizable {
         return key;
     }
 
+    public int getNumFields() {
+        return results == null ? -1 : results.length;
+    }
+
     public void readFields(ResultSet resultSet) throws SQLException {
         final ResultSetMetaData meta = resultSet.getMetaData();
         final int cols = meta.getColumnCount();

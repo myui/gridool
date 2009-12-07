@@ -51,6 +51,11 @@ public final class EmitDummyValueRecord extends GenericDBRecord {
         super(key, results, columnTypes);
     }
 
+    @Override
+    public int getNumFields() {
+        return 1;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public void writeTo(GridMarshaller marshaller, OutputStream out) throws GridException {

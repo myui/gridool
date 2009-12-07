@@ -42,6 +42,8 @@ public interface DBRecord extends Serializable {
 
     @Nonnull
     byte[] getKey();
+    
+    int getNumFields();
 
     @SuppressWarnings("unchecked")
     void writeTo(@Nonnull GridMarshaller marshaller, @Nonnull OutputStream out)
