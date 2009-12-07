@@ -3,6 +3,8 @@ package gridool.mapred;
 import gridool.GridClient;
 import gridool.GridJob;
 import gridool.GridTask;
+import gridool.lib.db.DBRecord;
+import gridool.lib.db.MultiKeyGenericDBRecord;
 import gridool.mapred.db.DBMapJob;
 import gridool.mapred.db.GetOptDBJobConf;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
@@ -34,6 +36,11 @@ public class RunGetOptDBMapJob {
 
         public JobConf(String[] argv) {
             super(argv);
+        }
+
+        @Override
+        public DBRecord createMapInputRecord() {
+            return new MultiKeyGenericDBRecord();
         }
 
         @SuppressWarnings("unchecked")

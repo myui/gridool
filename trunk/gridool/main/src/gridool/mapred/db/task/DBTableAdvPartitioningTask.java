@@ -87,7 +87,7 @@ public final class DBTableAdvPartitioningTask extends
         keys.clear();
 
         // foreign key
-        final ResultSet rs2 = meta.getExportedKeys(catalog, null, inputTable);
+        final ResultSet rs2 = meta.getImportedKeys(catalog, null, inputTable);
         try {
             while(rs2.next()) {
                 String fk = rs2.getString("FKCOLUMN_NAME");
