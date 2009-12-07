@@ -3,9 +3,12 @@ package gridool.mapred;
 import gridool.GridClient;
 import gridool.GridJob;
 import gridool.GridTask;
+import gridool.construct.GridJobBase;
+import gridool.lib.db.DBLocalJob;
 import gridool.lib.db.DBRecord;
 import gridool.lib.db.MultiKeyGenericDBRecord;
 import gridool.mapred.db.DBMapJob;
+import gridool.mapred.db.DBMapReduceJobConf;
 import gridool.mapred.db.GetOptDBJobConf;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
 import gridool.mapred.db.task.DBTableAdvPartitioningTask;
@@ -25,7 +28,7 @@ public class RunGetOptDBMapJob {
         final GetOptDBJobConf jobConf = new JobConf(args);
         final GridClient grid = new GridClient();
         try {
-            grid.execute(DBMapJob.class, jobConf);
+            grid.execute(DBLocalJob.class, jobConf);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
@@ -45,8 +48,8 @@ public class RunGetOptDBMapJob {
 
         @SuppressWarnings("unchecked")
         @Override
-        public DBMapShuffleTaskBase makeMapShuffleTask(DBMapJob dbMapJob, String destTableName) {
-            return new DBTableAdvPartitioningTask(dbMapJob, this);
+        public DBMapShuffleTaskBase makeMapShuffleTask(GridJobBase<DBMapReduceJobConf, ?> job) {
+            return new DBTableAdvPartitioningTask(job, this);
         }
 
         @SuppressWarnings("unchecked")

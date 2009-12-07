@@ -22,6 +22,7 @@ package gridool.mapred.db;
 
 import gridool.GridJob;
 import gridool.GridTask;
+import gridool.construct.GridJobBase;
 import gridool.lib.db.DBRecord;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
 import gridool.marshaller.GridMarshaller;
@@ -143,7 +144,7 @@ public abstract class DBMapReduceJobConf implements Serializable {
     }
 
     @SuppressWarnings("unchecked")
-    public abstract DBMapShuffleTaskBase makeMapShuffleTask(@Nonnull DBMapJob dbMapJob, @Nonnull String destTableName);
+    public abstract DBMapShuffleTaskBase makeMapShuffleTask(@Nonnull GridJobBase<DBMapReduceJobConf, ?> job);
 
     @SuppressWarnings("unchecked")
     protected abstract GridTask makeReduceTask(@Nonnull GridJob job, @Nonnull String inputTableName, @Nonnull String destTableName);

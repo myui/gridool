@@ -24,6 +24,7 @@ import gridool.GridClient;
 import gridool.GridException;
 import gridool.GridJob;
 import gridool.GridTask;
+import gridool.construct.GridJobBase;
 import gridool.lib.db.DBRecord;
 import gridool.lib.db.EmitDummyValueRecord;
 import gridool.mapred.db.task.DB2DhtMapShuffleTask;
@@ -184,8 +185,8 @@ public final class DBCountPageView {
         }
 
         @Override
-        public DBMapShuffleTaskBase<DBRecord, DBRecord> makeMapShuffleTask(DBMapJob dbMapJob, String destTableName) {
-            return new PageviewMapper(dbMapJob, this);
+        public DBMapShuffleTaskBase<DBRecord, DBRecord> makeMapShuffleTask(GridJobBase<DBMapReduceJobConf, ?> job) {
+            return new PageviewMapper(job, this);
         }
 
         @SuppressWarnings("unchecked")

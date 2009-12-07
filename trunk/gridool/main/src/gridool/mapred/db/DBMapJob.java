@@ -64,7 +64,7 @@ public class DBMapJob extends GridJobBase<DBMapReduceJobConf, String> {
         final GridNode[] nodes = router.getAllNodes();
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(nodes.length);
         for(GridNode node : nodes) {
-            GridTask task = jobConf.makeMapShuffleTask(this, destTableName);
+            GridTask task = jobConf.makeMapShuffleTask(this);
             map.put(task, node);
         }
         return map;

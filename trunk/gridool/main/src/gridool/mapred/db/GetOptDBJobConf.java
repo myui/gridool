@@ -20,6 +20,7 @@
  */
 package gridool.mapred.db;
 
+import gridool.construct.GridJobBase;
 import gridool.lib.db.DBRecord;
 import gridool.lib.db.GenericDBRecord;
 import gridool.mapred.db.task.DB2DhtMapShuffleTask;
@@ -166,8 +167,8 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
 
     @SuppressWarnings("unchecked")
     @Override
-    public DBMapShuffleTaskBase makeMapShuffleTask(DBMapJob dbMapJob, String destTableName) {
-        return new DB2DhtMapShuffleTask(dbMapJob, this);
+    public DBMapShuffleTaskBase makeMapShuffleTask(GridJobBase<DBMapReduceJobConf, ?> job) {
+        return new DB2DhtMapShuffleTask(job, this);
     }
 
     private static void processArgs(String[] args, Object target) {
