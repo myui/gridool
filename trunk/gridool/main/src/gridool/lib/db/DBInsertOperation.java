@@ -105,6 +105,7 @@ public final class DBInsertOperation extends DBOperation {
             try {
                 executeDDL(conn, createTableDDL);
             } catch (SQLException e) {
+                conn.rollback();
                 LOG.warn("Table already exists. Try to truncate " + tableName, e);
                 truncateTable(conn, tableName);
                 // fall through
