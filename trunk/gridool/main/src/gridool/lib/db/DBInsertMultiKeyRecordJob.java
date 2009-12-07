@@ -69,15 +69,15 @@ public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperati
                 if(node == null) {
                     throw new GridException("Could not find any node in cluster.");
                 }
-                if(mappedNodes.add(node)) {
-                    hasOverlap = true;
-                } else {// insert record if the given record is not associated yet.
+                if(mappedNodes.add(node)) {// insert record if the given record is not associated yet.
                     List<DBRecord> mappedRecords = nodeAssignMap.get(node);
                     if(mappedRecords == null) {
                         mappedRecords = new ArrayList<DBRecord>();
                         nodeAssignMap.put(node, mappedRecords);
                     }
                     mappedRecords.add(rec);
+                } else {
+                    hasOverlap = true;
                 }
             }
             if(hasOverlap) {

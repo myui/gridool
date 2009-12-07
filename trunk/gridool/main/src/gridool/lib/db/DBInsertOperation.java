@@ -193,9 +193,14 @@ public final class DBInsertOperation extends DBOperation {
         this.createTableDDL = IOUtils.readString(in);
         this.tableName = IOUtils.readString(in);
         final int numFields = in.readInt();
-        final String[] fn = new String[numFields];
-        for(int i = 0; i < numFields; i++) {
-            fn[i] = IOUtils.readString(in);
+        final String[] fn;
+        if(numFields == 0) {
+            fn = null;
+        } else {
+            fn = new String[numFields];
+            for(int i = 0; i < numFields; i++) {
+                fn[i] = IOUtils.readString(in);
+            }
         }
         this.fieldNames = fn;
         final int numRecords = in.readInt();
