@@ -209,7 +209,10 @@ public final class DBInsertOperation extends DBOperation {
     }
 
     public DBInsertOperation makeOperation(@Nonnull final DBRecord[] shrinkedRecords) {
-        return new DBInsertOperation(driverClassName, connectUrl, createTableDDL, tableName, fieldNames, shrinkedRecords);
+        final DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, createTableDDL, tableName, fieldNames, shrinkedRecords);
+        ops.userName = userName;
+        ops.password = password;
+        return ops;
     }
 
 }
