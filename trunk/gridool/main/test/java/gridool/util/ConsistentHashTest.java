@@ -29,8 +29,8 @@ import java.util.TreeMap;
 import org.junit.Test;
 
 import xbird.util.lang.HashAlgorithm;
-import xbird.util.lang.MutableInt;
 import xbird.util.math.MathUtils;
+import xbird.util.primitives.MutableInt;
 
 /**
  * 

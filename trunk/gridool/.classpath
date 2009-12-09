@@ -17,10 +17,10 @@
 			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="gridool/lib/native/sigar"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/xbird-open-1.0.jar" sourcepath="/xbird-open"/>
 	<classpathentry kind="lib" path="lib/optional/jdbc/monetdb-1.14-jdbc.jar" sourcepath="lib/src/MonetDB-java-1.32.4.zip"/>
 	<classpathentry kind="lib" path="lib/optional/serialization/protobuf-java-2.2.0.jar"/>
 	<classpathentry kind="lib" path="lib/optional/serialization/libthrift.jar"/>
 	<classpathentry kind="lib" path="lib/optional/jdbc/postgresql-8.4-701.jdbc4.jar" sourcepath="lib/src/postgresql-jdbc-8.4-701.src.zip"/>
+	<classpathentry kind="lib" path="lib/xbird-open-1.0.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>

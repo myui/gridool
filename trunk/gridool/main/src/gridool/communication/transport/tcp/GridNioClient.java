@@ -40,10 +40,10 @@ import xbird.util.datetime.StopWatch;
 import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.io.IOUtils;
 import xbird.util.lang.ObjectUtils;
-import xbird.util.lang.Primitives;
 import xbird.util.lang.PrintUtils;
 import xbird.util.net.NetUtils;
 import xbird.util.nio.NIOUtils;
+import xbird.util.primitives.Primitives;
 
 /**
  * 

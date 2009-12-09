@@ -27,7 +27,6 @@ import gridool.lib.db.DBInsertOperation;
 import gridool.lib.db.MultiKeyGenericDBRecord;
 import gridool.mapred.db.DBMapReduceJobConf;
 
-import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -36,8 +35,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import xbird.util.collections.ArrayQueue;
+import xbird.util.primitives.AtomicFloat;
 
 /**
  * 
@@ -54,7 +55,9 @@ public final class DBTableAdvPartitioningTask extends
     private transient int[] fkeyIdxs = null;
 
     private transient boolean firstShuffleAttempt = true;
-
+    private transient final AtomicFloat sumOverlapPerc = new AtomicFloat(0.0f);
+    private transient final AtomicInteger cntShuffle = new AtomicInteger(0);
+    
     @SuppressWarnings("unchecked")
     public DBTableAdvPartitioningTask(GridJob job, DBMapReduceJobConf jobConf) {
         super(job, jobConf);
@@ -143,15 +146,30 @@ public final class DBTableAdvPartitioningTask extends
                 MultiKeyGenericDBRecord[] records = queue.toArray(MultiKeyGenericDBRecord.class);
                 DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, createTableDDL, mapOutputTableName, fieldNames, records);
                 ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
-                final GridJobFuture<Serializable> future = kernel.execute(DBInsertMultiKeyRecordJob.class, ops);
+                final GridJobFuture<Float> future = kernel.execute(DBInsertMultiKeyRecordJob.class, ops);
+                Float overlapPerc = null;
                 try {
-                    future.get(); // wait for execution
+                    overlapPerc = future.get(); // wait for execution
                 } catch (InterruptedException ie) {
                     LOG.error(ie.getMessage(), ie);
                 } catch (ExecutionException ee) {
                     LOG.error(ee.getMessage(), ee);
                 }
+                if(overlapPerc != null) {
+                    sumOverlapPerc.addAndGet(overlapPerc.floatValue());
+                    cntShuffle.incrementAndGet();
+                }
             }
         });
     }
+
+    @Override
+    protected void postShuffle() {
+        super.postShuffle();        
+        if(LOG.isInfoEnabled()) {
+            float perc = sumOverlapPerc.get() / cntShuffle.get();
+            LOG.info("Percentage of overlapping records/shuffling records: " + perc + "%");
+        }
+    }
+    
 }

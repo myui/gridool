@@ -39,10 +39,10 @@ import xbird.util.datetime.StopWatch;
 import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.io.IOUtils;
 import xbird.util.lang.ObjectUtils;
-import xbird.util.lang.Primitives;
 import xbird.util.net.PoolableSocketChannelFactory;
 import xbird.util.nio.NIOUtils;
 import xbird.util.pool.ConcurrentKeyedStackObjectPool;
+import xbird.util.primitives.Primitives;
 
 /**
  * 

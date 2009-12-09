@@ -28,16 +28,12 @@ import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
 import gridool.routing.GridTaskRouter;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import xbird.util.collections.IdentityHashSet;
 
@@ -48,9 +44,11 @@ import xbird.util.collections.IdentityHashSet;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperation, Serializable> {
+public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperation, Float> {
     private static final long serialVersionUID = -8446997971270275539L;
-    private static final Log LOG = LogFactory.getLog(DBInsertMultiKeyRecordJob.class);
+
+    private transient long overlappingRecords = 0;
+    private transient long totalShuffledRecords = 0;
 
     public DBInsertMultiKeyRecordJob() {}
 
@@ -60,7 +58,7 @@ public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperati
         final int numNodes = router.getGridSize();
         final Map<GridNode, List<DBRecord>> nodeAssignMap = new HashMap<GridNode, List<DBRecord>>(numNodes);
         final Set<GridNode> mappedNodes = new IdentityHashSet<GridNode>();
-        int overlappingRecords = 0;
+        int overlaps = 0;
         for(MultiKeyGenericDBRecord rec : records) {
             final byte[][] keys = rec.getKeys();
             boolean hasOverlap = false;
@@ -81,14 +79,9 @@ public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperati
                 }
             }
             if(hasOverlap) {
-                overlappingRecords++;
+                overlaps++;
             }
             mappedNodes.clear();
-        }
-
-        if(LOG.isInfoEnabled()) {
-            LOG.info("overlapping records / shuffling records = " + overlappingRecords + " / "
-                    + records.length + "(" + ((overlappingRecords / records.length) * 100) + "%)");
         }
 
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
@@ -108,8 +101,8 @@ public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperati
         return GridTaskResultPolicy.CONTINUE;
     }
 
-    public Serializable reduce() throws GridException {
-        return null;
+    public Float reduce() throws GridException {
+        return new Float(overlappingRecords / (double) totalShuffledRecords);
     }
 
 }

@@ -33,7 +33,7 @@ import gridool.communication.GridCommunicationMessage;
 import xbird.util.io.FastByteArrayInputStream;
 import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.lang.ObjectUtils;
-import xbird.util.lang.Primitives;
+import xbird.util.primitives.Primitives;
 
 /**
  * 

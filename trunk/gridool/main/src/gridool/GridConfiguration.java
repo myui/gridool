@@ -36,7 +36,7 @@ import javax.annotation.Nonnull;
 
 import xbird.config.Settings;
 import xbird.util.lang.ObjectUtils;
-import xbird.util.lang.Primitives;
+import xbird.util.primitives.Primitives;
 
 /**
  * 
