@@ -168,7 +168,7 @@ public final class DBTableAdvPartitioningTask extends
         super.postShuffle();
         if(LOG.isInfoEnabled()) {
             float perc = (sumOverlapPerc.get() / cntShuffle.get()) * 100.0f;
-            LOG.info("Percentage of overlapping records/shuffling records: " + perc + "%");
+            LOG.info("Percentage of overlapping records in the shuffled records: " + perc + "%");
         }
     }
 
