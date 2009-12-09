@@ -42,6 +42,7 @@ import org.apache.commons.logging.LogFactory;
 
 import xbird.util.collections.ArrayQueue;
 import xbird.util.collections.BoundedArrayQueue;
+import xbird.util.concurrent.DirectExecutorService;
 import xbird.util.concurrent.ExecutorFactory;
 import xbird.util.concurrent.ExecutorUtils;
 
@@ -112,7 +113,9 @@ public abstract class DBMapShuffleTaskBase<IN_TYPE extends DBRecord, OUT_TYPE> e
     }
 
     public final Serializable execute() throws GridException {
-        this.shuffleExecPool = ExecutorFactory.newFixedThreadPool(shuffleThreads(), "Gridool#Shuffle", true);
+        int numShuffleThreads = shuffleThreads();
+        this.shuffleExecPool = (numShuffleThreads <= 0) ? new DirectExecutorService()
+                : ExecutorFactory.newFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
         this.shuffleSink = new BoundedArrayQueue<OUT_TYPE>(shuffleUnits());
 
         // execute a query
