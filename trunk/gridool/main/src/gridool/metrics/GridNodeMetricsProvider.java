@@ -86,8 +86,8 @@ public final class GridNodeMetricsProvider {
         GridTaskMetricsCounter newTaskMetrics = new GridTaskMetricsCounter();
         taskMetricsRef.set(newTaskMetrics);
 
-        if(LOG.isInfoEnabled()) {
-            LOG.info(capturedMetrics);
+        if(LOG.isDebugEnabled()) {
+            LOG.debug(capturedMetrics);
         }
         return capturedMetrics;
     }
