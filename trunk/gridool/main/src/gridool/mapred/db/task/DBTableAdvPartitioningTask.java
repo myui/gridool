@@ -57,7 +57,7 @@ public final class DBTableAdvPartitioningTask extends
     private transient boolean firstShuffleAttempt = true;
     private transient final AtomicFloat sumOverlapPerc = new AtomicFloat(0.0f);
     private transient final AtomicInteger cntShuffle = new AtomicInteger(0);
-    
+
     @SuppressWarnings("unchecked")
     public DBTableAdvPartitioningTask(GridJob job, DBMapReduceJobConf jobConf) {
         super(job, jobConf);
@@ -165,11 +165,11 @@ public final class DBTableAdvPartitioningTask extends
 
     @Override
     protected void postShuffle() {
-        super.postShuffle();        
+        super.postShuffle();
         if(LOG.isInfoEnabled()) {
-            float perc = sumOverlapPerc.get() / cntShuffle.get();
+            float perc = (sumOverlapPerc.get() / cntShuffle.get()) * 100.0f;
             LOG.info("Percentage of overlapping records/shuffling records: " + perc + "%");
         }
     }
-    
+
 }
