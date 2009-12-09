@@ -47,8 +47,8 @@ import xbird.util.collections.IdentityHashSet;
 public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperation, Float> {
     private static final long serialVersionUID = -8446997971270275539L;
 
-    private transient long overlappingRecords = 0;
-    private transient long totalShuffledRecords = 0;
+    private transient long overlappingRecords = 0L;
+    private transient long totalShuffledRecords = 0L;
 
     public DBInsertMultiKeyRecordJob() {}
 
@@ -83,6 +83,8 @@ public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperati
             }
             mappedNodes.clear();
         }
+        this.overlappingRecords = overlaps;
+        this.totalShuffledRecords = records.length;
 
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
         for(Map.Entry<GridNode, List<DBRecord>> e : nodeAssignMap.entrySet()) {
