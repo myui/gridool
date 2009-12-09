@@ -52,6 +52,8 @@ public final class DBTableAdvPartitioningTask extends
 
     private transient int[] pkeyIdxs = null;
     private transient int[] fkeyIdxs = null;
+    
+    private transient boolean firstShuffleAttempt = true;
 
     @SuppressWarnings("unchecked")
     public DBTableAdvPartitioningTask(GridJob job, DBMapReduceJobConf jobConf) {
@@ -129,7 +131,13 @@ public final class DBTableAdvPartitioningTask extends
             public void run() {
                 String driverClassName = jobConf.getDriverClassName();
                 String connectUrl = jobConf.getConnectUrl();
-                String createTableDDL = jobConf.getCreateMapOutputTableDDL();
+                final String createTableDDL;
+                if(firstShuffleAttempt) {
+                	 createTableDDL = jobConf.getCreateMapOutputTableDDL();
+                	DBTableAdvPartitioningTask.this.firstShuffleAttempt = false;
+                } else {
+                	createTableDDL = null;
+                }
                 String mapOutputTableName = jobConf.getMapOutputTableName();
                 String[] fieldNames = jobConf.getMapOutputFieldNames();
                 MultiKeyGenericDBRecord[] records = queue.toArray(MultiKeyGenericDBRecord.class);
