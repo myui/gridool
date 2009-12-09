@@ -52,7 +52,7 @@ public final class DBTableAdvPartitioningTask extends
 
     private transient int[] pkeyIdxs = null;
     private transient int[] fkeyIdxs = null;
-    
+
     private transient boolean firstShuffleAttempt = true;
 
     @SuppressWarnings("unchecked")
@@ -133,10 +133,10 @@ public final class DBTableAdvPartitioningTask extends
                 String connectUrl = jobConf.getConnectUrl();
                 final String createTableDDL;
                 if(firstShuffleAttempt) {
-                	 createTableDDL = jobConf.getCreateMapOutputTableDDL();
-                	DBTableAdvPartitioningTask.this.firstShuffleAttempt = false;
+                    createTableDDL = jobConf.getCreateMapOutputTableDDL();
+                    firstShuffleAttempt = false;
                 } else {
-                	createTableDDL = null;
+                    createTableDDL = null;
                 }
                 String mapOutputTableName = jobConf.getMapOutputTableName();
                 String[] fieldNames = jobConf.getMapOutputFieldNames();

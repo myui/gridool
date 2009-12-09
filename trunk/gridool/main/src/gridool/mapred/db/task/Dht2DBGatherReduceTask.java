@@ -74,19 +74,23 @@ public abstract class Dht2DBGatherReduceTask<IN_TYPE> extends
     }
 
     @Override
-    protected void invokeShuffle(ExecutorService shuffleExecPool, ArrayQueue<DBRecord> queue) {
-        String driverClassName = getDriverClassName();
-        String connectUrl = getReduceOutputDestinationDbUrl();
-        String mapOutputTableName = getReduceOutputTableName();
-        String[] fieldNames = jobConf.getReduceOutputFieldNames();
-        DBRecord[] records = queue.toArray(DBRecord.class);
-        final DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, mapOutputTableName, fieldNames, records);
-        ops.setAuth(getUserName(), getPassword());
-        try {
-            ops.execute();
-        } catch (SQLException e) {
-            LogFactory.getLog(getClass()).error(e);
-        }
+    protected void invokeShuffle(final ExecutorService shuffleExecPool, final ArrayQueue<DBRecord> queue) {
+        shuffleExecPool.execute(new Runnable() {
+            public void run() {
+                String driverClassName = getDriverClassName();
+                String connectUrl = getReduceOutputDestinationDbUrl();
+                String mapOutputTableName = getReduceOutputTableName();
+                String[] fieldNames = jobConf.getReduceOutputFieldNames();
+                DBRecord[] records = queue.toArray(DBRecord.class);
+                final DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, mapOutputTableName, fieldNames, records);
+                ops.setAuth(getUserName(), getPassword());
+                try {
+                    ops.execute();
+                } catch (SQLException e) {
+                    LogFactory.getLog(getClass()).error(e);
+                }
+            }
+        });
     }
 
 }

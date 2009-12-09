@@ -7,7 +7,6 @@ import gridool.construct.GridJobBase;
 import gridool.lib.db.DBLocalJob;
 import gridool.lib.db.DBRecord;
 import gridool.lib.db.MultiKeyGenericDBRecord;
-import gridool.mapred.db.DBMapJob;
 import gridool.mapred.db.DBMapReduceJobConf;
 import gridool.mapred.db.GetOptDBJobConf;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
@@ -49,7 +48,9 @@ public class RunGetOptDBMapJob {
         @SuppressWarnings("unchecked")
         @Override
         public DBMapShuffleTaskBase makeMapShuffleTask(GridJobBase<DBMapReduceJobConf, ?> job) {
-            return new DBTableAdvPartitioningTask(job, this);
+            DBTableAdvPartitioningTask task = new DBTableAdvPartitioningTask(job, this);
+            task.setShuffleThreads(1);  // workaround for monetdb (avoid concurrent insertion due to the table-level lock)
+            return task;
         }
 
         @SuppressWarnings("unchecked")

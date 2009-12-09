@@ -69,6 +69,8 @@ public abstract class DBMapShuffleTaskBase<IN_TYPE extends DBRecord, OUT_TYPE> e
     // ------------------------
     // working resources
 
+    private transient int shuffleUnits = 512;
+    private transient int shuffleThreads = Runtime.getRuntime().availableProcessors();
     private transient ExecutorService shuffleExecPool;
     private transient BoundedArrayQueue<OUT_TYPE> shuffleSink;
 
@@ -88,7 +90,11 @@ public abstract class DBMapShuffleTaskBase<IN_TYPE extends DBRecord, OUT_TYPE> e
      * Override to change the number of shuffle units. 512 by the default.
      */
     protected int shuffleUnits() {
-        return 512;
+        return shuffleUnits;
+    }
+
+    public void setShuffleUnits(int shuffleUnits) {
+        this.shuffleUnits = shuffleUnits;
     }
 
     /**
@@ -98,7 +104,11 @@ public abstract class DBMapShuffleTaskBase<IN_TYPE extends DBRecord, OUT_TYPE> e
      * @return number of shuffle threads. {@link Runtime#availableProcessors()} by the default.
      */
     protected int shuffleThreads() {
-        return Runtime.getRuntime().availableProcessors();
+        return shuffleThreads;
+    }
+
+    public void setShuffleThreads(int shuffleThreads) {
+        this.shuffleThreads = shuffleThreads;
     }
 
     public final Serializable execute() throws GridException {

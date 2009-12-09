@@ -46,6 +46,8 @@ import xbird.util.collections.ArrayQueue;
 public class DBMapShuffleTask extends DBMapShuffleTaskBase<DBRecord, DBRecord> {
     private static final long serialVersionUID = -269939175231317044L;
 
+    private transient boolean firstShuffleAttempt = true;
+    
     @SuppressWarnings("unchecked")
     public DBMapShuffleTask(GridJob job, DBMapReduceJobConf jobConf) {
         super(job, jobConf);
@@ -72,7 +74,13 @@ public class DBMapShuffleTask extends DBMapShuffleTaskBase<DBRecord, DBRecord> {
             public void run() {
                 String driverClassName = jobConf.getDriverClassName();
                 String connectUrl = jobConf.getConnectUrl();
-                String createTableDDL = jobConf.getCreateMapOutputTableDDL();
+                final String createTableDDL;
+                if(firstShuffleAttempt) {
+                    createTableDDL = jobConf.getCreateMapOutputTableDDL();
+                    firstShuffleAttempt = false;
+                } else {
+                    createTableDDL = null;
+                }
                 String mapOutputTableName = jobConf.getMapOutputTableName();
                 String[] fieldNames = jobConf.getMapOutputFieldNames();
                 DBRecord[] records = queue.toArray(DBRecord.class);
