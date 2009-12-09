@@ -135,7 +135,7 @@ public abstract class DBMapShuffleTaskBase<IN_TYPE extends DBRecord, OUT_TYPE> e
         final Statement statement;
         final ResultSet results;
         try {
-            statement = conn.createStatement(ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
+            statement = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
             results = statement.executeQuery(query);
         } catch (SQLException e) {
             try {
