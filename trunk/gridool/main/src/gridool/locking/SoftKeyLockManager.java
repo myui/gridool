@@ -34,7 +34,7 @@ import xbird.util.concurrent.jsr166.ConcurrentReferenceHashMap.ReferenceType;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public class SoftKeyLockManager implements LockManager {
+public final class SoftKeyLockManager implements LockManager {
 
     private final ConcurrentMap<Object, ReadWriteLock> lockPool;
 

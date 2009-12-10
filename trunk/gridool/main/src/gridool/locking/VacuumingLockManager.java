@@ -38,7 +38,7 @@ import javax.annotation.Nonnull;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public class VacuumingLockManager implements LockManager {
+public final class VacuumingLockManager implements LockManager {
 
     private final ConcurrentMap<Object, ThrowawayReadWriteLock> lockPool;
 
