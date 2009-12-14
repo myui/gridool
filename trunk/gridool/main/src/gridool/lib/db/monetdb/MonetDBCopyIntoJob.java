@@ -101,8 +101,8 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
             final String password = ops.getPassword();
 
             final MultiKeyRowPlaceholderRecord rec = records[0];
-            final String copyIntoQuery = "COPY INTO " + tableName
-                    + " FROM <src> USING DELIMITERS '" + rec.getFieldSeparator() + "', '"
+            final String copyIntoQuery = "COPY INTO '" + tableName
+                    + "' FROM '<src>' USING DELIMITERS '" + rec.getFieldSeparator() + "', '"
                     + rec.getRecordSeparator() + "', '" + rec.getStringQuote() + "' NULL AS '"
                     + rec.getNullString() + '\'';
 

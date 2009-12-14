@@ -105,11 +105,14 @@ public final class MonetDBCopyIntoOperation extends DBOperation implements Seria
             conn.rollback();
             throw e;
         } finally {
-            conn.close();
-        }
-
-        if(!loadFile.delete()) {
-            LOG.warn("Could not remove a tempolary file: " + loadFile.getAbsolutePath());
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                LOG.debug(e);
+            }
+            if(!loadFile.delete()) {
+                LOG.warn("Could not remove a tempolary file: " + loadFile.getAbsolutePath());
+            }
         }
 
         return Boolean.TRUE;

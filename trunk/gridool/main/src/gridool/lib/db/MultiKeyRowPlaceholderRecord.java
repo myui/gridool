@@ -74,11 +74,11 @@ public class MultiKeyRowPlaceholderRecord implements DBRecord, Externalizable {
     }
 
     public String getFieldSeparator() {
-        return ",";
+        return "\\t";
     }
 
     public String getRecordSeparator() {
-        return "\n";
+        return "\\n";
     }
 
     public String getStringQuote() {
