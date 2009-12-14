@@ -22,9 +22,9 @@ package gridool.mapred.db.task;
 
 import gridool.GridJob;
 import gridool.GridJobFuture;
-import gridool.lib.db.DBInsertMultiKeyRecordJob;
 import gridool.lib.db.DBInsertOperation;
-import gridool.lib.db.MultiKeyGenericDBRecord;
+import gridool.lib.db.MultiKeyRowPlaceholderRecord;
+import gridool.lib.db.monetdb.MonetDBCopyIntoJob;
 import gridool.mapred.db.DBMapReduceJobConf;
 
 import java.sql.Connection;
@@ -47,9 +47,9 @@ import xbird.util.primitives.AtomicFloat;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class DBTableAdvPartitioningTask extends
-        DBMapShuffleTaskBase<MultiKeyGenericDBRecord, MultiKeyGenericDBRecord> {
-    private static final long serialVersionUID = -8308742694304042395L;
+public final class DBTableAdvPartitioningBulkloadTask extends
+        DBMapShuffleTaskBase<MultiKeyRowPlaceholderRecord, MultiKeyRowPlaceholderRecord> {
+    private static final long serialVersionUID = 4820678759683359352L;
 
     private transient int[] pkeyIdxs = null;
     private transient int[] fkeyIdxs = null;
@@ -59,7 +59,7 @@ public final class DBTableAdvPartitioningTask extends
     private transient final AtomicInteger cntShuffle = new AtomicInteger(0);
 
     @SuppressWarnings("unchecked")
-    public DBTableAdvPartitioningTask(GridJob job, DBMapReduceJobConf jobConf) {
+    public DBTableAdvPartitioningBulkloadTask(GridJob job, DBMapReduceJobConf jobConf) {
         super(job, jobConf);
     }
 
@@ -115,20 +115,20 @@ public final class DBTableAdvPartitioningTask extends
     }
 
     @Override
-    protected void readFields(MultiKeyGenericDBRecord record, ResultSet results)
+    protected void readFields(MultiKeyRowPlaceholderRecord record, ResultSet results)
             throws SQLException {
         record.configureRecord(pkeyIdxs, fkeyIdxs);
         record.readFields(results);
     }
 
     @Override
-    protected boolean process(MultiKeyGenericDBRecord record) {
+    protected boolean process(MultiKeyRowPlaceholderRecord record) {
         shuffle(record);
         return true;
     }
 
     @Override
-    protected void invokeShuffle(final ExecutorService shuffleExecPool, final ArrayQueue<MultiKeyGenericDBRecord> queue) {
+    protected void invokeShuffle(final ExecutorService shuffleExecPool, final ArrayQueue<MultiKeyRowPlaceholderRecord> queue) {
         assert (kernel != null);
         shuffleExecPool.execute(new Runnable() {
             public void run() {
@@ -142,11 +142,10 @@ public final class DBTableAdvPartitioningTask extends
                     createTableDDL = null;
                 }
                 String mapOutputTableName = jobConf.getMapOutputTableName();
-                String[] fieldNames = jobConf.getMapOutputFieldNames();
-                MultiKeyGenericDBRecord[] records = queue.toArray(MultiKeyGenericDBRecord.class);
-                DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, createTableDDL, mapOutputTableName, fieldNames, records);
+                MultiKeyRowPlaceholderRecord[] records = queue.toArray(MultiKeyRowPlaceholderRecord.class);
+                DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, createTableDDL, mapOutputTableName, null, records);
                 ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
-                final GridJobFuture<Float> future = kernel.execute(DBInsertMultiKeyRecordJob.class, ops);
+                final GridJobFuture<Float> future = kernel.execute(MonetDBCopyIntoJob.class, ops);
                 Float overlapPerc = null;
                 try {
                     overlapPerc = future.get(); // wait for execution

@@ -83,7 +83,10 @@ public final class DBInsertOperation extends DBOperation {
         }
     }
 
-    @Nonnull
+    public String getCreateTableDDL() {
+        return createTableDDL;
+    }
+
     public String getTableName() {
         return tableName;
     }

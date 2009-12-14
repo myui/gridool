@@ -67,6 +67,22 @@ public abstract class DBOperation implements Externalizable {
         this.connectUrl = connectUrl;
     }
 
+    public String getDriverClassName() {
+        return driverClassName;
+    }
+
+    public String getConnectUrl() {
+        return connectUrl;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
     public final void setAuth(String userName, String password) {
         this.userName = userName;
         this.password = password;

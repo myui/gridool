@@ -158,7 +158,7 @@ public abstract class DBMapShuffleTaskBase<IN_TYPE extends DBRecord, OUT_TYPE> e
         // process -> shuffle is consequently called
         try {
             while(results.next()) {
-                IN_TYPE record = jobConf.createMapInputRecord();
+                IN_TYPE record = prepareInputRecord();
                 readFields(record, results);
                 if(!process(record)) {
                     break;
@@ -193,6 +193,10 @@ public abstract class DBMapShuffleTaskBase<IN_TYPE extends DBRecord, OUT_TYPE> e
     }
 
     protected void preprocess(Connection conn, ResultSet results) throws SQLException {}
+
+    protected IN_TYPE prepareInputRecord() {
+        return jobConf.createMapInputRecord();
+    }
 
     protected void readFields(IN_TYPE record, ResultSet results) throws SQLException {
         record.readFields(results);
