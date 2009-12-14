@@ -31,6 +31,7 @@ import gridool.lib.db.DBTaskAdapter;
 import gridool.lib.db.MultiKeyRowPlaceholderRecord;
 import gridool.routing.GridTaskRouter;
 
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -57,6 +58,7 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
 
     public Map<GridTask, GridNode> map(final GridTaskRouter router, final DBInsertOperation ops)
             throws GridException {
+        final Charset charset = Charset.forName("UTF-8");
         final MultiKeyRowPlaceholderRecord[] records = ops.getRecords();
         final int numNodes = router.getGridSize();
         final Map<GridNode, FastByteArrayOutputStream> nodeAssignMap = new HashMap<GridNode, FastByteArrayOutputStream>(numNodes);
@@ -77,7 +79,7 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
                         nodeAssignMap.put(node, rowsBuf);
                     }
                     String row = rec.getRow();
-                    byte[] b = StringUtils.getBytes(row);
+                    byte[] b = row.getBytes(charset);
                     rowsBuf.write(b, 0, b.length);
                 } else {
                     hasOverlap = true;
