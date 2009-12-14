@@ -61,6 +61,7 @@ public final class DBTableAdvPartitioningBulkloadTask extends
     @SuppressWarnings("unchecked")
     public DBTableAdvPartitioningBulkloadTask(GridJob job, DBMapReduceJobConf jobConf) {
         super(job, jobConf);
+        setShuffleUnits(10000);
     }
 
     @Override
