@@ -102,9 +102,11 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
 
             final MultiKeyRowPlaceholderRecord rec = records[0];
             final String copyIntoQuery = "COPY INTO \"" + tableName
-                    + "\" FROM '<src>' USING DELIMITERS '" + rec.getFieldSeparator() + "', '"
-                    + rec.getRecordSeparator() + "', '" + rec.getStringQuote() + "' NULL AS '"
-                    + rec.getNullString() + '\'';
+                    + "\" FROM '<src>' USING DELIMITERS '"
+                    + StringUtils.escape(rec.getFieldSeparator()) + "', '"
+                    + StringUtils.escape(rec.getRecordSeparator()) + "', '"
+                    + StringUtils.escape(rec.getStringQuote()) + "' NULL AS '"
+                    + StringUtils.escape(rec.getNullString()) + '\'';
 
             for(Map.Entry<GridNode, FastByteArrayOutputStream> e : nodeAssignMap.entrySet()) {
                 GridNode node = e.getKey();

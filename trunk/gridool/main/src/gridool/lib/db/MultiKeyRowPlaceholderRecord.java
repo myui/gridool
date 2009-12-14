@@ -68,17 +68,17 @@ public class MultiKeyRowPlaceholderRecord implements DBRecord, Externalizable {
     public String getRow() {
         return row;
     }
-    
+
     protected int expectedLineSize() {
         return 64;
     }
 
     public String getFieldSeparator() {
-        return "\\t";
+        return "\t";
     }
 
     public String getRecordSeparator() {
-        return "\\n";
+        return "\n";
     }
 
     public String getStringQuote() {
