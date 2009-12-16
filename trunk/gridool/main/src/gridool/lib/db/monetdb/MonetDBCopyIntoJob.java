@@ -59,13 +59,25 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
 
     public Map<GridTask, GridNode> map(final GridTaskRouter router, final DBInsertOperation ops)
             throws GridException {
-        final Charset charset = Charset.forName("UTF-8");
         final MultiKeyRowPlaceholderRecord[] records = ops.getRecords();
+        assert (records != null && records.length > 0);
+        final String tableName = ops.getTableName();
+        final MultiKeyRowPlaceholderRecord r = records[0];
+        final String tailCopyIntoQuery = " RECORDS INTO \"" + tableName
+                + "\" FROM '<src>' USING DELIMITERS '" + StringUtils.escape(r.getFieldSeparator())
+                + "', '" + StringUtils.escape(r.getRecordSeparator()) + "', '"
+                + StringUtils.escape(r.getStringQuote()) + "' NULL AS '"
+                + StringUtils.escape(r.getNullString()) + '\'';
+
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new IdentityHashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
         final Set<GridNode> mappedNodes = new IdentityHashSet<GridNode>();
+        final Charset charset = Charset.forName("UTF-8");
         int overlaps = 0;
-        for(final MultiKeyRowPlaceholderRecord rec : records) {
+        final int totalRecords = records.length;
+        for(int i = 0; i < totalRecords; i++) {
+            MultiKeyRowPlaceholderRecord rec = records[i];
+            records[i] = null;
             final byte[][] keys = rec.getKeys();
             boolean hasOverlap = false;
             for(byte[] key : keys) {
@@ -73,21 +85,23 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
                 if(node == null) {
                     throw new GridException("Could not find any node in cluster.");
                 }
-                if(mappedNodes.add(node)) {// insert record if the given record is not associated yet.                    
+                if(mappedNodes.add(node)) {// insert record if the given record is not associated yet.
+                    final String row = rec.getRow();
+                    final byte[] b = row.getBytes(charset);
+                    final int blen = b.length;
                     final FastByteArrayOutputStream rowsBuf;
                     final Pair<MutableInt, FastByteArrayOutputStream> pair = nodeAssignMap.get(node);
                     if(pair == null) {
-                        rowsBuf = new FastByteArrayOutputStream(32786);
+                        int expected = (blen * totalRecords) >> 4;
+                        rowsBuf = new FastByteArrayOutputStream(Math.max(expected, 32786));
                         Pair<MutableInt, FastByteArrayOutputStream> newPair = new Pair<MutableInt, FastByteArrayOutputStream>(new MutableInt(1), rowsBuf);
                         nodeAssignMap.put(node, newPair);
                     } else {
-                        rowsBuf = pair.getSecond();
-                        MutableInt cnt = pair.getFirst();
+                        rowsBuf = pair.second;
+                        MutableInt cnt = pair.first;
                         cnt.increment();
                     }
-                    String row = rec.getRow();
-                    byte[] b = row.getBytes(charset);
-                    rowsBuf.write(b, 0, b.length);
+                    rowsBuf.write(b, 0, blen);
                 } else {
                     hasOverlap = true;
                 }
@@ -98,37 +112,30 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
             mappedNodes.clear();
         }
         this.overlappingRecords = overlaps;
-        this.totalShuffledRecords = records.length;
+        this.totalShuffledRecords = totalRecords;
+
+        final String driverClassName = ops.getDriverClassName();
+        final String connectUrl = ops.getConnectUrl();
+        final String createTableDDL = ops.getCreateTableDDL();
+        final String userName = ops.getUserName();
+        final String password = ops.getPassword();
 
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
-        {
-            final String driverClassName = ops.getDriverClassName();
-            final String connectUrl = ops.getConnectUrl();
-            final String createTableDDL = ops.getCreateTableDDL();
-            final String tableName = ops.getTableName();
-            final String userName = ops.getUserName();
-            final String password = ops.getPassword();
-
-            final MultiKeyRowPlaceholderRecord rec = records[0];
-            final String tailCopyIntoQuery = " RECORDS INTO \"" + tableName
-                    + "\" FROM '<src>' USING DELIMITERS '"
-                    + StringUtils.escape(rec.getFieldSeparator()) + "', '"
-                    + StringUtils.escape(rec.getRecordSeparator()) + "', '"
-                    + StringUtils.escape(rec.getStringQuote()) + "' NULL AS '"
-                    + StringUtils.escape(rec.getNullString()) + '\'';
-
-            for(final Map.Entry<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> e : nodeAssignMap.entrySet()) {
-                GridNode node = e.getKey();
-                Pair<MutableInt, FastByteArrayOutputStream> pair = e.getValue();
-                MutableInt numRecords = pair.getFirst();
-                String copyIntoQuery = "COPY " + numRecords.intValue() + tailCopyIntoQuery;
-                FastByteArrayOutputStream rows = pair.getSecond();
-                byte[] b = rows.toByteArray();
-                MonetDBCopyIntoOperation shrinkedOps = new MonetDBCopyIntoOperation(driverClassName, connectUrl, createTableDDL, tableName, copyIntoQuery, b);
-                shrinkedOps.setAuth(userName, password);
-                GridTask task = new DBTaskAdapter(this, shrinkedOps);
-                map.put(task, node);
-            }
+        final StringBuilder copyIntoQueryBuf = new StringBuilder(tailCopyIntoQuery.length() + 20);
+        for(final Map.Entry<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> e : nodeAssignMap.entrySet()) {
+            GridNode node = e.getKey();
+            Pair<MutableInt, FastByteArrayOutputStream> pair = e.getValue();
+            MutableInt numRecords = pair.first;
+            copyIntoQueryBuf.append("COPY ").append(numRecords.intValue()).append(tailCopyIntoQuery);
+            String copyIntoQuery = copyIntoQueryBuf.toString();
+            copyIntoQueryBuf.setLength(0); // clear
+            FastByteArrayOutputStream rows = pair.second;
+            byte[] b = rows.toByteArray();
+            pair.second = null;
+            MonetDBCopyIntoOperation shrinkedOps = new MonetDBCopyIntoOperation(driverClassName, connectUrl, createTableDDL, tableName, copyIntoQuery, b);
+            shrinkedOps.setAuth(userName, password);
+            GridTask task = new DBTaskAdapter(this, shrinkedOps);
+            map.put(task, node);
         }
         return map;
     }
