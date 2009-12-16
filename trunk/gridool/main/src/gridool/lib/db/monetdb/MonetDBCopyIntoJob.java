@@ -73,14 +73,15 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
                 if(node == null) {
                     throw new GridException("Could not find any node in cluster.");
                 }
-                if(mappedNodes.add(node)) {// insert record if the given record is not associated yet.
-                    Pair<MutableInt, FastByteArrayOutputStream> pair = nodeAssignMap.get(node);
-                    FastByteArrayOutputStream rowsBuf = pair.getSecond();
-                    if(rowsBuf == null) {
+                if(mappedNodes.add(node)) {// insert record if the given record is not associated yet.                    
+                    final FastByteArrayOutputStream rowsBuf;
+                    final Pair<MutableInt, FastByteArrayOutputStream> pair = nodeAssignMap.get(node);
+                    if(pair == null) {
                         rowsBuf = new FastByteArrayOutputStream(32786);
                         Pair<MutableInt, FastByteArrayOutputStream> newPair = new Pair<MutableInt, FastByteArrayOutputStream>(new MutableInt(1), rowsBuf);
                         nodeAssignMap.put(node, newPair);
                     } else {
+                        rowsBuf = pair.getSecond();
                         MutableInt cnt = pair.getFirst();
                         cnt.increment();
                     }
