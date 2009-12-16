@@ -32,14 +32,15 @@ import gridool.lib.db.MultiKeyRowPlaceholderRecord;
 import gridool.routing.GridTaskRouter;
 
 import java.nio.charset.Charset;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 
 import xbird.util.collections.IdentityHashSet;
 import xbird.util.io.FastByteArrayOutputStream;
+import xbird.util.primitives.MutableInt;
 import xbird.util.string.StringUtils;
+import xbird.util.struct.Pair;
 
 /**
  * 
@@ -61,10 +62,10 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
         final Charset charset = Charset.forName("UTF-8");
         final MultiKeyRowPlaceholderRecord[] records = ops.getRecords();
         final int numNodes = router.getGridSize();
-        final Map<GridNode, FastByteArrayOutputStream> nodeAssignMap = new HashMap<GridNode, FastByteArrayOutputStream>(numNodes);
+        final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new IdentityHashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
         final Set<GridNode> mappedNodes = new IdentityHashSet<GridNode>();
         int overlaps = 0;
-        for(MultiKeyRowPlaceholderRecord rec : records) {
+        for(final MultiKeyRowPlaceholderRecord rec : records) {
             final byte[][] keys = rec.getKeys();
             boolean hasOverlap = false;
             for(byte[] key : keys) {
@@ -73,10 +74,15 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
                     throw new GridException("Could not find any node in cluster.");
                 }
                 if(mappedNodes.add(node)) {// insert record if the given record is not associated yet.
-                    FastByteArrayOutputStream rowsBuf = nodeAssignMap.get(node);
+                    Pair<MutableInt, FastByteArrayOutputStream> pair = nodeAssignMap.get(node);
+                    FastByteArrayOutputStream rowsBuf = pair.getSecond();
                     if(rowsBuf == null) {
-                        rowsBuf = new FastByteArrayOutputStream(16384);
-                        nodeAssignMap.put(node, rowsBuf);
+                        rowsBuf = new FastByteArrayOutputStream(32786);
+                        Pair<MutableInt, FastByteArrayOutputStream> newPair = new Pair<MutableInt, FastByteArrayOutputStream>(new MutableInt(1), rowsBuf);
+                        nodeAssignMap.put(node, newPair);
+                    } else {
+                        MutableInt cnt = pair.getFirst();
+                        cnt.increment();
                     }
                     String row = rec.getRow();
                     byte[] b = row.getBytes(charset);
@@ -103,16 +109,19 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
             final String password = ops.getPassword();
 
             final MultiKeyRowPlaceholderRecord rec = records[0];
-            final String copyIntoQuery = "COPY INTO \"" + tableName
+            final String tailCopyIntoQuery = " RECORDS INTO \"" + tableName
                     + "\" FROM '<src>' USING DELIMITERS '"
                     + StringUtils.escape(rec.getFieldSeparator()) + "', '"
                     + StringUtils.escape(rec.getRecordSeparator()) + "', '"
                     + StringUtils.escape(rec.getStringQuote()) + "' NULL AS '"
                     + StringUtils.escape(rec.getNullString()) + '\'';
 
-            for(Map.Entry<GridNode, FastByteArrayOutputStream> e : nodeAssignMap.entrySet()) {
+            for(final Map.Entry<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> e : nodeAssignMap.entrySet()) {
                 GridNode node = e.getKey();
-                FastByteArrayOutputStream rows = e.getValue();
+                Pair<MutableInt, FastByteArrayOutputStream> pair = e.getValue();
+                MutableInt numRecords = pair.getFirst();
+                String copyIntoQuery = "COPY " + numRecords.intValue() + tailCopyIntoQuery;
+                FastByteArrayOutputStream rows = pair.getSecond();
                 byte[] b = rows.toByteArray();
                 MonetDBCopyIntoOperation shrinkedOps = new MonetDBCopyIntoOperation(driverClassName, connectUrl, createTableDDL, tableName, copyIntoQuery, b);
                 shrinkedOps.setAuth(userName, password);
