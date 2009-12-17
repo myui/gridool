@@ -203,6 +203,7 @@ public final class MonetDBCopyIntoOperation extends DBOperation implements Seria
             GZIPOutputStream gos = new GZIPOutputStream(os, 8192);
             gos.write(rowsData);
             gos.finish();
+            this.rowsData = null; // help GC
         } else {
             out.writeBoolean(false);
             IOUtils.writeBytes(rowsData, out);
