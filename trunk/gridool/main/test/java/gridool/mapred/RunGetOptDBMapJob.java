@@ -49,7 +49,7 @@ public class RunGetOptDBMapJob {
         @Override
         public DBMapShuffleTaskBase makeMapShuffleTask(GridJobBase<DBMapReduceJobConf, ?> job) {
             DBTableAdvPartitioningBulkloadTask task = new DBTableAdvPartitioningBulkloadTask(job, this);
-            task.setShuffleUnits(300000);
+            task.setShuffleUnits(100000);
             task.setShuffleThreads(-1); // workaround for monetdb (avoid concurrent insertion due to the table-level lock)
             return task;
         }
