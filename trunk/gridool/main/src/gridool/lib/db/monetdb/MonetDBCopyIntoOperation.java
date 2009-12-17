@@ -28,10 +28,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.zip.GZIPOutputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -61,6 +63,8 @@ public final class MonetDBCopyIntoOperation extends DBOperation implements Seria
     private/* final */String copyIntoQuery;
     @Nonnull
     private/* final */byte[] rowsData;
+
+    private boolean compressed = false;
 
     public MonetDBCopyIntoOperation() {}
 
@@ -94,7 +98,7 @@ public final class MonetDBCopyIntoOperation extends DBOperation implements Seria
             }
         }
 
-        final File loadFile = prepareLoadFile(tableName, rowsData);
+        final File loadFile = prepareLoadFile(tableName, rowsData, compressed);
         this.rowsData = null;
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
         try {
@@ -140,7 +144,7 @@ public final class MonetDBCopyIntoOperation extends DBOperation implements Seria
         }
     }
 
-    private static File prepareLoadFile(final String tableName, final byte[] data) {
+    private static File prepareLoadFile(final String tableName, final byte[] data, final boolean compressed) {
         DbCollection rootColl = DbCollection.getRootCollection();
         File colDir = rootColl.getDirectory();
         if(!colDir.exists()) {
@@ -150,13 +154,13 @@ public final class MonetDBCopyIntoOperation extends DBOperation implements Seria
         final File loadFile;
         final FileOutputStream fos;
         try {
-            loadFile = File.createTempFile(tableName, ".csv", colDir);
+            loadFile = File.createTempFile(tableName, (compressed ? ".csv.gz" : ".csv"), colDir);
             fos = new FileOutputStream(loadFile);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create a load file", e);
         }
         try {
-            BufferedOutputStream bos = new BufferedOutputStream(fos, 8192);
+            BufferedOutputStream bos = new BufferedOutputStream(fos, 16384);
             bos.write(data, 0, data.length);
             bos.flush();
             bos.close();
@@ -183,6 +187,7 @@ public final class MonetDBCopyIntoOperation extends DBOperation implements Seria
         this.createTableDDL = IOUtils.readString(in);
         this.tableName = IOUtils.readString(in);
         this.copyIntoQuery = IOUtils.readString(in);
+        this.compressed = in.readBoolean();
         this.rowsData = IOUtils.readBytes(in);
     }
 
@@ -192,7 +197,16 @@ public final class MonetDBCopyIntoOperation extends DBOperation implements Seria
         IOUtils.writeString(createTableDDL, out);
         IOUtils.writeString(tableName, out);
         IOUtils.writeString(copyIntoQuery, out);
-        IOUtils.writeBytes(rowsData, out);
+        if(out instanceof OutputStream) {
+            out.writeBoolean(true);
+            OutputStream os = (OutputStream) out;
+            GZIPOutputStream gos = new GZIPOutputStream(os, 8192);
+            gos.write(rowsData);
+            gos.finish();
+        } else {
+            out.writeBoolean(false);
+            IOUtils.writeBytes(rowsData, out);
+        }
     }
 
 }

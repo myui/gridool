@@ -131,7 +131,7 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
             copyIntoQueryBuf.setLength(0); // clear
             FastByteArrayOutputStream rows = pair.second;
             byte[] b = rows.toByteArray();
-            pair.second = null;
+            pair.clear();
             MonetDBCopyIntoOperation shrinkedOps = new MonetDBCopyIntoOperation(driverClassName, connectUrl, createTableDDL, tableName, copyIntoQuery, b);
             shrinkedOps.setAuth(userName, password);
             GridTask task = new DBTaskAdapter(this, shrinkedOps);
