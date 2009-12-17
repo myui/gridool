@@ -80,7 +80,7 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
             records[i] = null;
             final byte[][] keys = rec.getKeys();
             boolean hasOverlap = false;
-            for(byte[] key : keys) {
+            for(final byte[] key : keys) {
                 final GridNode node = router.selectNode(key);
                 if(node == null) {
                     throw new GridException("Could not find any node in cluster.");
@@ -92,7 +92,7 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
                     final FastByteArrayOutputStream rowsBuf;
                     final Pair<MutableInt, FastByteArrayOutputStream> pair = nodeAssignMap.get(node);
                     if(pair == null) {
-                        int expected = (blen * totalRecords) >> 4;
+                        int expected = (blen * (totalRecords / numNodes)) << 1;
                         rowsBuf = new FastByteArrayOutputStream(Math.max(expected, 32786));
                         Pair<MutableInt, FastByteArrayOutputStream> newPair = new Pair<MutableInt, FastByteArrayOutputStream>(new MutableInt(1), rowsBuf);
                         nodeAssignMap.put(node, newPair);
