@@ -10,7 +10,7 @@ import gridool.lib.db.MultiKeyRowPlaceholderRecord;
 import gridool.mapred.db.DBMapReduceJobConf;
 import gridool.mapred.db.GetOptDBJobConf;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
-import gridool.mapred.db.task.DBTableAdvPartitioningBulkloadTask;
+import gridool.mapred.db.task.MonetDBTableAdvPartitioningBulkloadBatchTask;
 
 import java.rmi.RemoteException;
 
@@ -48,7 +48,7 @@ public class RunGetOptDBMapJob {
         @SuppressWarnings("unchecked")
         @Override
         public DBMapShuffleTaskBase makeMapShuffleTask(GridJobBase<DBMapReduceJobConf, ?> job) {
-            DBTableAdvPartitioningBulkloadTask task = new DBTableAdvPartitioningBulkloadTask(job, this);
+            MonetDBTableAdvPartitioningBulkloadBatchTask task = new MonetDBTableAdvPartitioningBulkloadBatchTask(job, this);
             task.setShuffleUnits(100000);
             task.setShuffleThreads(-1); // workaround for monetdb (avoid concurrent insertion due to the table-level lock)
             return task;
