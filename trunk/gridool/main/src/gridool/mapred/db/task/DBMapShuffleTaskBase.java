@@ -70,10 +70,10 @@ public abstract class DBMapShuffleTaskBase<IN_TYPE extends DBRecord, OUT_TYPE> e
     // ------------------------
     // working resources
 
-    private transient int shuffleUnits = 512;
-    private transient int shuffleThreads = Runtime.getRuntime().availableProcessors();
-    private transient ExecutorService shuffleExecPool;
-    private transient BoundedArrayQueue<OUT_TYPE> shuffleSink;
+    protected transient int shuffleUnits = 512;
+    protected transient int shuffleThreads = Runtime.getRuntime().availableProcessors();
+    protected transient ExecutorService shuffleExecPool;
+    protected transient BoundedArrayQueue<OUT_TYPE> shuffleSink;
 
     @SuppressWarnings("unchecked")
     public DBMapShuffleTaskBase(GridJob job, @Nonnull DBMapReduceJobConf jobConf) {
