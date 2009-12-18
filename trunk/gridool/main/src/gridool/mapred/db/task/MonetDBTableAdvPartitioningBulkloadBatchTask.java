@@ -210,7 +210,7 @@ public final class MonetDBTableAdvPartitioningBulkloadBatchTask extends
                     throw new IllegalStateException(ee);
                 }
                 assert (elapsed != null);
-                LOG.info(StopWatch.elapsedTime(elapsed.longValue()));
+                LOG.info("Elapsed time for bulkload: " + StopWatch.elapsedTime(elapsed.longValue()));
             }
         });
     }

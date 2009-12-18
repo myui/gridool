@@ -53,7 +53,7 @@ public final class MonetDBInvokeCopyIntoJob extends
 
     public Map<GridTask, GridNode> map(GridTaskRouter router, Pair<MonetDBInvokeCopyIntoOperation, Map<GridNode, MutableInt>> args)
             throws GridException {
-        this.sw = new StopWatch("Elapsed time for bulkload");
+        this.sw = new StopWatch();
 
         final MonetDBInvokeCopyIntoOperation ops = args.first;
         final String driverClassName = ops.getDriverClassName();
