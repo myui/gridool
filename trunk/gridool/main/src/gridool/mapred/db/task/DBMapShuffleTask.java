@@ -22,10 +22,10 @@ package gridool.mapred.db.task;
 
 import gridool.GridJob;
 import gridool.GridJobFuture;
-import gridool.lib.db.DBInsertOperation;
-import gridool.lib.db.DBInsertRecordJob;
-import gridool.lib.db.DBRecord;
-import gridool.lib.db.GenericDBRecord;
+import gridool.db.DBInsertOperation;
+import gridool.db.DBInsertRecordJob;
+import gridool.db.DBRecord;
+import gridool.db.GenericDBRecord;
 import gridool.mapred.db.DBMapReduceJobConf;
 
 import java.io.Serializable;

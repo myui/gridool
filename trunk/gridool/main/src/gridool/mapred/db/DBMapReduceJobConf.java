@@ -23,7 +23,7 @@ package gridool.mapred.db;
 import gridool.GridJob;
 import gridool.GridTask;
 import gridool.construct.GridJobBase;
-import gridool.lib.db.DBRecord;
+import gridool.db.DBRecord;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
 import gridool.marshaller.GridMarshaller;
 import gridool.marshaller.JdkMarshaller;
