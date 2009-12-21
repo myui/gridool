@@ -26,9 +26,9 @@ import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
+import gridool.db.DBRecord;
 import gridool.directory.helpers.DirectoryTaskAdapter;
 import gridool.directory.ops.AddOperation;
-import gridool.lib.db.DBRecord;
 import gridool.marshaller.GridMarshaller;
 import gridool.routing.GridTaskRouter;
 
