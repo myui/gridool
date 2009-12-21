@@ -18,17 +18,13 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.mapred.db.task;
+package gridool.lib.db;
 
 import gridool.GridJob;
 import gridool.GridJobFuture;
-import gridool.GridNode;
-import gridool.lib.db.DBInsertOperation;
-import gridool.lib.db.MultiKeyRowPlaceholderRecord;
-import gridool.lib.db.monetdb.MonetDBInvokeCopyIntoJob;
-import gridool.lib.db.monetdb.MonetDBInvokeCopyIntoOperation;
-import gridool.lib.db.monetdb.MonetDBPrepareCopyIntoJob;
+import gridool.lib.db.monetdb.MonetDBCopyIntoJob;
 import gridool.mapred.db.DBMapReduceJobConf;
+import gridool.mapred.db.task.DBMapShuffleTaskBase;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -36,18 +32,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import xbird.util.collections.ArrayQueue;
-import xbird.util.concurrent.collections.ConcurrentIdentityHashMap;
-import xbird.util.datetime.StopWatch;
-import xbird.util.primitives.MutableInt;
-import xbird.util.string.StringUtils;
-import xbird.util.struct.Pair;
+import xbird.util.primitive.AtomicFloat;
 
 /**
  * 
@@ -56,21 +46,21 @@ import xbird.util.struct.Pair;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class MonetDBTableAdvPartitioningBulkloadBatchTask extends
+public final class DBTableAdvPartitioningBulkloadTask extends
         DBMapShuffleTaskBase<MultiKeyRowPlaceholderRecord, MultiKeyRowPlaceholderRecord> {
     private static final long serialVersionUID = 4820678759683359352L;
 
     private transient int[] pkeyIdxs = null;
     private transient int[] fkeyIdxs = null;
 
-    private transient final AtomicBoolean firstShuffleAttempt = new AtomicBoolean(true);
-    private transient volatile String tailCopyIntoQuery;
-    private transient final ConcurrentMap<GridNode, MutableInt> assignedRecMap = new ConcurrentIdentityHashMap<GridNode, MutableInt>(64);
+    private transient volatile boolean firstShuffleAttempt = true;
+    private transient final AtomicFloat sumOverlapPerc = new AtomicFloat(0.0f);
+    private transient final AtomicInteger cntShuffle = new AtomicInteger(0);
 
     @SuppressWarnings("unchecked")
-    public MonetDBTableAdvPartitioningBulkloadBatchTask(GridJob job, DBMapReduceJobConf jobConf) {
+    public DBTableAdvPartitioningBulkloadTask(GridJob job, DBMapReduceJobConf jobConf) {
         super(job, jobConf);
-        this.shuffleUnits = 10000;
+        setShuffleUnits(10000);
     }
 
     @Override
@@ -144,44 +134,29 @@ public final class MonetDBTableAdvPartitioningBulkloadBatchTask extends
             public void run() {
                 String driverClassName = jobConf.getDriverClassName();
                 String connectUrl = jobConf.getConnectUrl();
-                String mapOutputTableName = jobConf.getMapOutputTableName();
-                MultiKeyRowPlaceholderRecord[] records = queue.toArray(MultiKeyRowPlaceholderRecord.class);
-                assert (records.length > 0);
                 final String createTableDDL;
-                if(firstShuffleAttempt.compareAndSet(true, false)) {
-                    MultiKeyRowPlaceholderRecord r = records[0];
-                    tailCopyIntoQuery = "COPY INTO \"" + mapOutputTableName
-                            + "\" FROM '<src>' USING DELIMITERS '"
-                            + StringUtils.escape(r.getFieldSeparator()) + "', '"
-                            + StringUtils.escape(r.getRecordSeparator()) + "', '"
-                            + StringUtils.escape(r.getStringQuote()) + "' NULL AS '"
-                            + StringUtils.escape(r.getNullString()) + '\'';
+                if(firstShuffleAttempt) {
                     createTableDDL = jobConf.getCreateMapOutputTableDDL();
+                    firstShuffleAttempt = false;
                 } else {
                     createTableDDL = null;
                 }
-
+                String mapOutputTableName = jobConf.getMapOutputTableName();
+                MultiKeyRowPlaceholderRecord[] records = queue.toArray(MultiKeyRowPlaceholderRecord.class);
                 DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, createTableDDL, mapOutputTableName, null, records);
                 ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
-                final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(MonetDBPrepareCopyIntoJob.class, ops);
-                final Map<GridNode, MutableInt> map;
+                final GridJobFuture<Float> future = kernel.execute(MonetDBCopyIntoJob.class, ops);
+                Float overlapPerc = null;
                 try {
-                    map = future.get(); // wait for execution
+                    overlapPerc = future.get(); // wait for execution
                 } catch (InterruptedException ie) {
                     LOG.error(ie.getMessage(), ie);
-                    throw new IllegalStateException(ie);
                 } catch (ExecutionException ee) {
                     LOG.error(ee.getMessage(), ee);
-                    throw new IllegalStateException(ee);
                 }
-                final ConcurrentMap<GridNode, MutableInt> recMap = assignedRecMap;
-                for(Map.Entry<GridNode, MutableInt> e : map.entrySet()) {
-                    GridNode node = e.getKey();
-                    MutableInt assigned = e.getValue();
-                    final MutableInt prev = recMap.putIfAbsent(node, assigned);
-                    if(prev != null) {
-                        prev.add(assigned.intValue());
-                    }
+                if(overlapPerc != null) {
+                    sumOverlapPerc.addAndGet(overlapPerc.floatValue());
+                    cntShuffle.incrementAndGet();
                 }
             }
         });
@@ -190,29 +165,10 @@ public final class MonetDBTableAdvPartitioningBulkloadBatchTask extends
     @Override
     protected void postShuffle() {
         super.postShuffle();
-        String driverClassName = jobConf.getDriverClassName();
-        String connectUrl = jobConf.getConnectUrl();
-        String tableName = jobConf.getMapOutputTableName();
-        final MonetDBInvokeCopyIntoOperation ops = new MonetDBInvokeCopyIntoOperation(driverClassName, connectUrl, tableName, tailCopyIntoQuery);
-        ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
-        final Pair<MonetDBInvokeCopyIntoOperation, Map<GridNode, MutableInt>> pair = new Pair<MonetDBInvokeCopyIntoOperation, Map<GridNode, MutableInt>>(ops, assignedRecMap);
-        shuffleExecPool.execute(new Runnable() {
-            public void run() {
-                final GridJobFuture<Long> future = kernel.execute(MonetDBInvokeCopyIntoJob.class, pair);
-                final Long elapsed;
-                try {
-                    elapsed = future.get();
-                } catch (InterruptedException ie) {
-                    LOG.error(ie.getMessage(), ie);
-                    throw new IllegalStateException(ie);
-                } catch (ExecutionException ee) {
-                    LOG.error(ee.getMessage(), ee);
-                    throw new IllegalStateException(ee);
-                }
-                assert (elapsed != null);
-                LOG.info("Elapsed time for bulkload: " + StopWatch.elapsedTime(elapsed.longValue()));
-            }
-        });
+        if(LOG.isInfoEnabled()) {
+            float perc = (sumOverlapPerc.get() / cntShuffle.get()) * 100.0f;
+            LOG.info("Percentage of overlapping records in the shuffled records: " + perc + "%");
+        }
     }
 
 }

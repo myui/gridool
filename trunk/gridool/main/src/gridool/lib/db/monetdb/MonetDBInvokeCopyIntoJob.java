@@ -33,7 +33,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 import xbird.util.datetime.StopWatch;
-import xbird.util.primitives.MutableInt;
+import xbird.util.primitive.MutableInt;
 import xbird.util.struct.Pair;
 
 /**

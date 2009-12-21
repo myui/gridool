@@ -42,7 +42,7 @@ import xbird.util.lang.ObjectUtils;
 import xbird.util.net.PoolableSocketChannelFactory;
 import xbird.util.nio.NIOUtils;
 import xbird.util.pool.ConcurrentKeyedStackObjectPool;
-import xbird.util.primitives.Primitives;
+import xbird.util.primitive.Primitives;
 
 /**
  * 

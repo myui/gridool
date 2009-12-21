@@ -43,7 +43,7 @@ import xbird.util.lang.ObjectUtils;
 import xbird.util.lang.PrintUtils;
 import xbird.util.net.NetUtils;
 import xbird.util.nio.NIOUtils;
-import xbird.util.primitives.Primitives;
+import xbird.util.primitive.Primitives;
 
 /**
  * 

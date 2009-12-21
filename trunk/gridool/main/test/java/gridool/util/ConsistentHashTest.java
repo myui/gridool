@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import xbird.util.lang.HashAlgorithm;
 import xbird.util.math.MathUtils;
-import xbird.util.primitives.MutableInt;
+import xbird.util.primitive.MutableInt;
 
 /**
  * 

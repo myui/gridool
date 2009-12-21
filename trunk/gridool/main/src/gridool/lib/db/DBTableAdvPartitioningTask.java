@@ -18,14 +18,12 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.mapred.db.task;
+package gridool.lib.db;
 
 import gridool.GridJob;
 import gridool.GridJobFuture;
-import gridool.lib.db.DBInsertOperation;
-import gridool.lib.db.MultiKeyRowPlaceholderRecord;
-import gridool.lib.db.monetdb.MonetDBCopyIntoJob;
 import gridool.mapred.db.DBMapReduceJobConf;
+import gridool.mapred.db.task.DBMapShuffleTaskBase;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -38,7 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import xbird.util.collections.ArrayQueue;
-import xbird.util.primitives.AtomicFloat;
+import xbird.util.primitive.AtomicFloat;
 
 /**
  * 
@@ -47,21 +45,20 @@ import xbird.util.primitives.AtomicFloat;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class DBTableAdvPartitioningBulkloadTask extends
-        DBMapShuffleTaskBase<MultiKeyRowPlaceholderRecord, MultiKeyRowPlaceholderRecord> {
-    private static final long serialVersionUID = 4820678759683359352L;
+public final class DBTableAdvPartitioningTask extends
+        DBMapShuffleTaskBase<MultiKeyGenericDBRecord, MultiKeyGenericDBRecord> {
+    private static final long serialVersionUID = -8308742694304042395L;
 
     private transient int[] pkeyIdxs = null;
     private transient int[] fkeyIdxs = null;
 
-    private transient volatile boolean firstShuffleAttempt = true;
+    private transient boolean firstShuffleAttempt = true;
     private transient final AtomicFloat sumOverlapPerc = new AtomicFloat(0.0f);
     private transient final AtomicInteger cntShuffle = new AtomicInteger(0);
 
     @SuppressWarnings("unchecked")
-    public DBTableAdvPartitioningBulkloadTask(GridJob job, DBMapReduceJobConf jobConf) {
+    public DBTableAdvPartitioningTask(GridJob job, DBMapReduceJobConf jobConf) {
         super(job, jobConf);
-        setShuffleUnits(10000);
     }
 
     @Override
@@ -116,20 +113,20 @@ public final class DBTableAdvPartitioningBulkloadTask extends
     }
 
     @Override
-    protected void readFields(MultiKeyRowPlaceholderRecord record, ResultSet results)
+    protected void readFields(MultiKeyGenericDBRecord record, ResultSet results)
             throws SQLException {
         record.configureRecord(pkeyIdxs, fkeyIdxs);
         record.readFields(results);
     }
 
     @Override
-    protected boolean process(MultiKeyRowPlaceholderRecord record) {
+    protected boolean process(MultiKeyGenericDBRecord record) {
         shuffle(record);
         return true;
     }
 
     @Override
-    protected void invokeShuffle(final ExecutorService shuffleExecPool, final ArrayQueue<MultiKeyRowPlaceholderRecord> queue) {
+    protected void invokeShuffle(final ExecutorService shuffleExecPool, final ArrayQueue<MultiKeyGenericDBRecord> queue) {
         assert (kernel != null);
         shuffleExecPool.execute(new Runnable() {
             public void run() {
@@ -143,10 +140,11 @@ public final class DBTableAdvPartitioningBulkloadTask extends
                     createTableDDL = null;
                 }
                 String mapOutputTableName = jobConf.getMapOutputTableName();
-                MultiKeyRowPlaceholderRecord[] records = queue.toArray(MultiKeyRowPlaceholderRecord.class);
-                DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, createTableDDL, mapOutputTableName, null, records);
+                String[] fieldNames = jobConf.getMapOutputFieldNames();
+                MultiKeyGenericDBRecord[] records = queue.toArray(MultiKeyGenericDBRecord.class);
+                DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, createTableDDL, mapOutputTableName, fieldNames, records);
                 ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
-                final GridJobFuture<Float> future = kernel.execute(MonetDBCopyIntoJob.class, ops);
+                final GridJobFuture<Float> future = kernel.execute(DBInsertMultiKeyRecordJob.class, ops);
                 Float overlapPerc = null;
                 try {
                     overlapPerc = future.get(); // wait for execution

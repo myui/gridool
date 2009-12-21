@@ -7,10 +7,10 @@ import gridool.construct.GridJobBase;
 import gridool.lib.db.DBLocalJob;
 import gridool.lib.db.DBRecord;
 import gridool.lib.db.MultiKeyRowPlaceholderRecord;
+import gridool.lib.db.monetdb.MonetDBTableAdvPartitioningBulkloadBatchTask;
 import gridool.mapred.db.DBMapReduceJobConf;
 import gridool.mapred.db.GetOptDBJobConf;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
-import gridool.mapred.db.task.MonetDBTableAdvPartitioningBulkloadBatchTask;
 
 import java.rmi.RemoteException;
 

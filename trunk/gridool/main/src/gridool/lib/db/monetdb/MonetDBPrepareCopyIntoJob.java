@@ -38,7 +38,7 @@ import java.util.Set;
 
 import xbird.util.collections.IdentityHashSet;
 import xbird.util.io.FastByteArrayOutputStream;
-import xbird.util.primitives.MutableInt;
+import xbird.util.primitive.MutableInt;
 import xbird.util.struct.Pair;
 
 /**

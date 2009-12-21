@@ -40,7 +40,7 @@ import org.kohsuke.args4j.Option;
 import xbird.config.Settings;
 import xbird.storage.DbCollection;
 import xbird.util.net.NetUtils;
-import xbird.util.primitives.Primitives;
+import xbird.util.primitive.Primitives;
 import xbird.util.string.StringUtils;
 
 /**
