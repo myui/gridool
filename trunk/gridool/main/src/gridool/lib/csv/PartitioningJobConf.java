@@ -31,14 +31,17 @@ import javax.annotation.Nonnull;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public abstract class BulkloadJobConf implements Serializable {
+public abstract class PartitioningJobConf implements Serializable {
     private static final long serialVersionUID = 636573640789390674L;
 
-    public BulkloadJobConf() {}
+    public PartitioningJobConf() {}
 
     @Nonnull
     public abstract String getCsvFilePath();
-    
+
+    @Nonnull
+    public abstract String getTableName();
+
     @Nonnull
     public abstract int[] partitionigKeyIndices();
 
@@ -46,14 +49,20 @@ public abstract class BulkloadJobConf implements Serializable {
         return '\t';
     }
 
+    public char getRecordSeparator() {
+        return '\n';
+    }
+
     public char getStringQuote() {
         return '\"';
     }
 
+    @Deprecated
     public char getEscapeCharacter() {
         return '\\';
     }
 
+    @Deprecated
     public String getNullString() {
         return "";
     }
