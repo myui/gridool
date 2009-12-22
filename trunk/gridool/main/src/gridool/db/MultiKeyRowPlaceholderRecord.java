@@ -18,10 +18,9 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.db.monetdb;
+package gridool.db;
 
 import gridool.GridException;
-import gridool.db.DBRecord;
 import gridool.marshaller.GridMarshaller;
 
 import java.io.Externalizable;
