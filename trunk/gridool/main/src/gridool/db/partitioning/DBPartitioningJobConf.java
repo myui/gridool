@@ -20,6 +20,9 @@
  */
 package gridool.db.partitioning;
 
+import gridool.GridTask;
+import gridool.db.partitioning.monetdb.MonetDBParallelLoadTask;
+
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -130,6 +133,10 @@ public abstract class DBPartitioningJobConf implements Serializable {
         }
         conn.setAutoCommit(autoCommit);
         return conn;
+    }
+
+    public GridTask makePartitioningTask(DBPartitioningJob job) {
+        return new MonetDBParallelLoadTask(job, this);
     }
 
 }

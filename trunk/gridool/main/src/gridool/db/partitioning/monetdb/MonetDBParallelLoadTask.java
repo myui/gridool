@@ -56,12 +56,13 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
     @Override
     protected void postShuffle() {
         super.postShuffle();
+
         String driverClassName = jobConf.getDriverClassName();
         String connectUrl = jobConf.getConnectUrl();
         String tableName = jobConf.getTableName();
         String createTableDDL = jobConf.getCreateTableDDL();
         String copyIntoQuery = generateCopyIntoQuery(tableName, jobConf);
-        
+
         MonetDBParallelLoadOperation ops = new MonetDBParallelLoadOperation(driverClassName, connectUrl, tableName, createTableDDL, copyIntoQuery);
         ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
         final Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>> pair = new Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>>(ops, assignMap);
