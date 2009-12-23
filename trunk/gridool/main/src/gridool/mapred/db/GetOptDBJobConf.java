@@ -21,8 +21,8 @@
 package gridool.mapred.db;
 
 import gridool.construct.GridJobBase;
-import gridool.db.DBRecord;
-import gridool.db.GenericDBRecord;
+import gridool.db.record.DBRecord;
+import gridool.db.record.GenericDBRecord;
 import gridool.mapred.db.task.DB2DhtMapShuffleTask;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
 

@@ -20,6 +20,8 @@
  */
 package gridool.db;
 
+import gridool.db.record.DBRecord;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;

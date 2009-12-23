@@ -26,7 +26,7 @@ import gridool.GridKernel;
 import gridool.annotation.GridKernelResource;
 import gridool.db.DBInsertOperation;
 import gridool.db.DBInsertRecordJob;
-import gridool.db.DBRecord;
+import gridool.db.record.DBRecord;
 import gridool.mapred.db.DBMapReduceJobConf;
 
 import java.io.Serializable;

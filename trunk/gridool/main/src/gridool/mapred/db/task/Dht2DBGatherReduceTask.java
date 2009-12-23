@@ -22,7 +22,7 @@ package gridool.mapred.db.task;
 
 import gridool.GridJob;
 import gridool.db.DBInsertOperation;
-import gridool.db.DBRecord;
+import gridool.db.record.DBRecord;
 import gridool.mapred.db.DBMapReduceJobConf;
 import gridool.util.GridUtils;
 

@@ -26,6 +26,7 @@ import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
+import gridool.db.partitioning.FileAppendTask;
 import gridool.db.partitioning.PartitioningJobConf;
 import gridool.routing.GridTaskRouter;
 

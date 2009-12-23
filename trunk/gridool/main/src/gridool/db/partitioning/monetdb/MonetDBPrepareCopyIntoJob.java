@@ -28,7 +28,7 @@ import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
 import gridool.db.DBInsertOperation;
 import gridool.db.DBTaskAdapter;
-import gridool.db.MultiKeyRowPlaceholderRecord;
+import gridool.db.record.MultiKeyRowPlaceholderRecord;
 import gridool.routing.GridTaskRouter;
 
 import java.nio.charset.Charset;

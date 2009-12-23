@@ -24,7 +24,7 @@ import gridool.GridJob;
 import gridool.GridJobFuture;
 import gridool.GridNode;
 import gridool.db.DBInsertOperation;
-import gridool.db.MultiKeyRowPlaceholderRecord;
+import gridool.db.record.MultiKeyRowPlaceholderRecord;
 import gridool.mapred.db.DBMapReduceJobConf;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
 

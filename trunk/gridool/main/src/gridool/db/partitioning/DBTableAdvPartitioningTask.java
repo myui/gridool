@@ -18,10 +18,13 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.db;
+package gridool.db.partitioning;
 
 import gridool.GridJob;
 import gridool.GridJobFuture;
+import gridool.db.DBInsertMultiKeyRecordJob;
+import gridool.db.DBInsertOperation;
+import gridool.db.record.MultiKeyGenericDBRecord;
 import gridool.mapred.db.DBMapReduceJobConf;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
 

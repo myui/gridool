@@ -26,6 +26,8 @@ import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
+import gridool.db.record.DBRecord;
+import gridool.db.record.MultiKeyGenericDBRecord;
 import gridool.routing.GridTaskRouter;
 
 import java.util.ArrayList;

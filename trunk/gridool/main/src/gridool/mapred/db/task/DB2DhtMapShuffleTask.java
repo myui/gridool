@@ -22,8 +22,8 @@ package gridool.mapred.db.task;
 
 import gridool.GridJob;
 import gridool.GridJobFuture;
-import gridool.db.DBRecord;
-import gridool.db.GenericDBRecord;
+import gridool.db.record.DBRecord;
+import gridool.db.record.GenericDBRecord;
 import gridool.directory.job.DirectoryAddRecordJob;
 import gridool.directory.job.DirectoryAddRecordJob.AddRecordOps;
 import gridool.mapred.db.DBMapReduceJobConf;

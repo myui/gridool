@@ -18,7 +18,7 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.db;
+package gridool.db.record;
 
 import gridool.GridException;
 import gridool.marshaller.GridMarshaller;
