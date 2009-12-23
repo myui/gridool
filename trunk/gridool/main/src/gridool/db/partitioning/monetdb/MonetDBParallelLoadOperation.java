@@ -23,23 +23,18 @@ package gridool.db.partitioning.monetdb;
 import gridool.db.DBOperation;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import xbird.storage.DbCollection;
-import xbird.util.io.FastBufferedOutputStream;
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
 
@@ -50,31 +45,37 @@ import xbird.util.jdbc.JDBCUtils;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class MonetDBCopyIntoOperation extends DBOperation implements Serializable {
-    private static final long serialVersionUID = 1823389045268725519L;
-    private static final Log LOG = LogFactory.getLog(MonetDBCopyIntoOperation.class);
+public final class MonetDBParallelLoadOperation extends DBOperation {
+    private static final long serialVersionUID = 2815346044185945907L;
+    private static final Log LOG = LogFactory.getLog(MonetDBParallelLoadOperation.class);
 
-    @Nullable
-    private/* final */String createTableDDL;
     @Nonnull
     private/* final */String tableName;
     @Nonnull
-    private/* final */String copyIntoQuery;
+    private/* final */String createTableDDL;
     @Nonnull
-    private/* final */byte[] rowsData;
+    private/* final */String copyIntoQuery;
 
-    public MonetDBCopyIntoOperation() {}
+    public MonetDBParallelLoadOperation() {}
 
-    public MonetDBCopyIntoOperation(String driverClassName, String connectUrl, @Nullable String createTableDDL, @Nonnull String tableName, @Nonnull String copyIntoQuery, @Nonnull byte[] rows) {
+    public MonetDBParallelLoadOperation(String driverClassName, String connectUrl, @Nonnull String tableName, @Nonnull String createTableDDL, @Nonnull String copyIntoQuery) {
         super(driverClassName, connectUrl);
-        this.createTableDDL = createTableDDL;
-        this.tableName = tableName;
-        this.copyIntoQuery = copyIntoQuery;
-        this.rowsData = rows;
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public String getCreateTableDDL() {
+        return createTableDDL;
+    }
+
+    public String getCopyIntoQuery(final int numRecords) {
+        return copyIntoQuery.replaceFirst("COPY ", "COPY " + numRecords + " RECORDS ");
     }
 
     @Override
-    public Serializable execute() throws SQLException {
+    public Integer execute() throws SQLException {
         final Connection conn;
         try {
             conn = getConnection();
@@ -82,24 +83,34 @@ public final class MonetDBCopyIntoOperation extends DBOperation implements Seria
             LOG.error(e);
             throw new SQLException(e.getMessage());
         }
-        if(createTableDDL != null) {// prepare a table
-            try {
-                JDBCUtils.update(conn, createTableDDL);
-            } catch (SQLException e) {
-                conn.rollback();
-                if(LOG.isDebugEnabled()) {
-                    LOG.debug("Table already exists. Try to truncate " + tableName, e);
-                }
-                truncateTable(conn, tableName);
-                // fall through
-            }
-        }
 
-        final File loadFile = prepareLoadFile(tableName, rowsData);
-        this.rowsData = null;
-        final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
+        prepareTable(conn, createTableDDL, tableName);
+
+        int numInserted = invokeCopyInto(conn, copyIntoQuery, tableName);
+        return numInserted;
+    }
+
+    private static void prepareTable(Connection conn, String createTableDDL, String tableName)
+            throws SQLException {
         try {
-            JDBCUtils.update(conn, query);
+            JDBCUtils.update(conn, createTableDDL);
+        } catch (SQLException e) {
+            conn.rollback();
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("Table already exists. Try to truncate " + tableName, e);
+            }
+            truncateTable(conn, tableName);
+            // fall through
+        }
+    }
+
+    private static int invokeCopyInto(Connection conn, String copyIntoQuery, String tableName)
+            throws SQLException {
+        final File loadFile = prepareLoadFile(tableName);
+        final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
+        final int ret;
+        try {
+            ret = JDBCUtils.update(conn, query);
             conn.commit();
         } catch (SQLException e) {
             LOG.error("rollback a transaction", e);
@@ -115,51 +126,27 @@ public final class MonetDBCopyIntoOperation extends DBOperation implements Seria
                 LOG.warn("Could not remove a tempolary file: " + loadFile.getAbsolutePath());
             }
         }
-
-        return Boolean.TRUE;
+        return ret;
     }
 
-    private static void truncateTable(@Nonnull final Connection conn, @Nonnull final String table)
+    private static void truncateTable(@Nonnull final Connection conn, @Nonnull final String tableName)
             throws SQLException {
-        final Statement st = conn.createStatement();
-        try {
-            st.executeUpdate("DELETE FROM " + table);
-            conn.commit();
-        } finally {
-            st.close();
-        }
+        String dml = "DELETE FROM " + tableName;
+        JDBCUtils.update(conn, dml);
     }
 
-    private static File prepareLoadFile(final String tableName, final byte[] data) {
+    private static File prepareLoadFile(final String tableName) {
         DbCollection rootColl = DbCollection.getRootCollection();
         File colDir = rootColl.getDirectory();
         if(!colDir.exists()) {
             throw new IllegalStateException("Database directory not found: "
                     + colDir.getAbsoluteFile());
         }
-        final File loadFile;
-        final FileOutputStream fos;
-        try {
-            loadFile = File.createTempFile(tableName, ".csv", colDir);
-            fos = new FileOutputStream(loadFile);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to create a load file", e);
+        final File file = new File(colDir, tableName + ".csv");
+        if(!file.exists()) {
+            throw new IllegalStateException("Loading file not found: " + file.getAbsolutePath());
         }
-        try {
-            FastBufferedOutputStream bos = new FastBufferedOutputStream(fos, 8192);
-            bos.write(data, 0, data.length);
-            bos.flush();
-            bos.close();
-        } catch (IOException e) {
-            try {
-                fos.close();
-            } catch (IOException ioe) {
-                LOG.debug(ioe);
-            }
-            throw new IllegalStateException("Failed to write data into file: "
-                    + loadFile.getAbsolutePath(), e);
-        }
-        return loadFile;
+        return file;
     }
 
     private static String complementCopyIntoQuery(final String query, final File loadFile) {
@@ -170,19 +157,17 @@ public final class MonetDBCopyIntoOperation extends DBOperation implements Seria
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
-        this.createTableDDL = IOUtils.readString(in);
         this.tableName = IOUtils.readString(in);
+        this.createTableDDL = IOUtils.readString(in);
         this.copyIntoQuery = IOUtils.readString(in);
-        this.rowsData = IOUtils.readBytes(in);
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
-        IOUtils.writeString(createTableDDL, out);
         IOUtils.writeString(tableName, out);
+        IOUtils.writeString(createTableDDL, out);
         IOUtils.writeString(copyIntoQuery, out);
-        IOUtils.writeBytes(rowsData, out);
     }
 
 }

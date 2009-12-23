@@ -29,7 +29,6 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import javax.annotation.Nonnull;
 
@@ -38,6 +37,7 @@ import org.apache.commons.logging.LogFactory;
 
 import xbird.storage.DbCollection;
 import xbird.util.io.IOUtils;
+import xbird.util.jdbc.JDBCUtils;
 
 /**
  * 
@@ -62,15 +62,15 @@ public final class MonetDBInvokeCopyIntoOperation extends DBOperation implements
         this.tableName = tableName;
         this.copyIntoQuery = copyIntoQuery;
     }
-    
+
     public String getTableName() {
         return tableName;
     }
-    
+
     public String getCopyIntoQuery() {
         return copyIntoQuery;
     }
-    
+
     public String getCopyIntoQuery(final int numRecords) {
         return copyIntoQuery.replaceFirst("COPY ", "COPY " + numRecords + " RECORDS ");
     }
@@ -88,7 +88,7 @@ public final class MonetDBInvokeCopyIntoOperation extends DBOperation implements
         final File loadFile = prepareLoadFile(tableName);
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
         try {
-            executeUpdate(conn, query);
+            JDBCUtils.update(conn, query);
             conn.commit();
         } catch (SQLException e) {
             LOG.error("rollback a transaction", e);
@@ -120,17 +120,6 @@ public final class MonetDBInvokeCopyIntoOperation extends DBOperation implements
             throw new IllegalStateException("Loading file not found: " + file.getAbsolutePath());
         }
         return file;
-    }
-
-    private static void executeUpdate(@Nonnull final Connection conn, @Nonnull final String sql)
-            throws SQLException {
-        final Statement st = conn.createStatement();
-        try {
-            st.executeUpdate(sql);
-            conn.commit();
-        } finally {
-            st.close();
-        }
     }
 
     private static String complementCopyIntoQuery(final String query, final File loadFile) {

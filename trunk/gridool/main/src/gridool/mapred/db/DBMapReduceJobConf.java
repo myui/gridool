@@ -61,14 +61,13 @@ public abstract class DBMapReduceJobConf implements Serializable {
     public final Connection getConnection(String connectUrl, boolean configure)
             throws ClassNotFoundException, SQLException {
         Class.forName(getDriverClassName());
-        final String url = getConnectUrl();
         final String user = getUserName();
         final Connection conn;
         if(user == null) {
-            conn = DriverManager.getConnection(url);
+            conn = DriverManager.getConnection(connectUrl);
         } else {
             String password = getPassword();
-            conn = DriverManager.getConnection(url, user, password);
+            conn = DriverManager.getConnection(connectUrl, user, password);
         }
         if(configure) {
             configure(conn);

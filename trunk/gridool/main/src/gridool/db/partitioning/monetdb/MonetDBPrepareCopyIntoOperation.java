@@ -30,7 +30,6 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -41,6 +40,7 @@ import org.apache.commons.logging.LogFactory;
 import xbird.storage.DbCollection;
 import xbird.util.io.FastBufferedOutputStream;
 import xbird.util.io.IOUtils;
+import xbird.util.jdbc.JDBCUtils;
 
 /**
  * 
@@ -81,7 +81,7 @@ public final class MonetDBPrepareCopyIntoOperation extends DBOperation implement
                 throw new SQLException(e.getMessage());
             }
             try {
-                executeUpdate(conn, createTableDDL);
+                JDBCUtils.update(conn, createTableDDL);
             } catch (SQLException e) {
                 conn.rollback();
                 if(LOG.isDebugEnabled()) {
@@ -98,26 +98,10 @@ public final class MonetDBPrepareCopyIntoOperation extends DBOperation implement
         return Boolean.TRUE;
     }
 
-    private static void executeUpdate(@Nonnull final Connection conn, @Nonnull final String sql)
-            throws SQLException {
-        final Statement st = conn.createStatement();
-        try {
-            st.executeUpdate(sql);
-            conn.commit();
-        } finally {
-            st.close();
-        }
-    }
-
     private static void truncateTable(@Nonnull final Connection conn, @Nonnull final String table)
             throws SQLException {
-        final Statement st = conn.createStatement();
-        try {
-            st.executeUpdate("DELETE FROM " + table);
-            conn.commit();
-        } finally {
-            st.close();
-        }
+        String dml = "DELETE FROM " + table;
+        JDBCUtils.update(conn, dml);
     }
 
     private static File prepareLoadFile(final String tableName, final byte[] data, final boolean append) {

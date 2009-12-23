@@ -29,11 +29,8 @@ import gridool.mapred.db.DBMapReduceJobConf;
 import gridool.mapred.db.task.DBMapShuffleTaskBase;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -43,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import xbird.util.collections.ArrayQueue;
 import xbird.util.concurrent.collections.ConcurrentIdentityHashMap;
 import xbird.util.datetime.StopWatch;
+import xbird.util.jdbc.JDBCUtils;
 import xbird.util.primitive.MutableInt;
 import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
@@ -73,52 +71,10 @@ public final class MonetDBTableAdvPartitioningBulkloadBatchTask extends
 
     @Override
     protected void preprocess(final Connection conn, final ResultSet results) throws SQLException {
-        final List<String> keys = new ArrayList<String>();
         final String inputTable = jobConf.getInputTable();
-        final DatabaseMetaData meta = conn.getMetaData();
-        final String catalog = conn.getCatalog();
-
-        // primary key
-        final ResultSet rs1 = meta.getPrimaryKeys(catalog, null, inputTable);
-        try {
-            while(rs1.next()) {
-                String pk = rs1.getString("COLUMN_NAME");
-                keys.add(pk);
-            }
-        } finally {
-            rs1.close();
-        }
-        final int pkeyColumns = keys.size();
-        if(pkeyColumns != 0) {
-            final int[] idxs = new int[pkeyColumns];
-            for(int i = 0; i < pkeyColumns; i++) {
-                String label = keys.get(i);
-                idxs[i] = results.findColumn(label);
-            }
-            this.pkeyIdxs = idxs;
-        }
-        keys.clear();
-
-        // foreign key 
-        final ResultSet rs2 = meta.getImportedKeys(catalog, null, inputTable);
-        try {
-            while(rs2.next()) {
-                String fk = rs2.getString("FKCOLUMN_NAME");
-                keys.add(fk);
-            }
-        } finally {
-            rs2.close();
-        }
-        final int fkeyColumns = keys.size();
-        if(fkeyColumns != 0) {
-            final int[] idxs = new int[fkeyColumns];
-            for(int i = 0; i < fkeyColumns; i++) {
-                String label = keys.get(i);
-                idxs[i] = results.findColumn(label);
-            }
-            this.fkeyIdxs = idxs;
-        }
-
+        Pair<int[], int[]> keys = JDBCUtils.getPartitioningKeys(conn, inputTable);
+        this.pkeyIdxs = keys.getFirst();
+        this.fkeyIdxs = keys.getSecond();
         assert (pkeyIdxs != null || fkeyIdxs != null);
     }
 

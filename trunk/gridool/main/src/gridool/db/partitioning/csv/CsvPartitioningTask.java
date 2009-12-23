@@ -27,7 +27,7 @@ import gridool.GridKernel;
 import gridool.GridNode;
 import gridool.annotation.GridKernelResource;
 import gridool.construct.GridTaskAdapter;
-import gridool.db.partitioning.PartitioningJobConf;
+import gridool.db.partitioning.DBPartitioningJobConf;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -36,7 +36,6 @@ import java.io.InputStreamReader;
 import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -70,7 +69,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     private static final Log LOG = LogFactory.getLog(CsvPartitioningTask.class);
 
     @Nonnull
-    protected final PartitioningJobConf jobConf;
+    protected final DBPartitioningJobConf jobConf;
 
     // ------------------------
     // injected resources
@@ -80,7 +79,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
 
     // ------------------------
 
-    private transient final ConcurrentIdentityHashMap<GridNode, MutableInt> assignMap;
+    protected transient final ConcurrentIdentityHashMap<GridNode, MutableInt> assignMap;
 
     // ------------------------
     // working resources
@@ -91,7 +90,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     protected transient BoundedArrayQueue<String> shuffleSink;
 
     @SuppressWarnings("unchecked")
-    public CsvPartitioningTask(GridJob job, PartitioningJobConf jobConf) {
+    public CsvPartitioningTask(GridJob job, DBPartitioningJobConf jobConf) {
         super(job, false);
         this.jobConf = jobConf;
         this.assignMap = new ConcurrentIdentityHashMap<GridNode, MutableInt>(64);
@@ -118,7 +117,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         this.shuffleThreads = shuffleThreads;
     }
 
-    public ConcurrentIdentityHashMap<GridNode, MutableInt> execute() throws GridException {
+    public final ConcurrentIdentityHashMap<GridNode, MutableInt> execute() throws GridException {
         int numShuffleThreads = shuffleThreads();
         this.shuffleExecPool = (numShuffleThreads <= 0) ? new DirectExecutorService()
                 : ExecutorFactory.newFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
@@ -138,7 +137,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         return assignMap;
     }
 
-    protected void shuffle(@Nonnull final String record) {
+    private void shuffle(@Nonnull final String record) {
         assert (shuffleSink != null);
         if(!shuffleSink.offer(record)) {
             invokeShuffle(shuffleExecPool, shuffleSink);
@@ -154,12 +153,12 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         ExecutorUtils.shutdownAndAwaitTermination(shuffleExecPool);
     }
 
-    protected void invokeShuffle(@Nonnull final ExecutorService shuffleExecPool, @Nonnull final ArrayQueue<String> queue) {
+    private void invokeShuffle(@Nonnull final ExecutorService shuffleExecPool, @Nonnull final ArrayQueue<String> queue) {
         assert (kernel != null);
         shuffleExecPool.execute(new Runnable() {
             public void run() {
                 String[] lines = queue.toArray(String.class);
-                Pair<String[], PartitioningJobConf> ops = new Pair<String[], PartitioningJobConf>(lines, jobConf);
+                Pair<String[], DBPartitioningJobConf> ops = new Pair<String[], DBPartitioningJobConf>(lines, jobConf);
                 final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(CsvHashPartitioningJob.class, ops);
                 final Map<GridNode, MutableInt> map;
                 try {
@@ -184,7 +183,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         });
     }
 
-    private static final CvsReader getCsvReader(final PartitioningJobConf jobConf)
+    private static final CvsReader getCsvReader(final DBPartitioningJobConf jobConf)
             throws GridException {
         final String csvPath = jobConf.getCsvFilePath();
         final Reader reader;
@@ -199,17 +198,6 @@ public class CsvPartitioningTask extends GridTaskAdapter {
             LOG.error(uee);
             throw new IllegalStateException(uee); // should never happens
         }
-
-        final int[] keyIdxs = jobConf.partitionigKeyIndices();
-        int maxKeyIdx = -1;
-        for(int k : keyIdxs) {
-            maxKeyIdx = Math.max(maxKeyIdx, k);
-        }
-        if(maxKeyIdx < 0) {
-            throw new IllegalStateException("Paritioning keys are invalid: "
-                    + Arrays.toString(keyIdxs));
-        }
-
         PushbackReader pushback = new PushbackReader(reader);
         return new SimpleCvsReader(pushback, jobConf.getFieldSeparator(), jobConf.getStringQuote());
     }

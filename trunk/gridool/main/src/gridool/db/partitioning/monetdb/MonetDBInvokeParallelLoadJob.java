@@ -32,7 +32,6 @@ import gridool.routing.GridTaskRouter;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-import xbird.util.datetime.StopWatch;
 import xbird.util.primitive.MutableInt;
 import xbird.util.struct.Pair;
 
@@ -43,32 +42,31 @@ import xbird.util.struct.Pair;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class MonetDBInvokeCopyIntoJob extends
-        GridJobBase<Pair<MonetDBInvokeCopyIntoOperation, Map<GridNode, MutableInt>>, Long> {
-    private static final long serialVersionUID = 2379356861976547924L;
+public final class MonetDBInvokeParallelLoadJob extends
+        GridJobBase<Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>>, Long> {
+    private static final long serialVersionUID = 3356783271521697124L;
 
-    private transient StopWatch sw;
+    private transient long numProcessed = 0L;
 
-    public MonetDBInvokeCopyIntoJob() {}
+    public MonetDBInvokeParallelLoadJob() {}
 
-    public Map<GridTask, GridNode> map(GridTaskRouter router, Pair<MonetDBInvokeCopyIntoOperation, Map<GridNode, MutableInt>> args)
+    public Map<GridTask, GridNode> map(GridTaskRouter router, Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>> args)
             throws GridException {
-        this.sw = new StopWatch();
-
-        final MonetDBInvokeCopyIntoOperation ops = args.getFirst();
+        final MonetDBParallelLoadOperation ops = args.getFirst();
         final String driverClassName = ops.getDriverClassName();
         final String connectUrl = ops.getConnectUrl();
-        final String tableName = ops.getTableName();
         final String userName = ops.getUserName();
         final String password = ops.getPassword();
+        final String tableName = ops.getTableName();
+        final String createTableDDL = ops.getCreateTableDDL();
 
         final Map<GridNode, MutableInt> assigned = args.getSecond();
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(assigned.size());
         for(final Map.Entry<GridNode, MutableInt> e : assigned.entrySet()) {
             GridNode node = e.getKey();
             MutableInt numRecords = e.getValue();
-            String query = ops.getCopyIntoQuery(numRecords.intValue());
-            MonetDBInvokeCopyIntoOperation shrinkedOps = new MonetDBInvokeCopyIntoOperation(driverClassName, connectUrl, tableName, query);
+            String copyIntoQuery = ops.getCopyIntoQuery(numRecords.intValue());
+            MonetDBParallelLoadOperation shrinkedOps = new MonetDBParallelLoadOperation(driverClassName, connectUrl, tableName, createTableDDL, copyIntoQuery);
             shrinkedOps.setAuth(userName, password);
             GridTask task = new DBTaskAdapter(this, shrinkedOps);
             map.put(task, node);
@@ -77,11 +75,15 @@ public final class MonetDBInvokeCopyIntoJob extends
     }
 
     public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+        Integer processed = result.getResult();
+        if(processed != null) {
+            numProcessed += processed.intValue();
+        }
         return GridTaskResultPolicy.CONTINUE;
     }
 
     public Long reduce() throws GridException {
-        return sw.elapsed();
+        return numProcessed;
     }
 
 }
