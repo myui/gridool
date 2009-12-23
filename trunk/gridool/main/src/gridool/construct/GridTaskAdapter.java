@@ -70,10 +70,10 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
     private final boolean isFailoverActive;
 
     protected volatile boolean canceled = false;
-    private volatile FutureTask<Serializable> running;
+    private transient volatile FutureTask<Serializable> running;
 
     @GridExecutionMonitorResource
-    protected GridExecutionMonitor monitor;
+    protected transient GridExecutionMonitor monitor;
 
     @SuppressWarnings("unchecked")
     protected GridTaskAdapter(@CheckForNull GridJob job, boolean failover) {

@@ -57,14 +57,4 @@ public abstract class PartitioningJobConf implements Serializable {
         return '\"';
     }
 
-    @Deprecated
-    public char getEscapeCharacter() {
-        return '\\';
-    }
-
-    @Deprecated
-    public String getNullString() {
-        return "";
-    }
-
 }

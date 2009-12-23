@@ -22,6 +22,7 @@ package gridool.partitioning.csv;
 
 import gridool.GridException;
 import gridool.GridJob;
+import gridool.GridJobFuture;
 import gridool.GridKernel;
 import gridool.GridNode;
 import gridool.annotation.GridKernelResource;
@@ -36,6 +37,8 @@ import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Nonnull;
@@ -49,9 +52,11 @@ import xbird.util.concurrent.DirectExecutorService;
 import xbird.util.concurrent.ExecutorFactory;
 import xbird.util.concurrent.ExecutorUtils;
 import xbird.util.concurrent.collections.ConcurrentIdentityHashMap;
-import xbird.util.csv.AdvCvsReader;
+import xbird.util.csv.CvsReader;
+import xbird.util.csv.SimpleCvsReader;
 import xbird.util.io.FastBufferedInputStream;
 import xbird.util.primitive.MutableInt;
+import xbird.util.struct.Pair;
 
 /**
  * 
@@ -80,7 +85,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     // ------------------------
     // working resources
 
-    protected transient int shuffleUnits = 512;
+    protected transient int shuffleUnits = 10000;
     protected transient int shuffleThreads = Runtime.getRuntime().availableProcessors();
     protected transient ExecutorService shuffleExecPool;
     protected transient BoundedArrayQueue<String> shuffleSink;
@@ -97,7 +102,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         return true;
     }
 
-    protected int shuffleUnits() {
+    public int shuffleUnits() {
         return shuffleUnits;
     }
 
@@ -105,7 +110,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         this.shuffleUnits = shuffleUnits;
     }
 
-    protected int shuffleThreads() {
+    public int shuffleThreads() {
         return shuffleThreads;
     }
 
@@ -119,7 +124,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
                 : ExecutorFactory.newFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
         this.shuffleSink = new BoundedArrayQueue<String>(shuffleUnits());
 
-        final AdvCvsReader reader = getCsvReader(jobConf);
+        final CvsReader reader = getCsvReader(jobConf);
         try {
             String line;
             while((line = reader.getNextLine()) != null) {
@@ -154,12 +159,32 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         shuffleExecPool.execute(new Runnable() {
             public void run() {
                 String[] lines = queue.toArray(String.class);
-                
+                Pair<String[], PartitioningJobConf> ops = new Pair<String[], PartitioningJobConf>(lines, jobConf);
+                final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(CsvHashPartitioningJob.class, ops);
+                final Map<GridNode, MutableInt> map;
+                try {
+                    map = future.get(); // wait for execution
+                } catch (InterruptedException ie) {
+                    LOG.error(ie.getMessage(), ie);
+                    throw new IllegalStateException(ie);
+                } catch (ExecutionException ee) {
+                    LOG.error(ee.getMessage(), ee);
+                    throw new IllegalStateException(ee);
+                }
+                final ConcurrentIdentityHashMap<GridNode, MutableInt> recMap = assignMap;
+                for(Map.Entry<GridNode, MutableInt> e : map.entrySet()) {
+                    GridNode node = e.getKey();
+                    MutableInt assigned = e.getValue();
+                    final MutableInt prev = recMap.putIfAbsent(node, assigned);
+                    if(prev != null) {
+                        prev.add(assigned.intValue());
+                    }
+                }
             }
         });
     }
 
-    private static final AdvCvsReader getCsvReader(final PartitioningJobConf jobConf)
+    private static final CvsReader getCsvReader(final PartitioningJobConf jobConf)
             throws GridException {
         final String csvPath = jobConf.getCsvFilePath();
         final Reader reader;
@@ -186,7 +211,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         }
 
         PushbackReader pushback = new PushbackReader(reader);
-        return new AdvCvsReader(pushback, keyIdxs, jobConf.getFieldSeparator(), jobConf.getStringQuote());
+        return new SimpleCvsReader(pushback, jobConf.getFieldSeparator(), jobConf.getStringQuote());
     }
 
 }

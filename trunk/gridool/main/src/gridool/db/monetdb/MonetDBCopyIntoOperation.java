@@ -22,7 +22,6 @@ package gridool.db.monetdb;
 
 import gridool.db.DBOperation;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -40,6 +39,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import xbird.storage.DbCollection;
+import xbird.util.io.FastBufferedOutputStream;
 import xbird.util.io.IOUtils;
 
 /**
@@ -156,7 +156,7 @@ public final class MonetDBCopyIntoOperation extends DBOperation implements Seria
             throw new IllegalStateException("Failed to create a load file", e);
         }
         try {
-            BufferedOutputStream bos = new BufferedOutputStream(fos, 8192);
+            FastBufferedOutputStream bos = new FastBufferedOutputStream(fos, 8192);
             bos.write(data, 0, data.length);
             bos.flush();
             bos.close();

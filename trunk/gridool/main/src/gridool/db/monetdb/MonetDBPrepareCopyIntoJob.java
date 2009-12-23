@@ -63,7 +63,7 @@ public final class MonetDBPrepareCopyIntoJob extends
 
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new IdentityHashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
-        final Set<GridNode> mappedNodes = new IdentityHashSet<GridNode>();
+        final Set<GridNode> mappedNodes = new IdentityHashSet<GridNode>(numNodes);
         final Charset charset = Charset.forName("UTF-8");
         final int totalRecords = records.length;
         for(int i = 0; i < totalRecords; i++) {

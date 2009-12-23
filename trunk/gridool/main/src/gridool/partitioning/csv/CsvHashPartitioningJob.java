@@ -26,11 +26,21 @@ import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
+import gridool.partitioning.PartitioningJobConf;
 import gridool.routing.GridTaskRouter;
 
+import java.nio.charset.Charset;
+import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 
+import xbird.util.collections.FixedArrayList;
+import xbird.util.collections.IdentityHashSet;
+import xbird.util.csv.CsvUtils;
+import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.primitive.MutableInt;
+import xbird.util.string.StringUtils;
+import xbird.util.struct.Pair;
 
 /**
  * 
@@ -40,23 +50,87 @@ import xbird.util.primitive.MutableInt;
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
 public final class CsvHashPartitioningJob extends
-        GridJobBase<CsvPartitioningOperation, Map<GridNode, MutableInt>> {
+        GridJobBase<Pair<String[], PartitioningJobConf>, Map<GridNode, MutableInt>> {
+    private static final long serialVersionUID = 149683992715077498L;
+
+    private transient Map<GridNode, MutableInt> assignedRecMap;
 
     public CsvHashPartitioningJob() {}
 
-    public Map<GridTask, GridNode> map(GridTaskRouter router, CsvPartitioningOperation ops)
+    public Map<GridTask, GridNode> map(GridTaskRouter router, Pair<String[], PartitioningJobConf> ops)
             throws GridException {
-        
-        
-        return null;
+        final String[] lines = ops.getFirst();
+        PartitioningJobConf jobConf = ops.getSecond();
+        final int[] fieldIndicies = jobConf.partitionigKeyIndices();
+        final char filedSeparator = jobConf.getFieldSeparator();
+        final char quoteChar = jobConf.getStringQuote();
+        final int numPartKeys = fieldIndicies.length;
+        assert (numPartKeys > 0) : numPartKeys;
+        final String[] fields = new String[numPartKeys];
+        final FixedArrayList<String> fieldList = new FixedArrayList<String>(fields);
+
+        final Charset charset = Charset.forName("UTF-8");
+        final int totalRecords = lines.length;
+        final int numNodes = router.getGridSize();
+        final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new IdentityHashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
+        final Set<GridNode> mappedNodes = new IdentityHashSet<GridNode>(numNodes);
+        for(int i = 0; i < totalRecords; i++) {
+            String line = lines[i];
+            lines[i] = null;
+            CsvUtils.retrieveFields(line, fieldIndicies, fieldList, filedSeparator, quoteChar);
+            fieldList.trimToZero();
+            for(final String f : fields) {
+                final byte[] k = StringUtils.getBytes(f);
+                final GridNode node = router.selectNode(k);
+                if(node == null) {
+                    throw new GridException("Could not find any node in cluster.");
+                }
+                if(mappedNodes.add(node)) {// insert record if the given record is not associated yet.
+                    final byte[] b = line.getBytes(charset);
+                    final int blen = b.length;
+                    final FastByteArrayOutputStream rowsBuf;
+                    final Pair<MutableInt, FastByteArrayOutputStream> pair = nodeAssignMap.get(node);
+                    if(pair == null) {
+                        int expected = (blen * (totalRecords / numNodes)) << 1;
+                        rowsBuf = new FastByteArrayOutputStream(Math.max(expected, 32786));
+                        Pair<MutableInt, FastByteArrayOutputStream> newPair = new Pair<MutableInt, FastByteArrayOutputStream>(new MutableInt(1), rowsBuf);
+                        nodeAssignMap.put(node, newPair);
+                    } else {
+                        rowsBuf = pair.second;
+                        MutableInt cnt = pair.first;
+                        cnt.increment();
+                    }
+                    rowsBuf.write(b, 0, blen);
+                }
+            }
+            mappedNodes.clear();
+        }
+
+        String tableName = jobConf.getTableName();
+        final String fileName = tableName + ".csv";
+        final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
+        final Map<GridNode, MutableInt> assignedRecMap = new IdentityHashMap<GridNode, MutableInt>(numNodes);
+        for(final Map.Entry<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> e : nodeAssignMap.entrySet()) {
+            GridNode node = e.getKey();
+            Pair<MutableInt, FastByteArrayOutputStream> pair = e.getValue();
+            MutableInt numRecords = pair.first;
+            assignedRecMap.put(node, numRecords);
+            FastByteArrayOutputStream rows = pair.second;
+            byte[] b = rows.toByteArray();
+            pair.clear();
+            GridTask task = new FileAppendTask(this, fileName, b);
+            map.put(task, node);
+        }
+        this.assignedRecMap = assignedRecMap;
+        return map;
     }
-    
+
     public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
         return GridTaskResultPolicy.CONTINUE;
     }
 
     public Map<GridNode, MutableInt> reduce() throws GridException {
-        return null;
+        return assignedRecMap;
     }
 
 }
