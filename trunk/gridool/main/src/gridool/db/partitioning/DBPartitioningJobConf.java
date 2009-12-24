@@ -20,7 +20,7 @@
  */
 package gridool.db.partitioning;
 
-import gridool.GridTask;
+import gridool.db.partitioning.csv.CsvPartitioningTask;
 
 import java.io.Serializable;
 import java.sql.Connection;
@@ -85,7 +85,7 @@ public abstract class DBPartitioningJobConf implements Serializable {
         }
         return partitionigKeyIndices;
     }
-    
+
     @Nonnull
     protected String getBaseTableName() {
         throw new UnsupportedOperationException();
@@ -148,6 +148,6 @@ public abstract class DBPartitioningJobConf implements Serializable {
     }
 
     @Nonnull
-    public abstract GridTask makePartitioningTask(DBPartitioningJob job);
+    public abstract CsvPartitioningTask makePartitioningTask(DBPartitioningJob job);
 
 }

@@ -20,7 +20,6 @@
  */
 package gridool.db.partitioning;
 
-import gridool.GridTask;
 import gridool.db.partitioning.monetdb.MonetDBParallelLoadTask;
 
 import javax.annotation.Nonnull;
@@ -151,7 +150,7 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     }
 
     @Override
-    public GridTask makePartitioningTask(DBPartitioningJob job) {
+    public MonetDBParallelLoadTask makePartitioningTask(DBPartitioningJob job) {
         return new MonetDBParallelLoadTask(job, this);
     }
 

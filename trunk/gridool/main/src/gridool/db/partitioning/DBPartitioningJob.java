@@ -26,10 +26,14 @@ import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
+import gridool.db.partitioning.csv.CsvPartitioningTask;
 import gridool.routing.GridTaskRouter;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
+
+import xbird.util.concurrent.collections.ConcurrentIdentityHashMap;
+import xbird.util.primitive.MutableInt;
 
 /**
  * 
@@ -48,16 +52,18 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
     public Map<GridTask, GridNode> map(GridTaskRouter router, DBPartitioningJobConf jobConf)
             throws GridException {
         Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(1);
-        GridTask dbtask = jobConf.makePartitioningTask(this);
+        CsvPartitioningTask dbtask = jobConf.makePartitioningTask(this);
         GridNode localNode = getJobNode();
         map.put(dbtask, localNode);
         return map;
     }
 
     public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
-        Long processed = result.getResult();
+        final ConcurrentIdentityHashMap<GridNode, MutableInt> processed = result.getResult();
         if(processed != null) {
-            numProcessed = processed.longValue();
+            for(MutableInt e : processed.values()) {
+                numProcessed += e.intValue();
+            }
         }
         return GridTaskResultPolicy.CONTINUE;
     }
