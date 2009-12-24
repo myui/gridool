@@ -13,7 +13,7 @@
             <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/jgroups-core-2.6.3.GA.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/optional/tokyocabinet-1.14.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/jsr305.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/args4j-2.0.4.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/args4j-2.0.12.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/optional/junit-4.1.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/commons-logging-1.0.4.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/optional/log4j-1.2.13.jar"/>
