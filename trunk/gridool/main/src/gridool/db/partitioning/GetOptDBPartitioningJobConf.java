@@ -57,6 +57,9 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     // ----------------------------
     // optional stuffs
 
+    @Option(name = "-alterTbl", usage = "DDL used after creating a table to load data")
+    private String alterTableDDL;
+
     @Option(name = "-user", usage = "database user name")
     private String dbUserName = null;
 
@@ -107,6 +110,11 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     // optional stuffs
 
     @Override
+    public final String getAlterTableDDL() {
+        return alterTableDDL;
+    }
+
+    @Override
     public final String getUserName() {
         return dbUserName;
     }
@@ -135,7 +143,7 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     public GridTask makePartitioningTask(DBPartitioningJob job) {
         return new MonetDBParallelLoadTask(job, this);
     }
-    
+
     private static void processArgs(String[] args, Object target) {
         final CmdLineParser parser = new CmdLineParser(target);
         try {

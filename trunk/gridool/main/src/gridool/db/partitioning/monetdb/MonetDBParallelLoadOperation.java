@@ -30,11 +30,13 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import xbird.storage.DbCollection;
+import xbird.util.datetime.StopWatch;
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
 
@@ -55,11 +57,17 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     private/* final */String createTableDDL;
     @Nonnull
     private/* final */String copyIntoQuery;
+    @Nullable
+    private/* final */String alterTableDDL;
 
     public MonetDBParallelLoadOperation() {}
 
-    public MonetDBParallelLoadOperation(String driverClassName, String connectUrl, @Nonnull String tableName, @Nonnull String createTableDDL, @Nonnull String copyIntoQuery) {
+    public MonetDBParallelLoadOperation(String driverClassName, String connectUrl, @Nonnull String tableName, @Nonnull String createTableDDL, @Nonnull String copyIntoQuery, @Nullable String alterTableDDL) {
         super(driverClassName, connectUrl);
+        this.tableName = tableName;
+        this.createTableDDL = createTableDDL;
+        this.copyIntoQuery = copyIntoQuery;
+        this.alterTableDDL = alterTableDDL;
     }
 
     public String getTableName() {
@@ -74,6 +82,10 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         return copyIntoQuery.replaceFirst("COPY ", "COPY " + numRecords + " RECORDS ");
     }
 
+    public String getAlterTableDDL() {
+        return alterTableDDL;
+    }
+
     @Override
     public Integer execute() throws SQLException {
         final Connection conn;
@@ -83,10 +95,27 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             LOG.error(e);
             throw new SQLException(e.getMessage());
         }
-
-        prepareTable(conn, createTableDDL, tableName);
-
-        int numInserted = invokeCopyInto(conn, copyIntoQuery, tableName);
+        final int numInserted;
+        try {
+            // #1 create table
+            prepareTable(conn, createTableDDL, tableName);
+            // #2 invoke COPY INTO
+            StopWatch sw = new StopWatch();
+            numInserted = invokeCopyInto(conn, copyIntoQuery, tableName);
+            LOG.info("Elapsed time for COPY INTO: " + sw.toString());
+            // #3 create indices and constraints
+            if(alterTableDDL != null) {
+                sw.reset();
+                alterTable(conn, alterTableDDL);
+                LOG.info("Elapsed time for ALTER TABLE: " + sw.toString());
+            }
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                LOG.debug(e);
+            }
+        }
         return numInserted;
     }
 
@@ -117,16 +146,22 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             conn.rollback();
             throw e;
         } finally {
-            try {
-                conn.close();
-            } catch (SQLException e) {
-                LOG.debug(e);
-            }
             if(!loadFile.delete()) {
                 LOG.warn("Could not remove a tempolary file: " + loadFile.getAbsolutePath());
             }
         }
         return ret;
+    }
+
+    private static void alterTable(Connection conn, String sql) throws SQLException {
+        try {
+            JDBCUtils.update(conn, sql);
+            conn.commit();
+        } catch (SQLException e) {
+            LOG.error("rollback a transaction", e);
+            conn.rollback();
+            throw e;
+        }
     }
 
     private static void truncateTable(@Nonnull final Connection conn, @Nonnull final String tableName)

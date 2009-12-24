@@ -59,6 +59,7 @@ public final class MonetDBInvokeParallelLoadJob extends
         final String password = ops.getPassword();
         final String tableName = ops.getTableName();
         final String createTableDDL = ops.getCreateTableDDL();
+        final String alterTableDDL = ops.getAlterTableDDL();
 
         final Map<GridNode, MutableInt> assigned = args.getSecond();
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(assigned.size());
@@ -66,7 +67,7 @@ public final class MonetDBInvokeParallelLoadJob extends
             GridNode node = e.getKey();
             MutableInt numRecords = e.getValue();
             String copyIntoQuery = ops.getCopyIntoQuery(numRecords.intValue());
-            MonetDBParallelLoadOperation shrinkedOps = new MonetDBParallelLoadOperation(driverClassName, connectUrl, tableName, createTableDDL, copyIntoQuery);
+            MonetDBParallelLoadOperation shrinkedOps = new MonetDBParallelLoadOperation(driverClassName, connectUrl, tableName, createTableDDL, copyIntoQuery, alterTableDDL);
             shrinkedOps.setAuth(userName, password);
             GridTask task = new DBTaskAdapter(this, shrinkedOps);
             map.put(task, node);

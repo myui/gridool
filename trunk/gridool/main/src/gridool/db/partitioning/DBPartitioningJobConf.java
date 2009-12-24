@@ -117,6 +117,11 @@ public abstract class DBPartitioningJobConf implements Serializable {
     @Nonnull
     public abstract String getCreateTableDDL();
 
+    @Nullable
+    public String getAlterTableDDL() {
+        return null;
+    }
+
     @Nonnull
     public final Connection getConnection(boolean autoCommit) throws ClassNotFoundException,
             SQLException {
