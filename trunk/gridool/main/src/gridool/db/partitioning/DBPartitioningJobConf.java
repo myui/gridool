@@ -59,14 +59,17 @@ public abstract class DBPartitioningJobConf implements Serializable {
     /**
      * Returns pair of primary key column indices and foreign key column indices.
      * Recommended to override if possible.
+     * 
+     * @see #getBaseTableName()
      */
     @Nonnull
     public synchronized Pair<int[], int[]> partitionigKeyIndices() {
         if(partitionigKeyIndices == null) {
+            final String tblName = getBaseTableName();
             try {
                 final Connection conn = getConnection(false);
                 try {
-                    partitionigKeyIndices = JDBCUtils.getPartitioningKeys(conn, getTableName());
+                    partitionigKeyIndices = JDBCUtils.getPartitioningKeys(conn, tblName);
                 } finally {
                     try {
                         conn.close();
@@ -81,6 +84,11 @@ public abstract class DBPartitioningJobConf implements Serializable {
             }
         }
         return partitionigKeyIndices;
+    }
+    
+    @Nonnull
+    protected String getBaseTableName() {
+        throw new UnsupportedOperationException();
     }
 
     public char getFieldSeparator() {

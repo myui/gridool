@@ -75,6 +75,9 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     @Option(name = "-quote", usage = "Quote string used in the CSV file")
     private char stringQuote = '\"';
 
+    @Option(name = "-baseTbl", usage = "Base table name used for inspecting partitioning keys")
+    private String baseTableName = null;
+
     // ----------------------------
 
     public GetOptDBPartitioningJobConf(@Nonnull String[] argv) {
@@ -137,6 +140,14 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     @Override
     public final char getStringQuote() {
         return stringQuote;
+    }
+
+    @Override
+    protected String getBaseTableName() {
+        if(baseTableName == null) {
+            throw new IllegalStateException("Should provide -baseTbl option when DBPartitioningJobConf#partitionigKeyIndices() is not overloaded");
+        }
+        return baseTableName;
     }
 
     @Override
