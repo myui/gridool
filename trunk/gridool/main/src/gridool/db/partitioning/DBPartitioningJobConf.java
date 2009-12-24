@@ -95,8 +95,8 @@ public abstract class DBPartitioningJobConf implements Serializable {
         return '\t';
     }
 
-    public char getRecordSeparator() {
-        return '\n';
+    public String getRecordSeparator() {
+        return "\n";
     }
 
     public char getStringQuote() {

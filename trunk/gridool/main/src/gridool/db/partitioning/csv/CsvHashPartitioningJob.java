@@ -64,7 +64,17 @@ public final class CsvHashPartitioningJob extends
         DBPartitioningJobConf jobConf = ops.getSecond();
         Pair<int[], int[]> partitioningKeys = jobConf.partitionigKeyIndices();
         final int[] pkeyIndicies = partitioningKeys.getFirst();
+        if(pkeyIndicies != null) {
+            for(int i = 0; i < pkeyIndicies.length; i++) {
+                pkeyIndicies[i] = pkeyIndicies[i] - 1;
+            }
+        }
         final int[] fkeyIndicies = partitioningKeys.getSecond();
+        if(fkeyIndicies != null) {
+            for(int i = 0; i < fkeyIndicies.length; i++) {
+                fkeyIndicies[i] = fkeyIndicies[i] - 1;
+            }
+        }
         final char filedSeparator = jobConf.getFieldSeparator();
         final char quoteChar = jobConf.getStringQuote();
         final String[] fields = new String[Math.max(pkeyIndicies == null ? 0 : pkeyIndicies.length, fkeyIndicies == null ? 0

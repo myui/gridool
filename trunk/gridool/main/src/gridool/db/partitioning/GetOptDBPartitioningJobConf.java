@@ -70,7 +70,7 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     private char fieldSeparator = '\t';
 
     @Option(name = "-recSep", usage = "Record separator used in the CSV file")
-    private char recordSeparator = '\n';
+    private String recordSeparator = "\n";
 
     @Option(name = "-quote", usage = "Quote string used in the CSV file")
     private char stringQuote = '\"';
@@ -133,7 +133,7 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     }
 
     @Override
-    public final char getRecordSeparator() {
+    public final String getRecordSeparator() {
         return recordSeparator;
     }
 
