@@ -143,33 +143,28 @@ public final class MonetDBTableAdvPartitioningBulkloadBatchTask extends
 
     @Override
     protected void postShuffle() {
-        if(!shuffleSink.isEmpty()) {
-            invokeShuffle(shuffleExecPool, shuffleSink);
-        }
-        
+        super.postShuffle();
+
         String driverClassName = jobConf.getDriverClassName();
         String connectUrl = jobConf.getConnectUrl();
         String tableName = jobConf.getMapOutputTableName();
         final MonetDBInvokeCopyIntoOperation ops = new MonetDBInvokeCopyIntoOperation(driverClassName, connectUrl, tableName, tailCopyIntoQuery);
         ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
         final Pair<MonetDBInvokeCopyIntoOperation, Map<GridNode, MutableInt>> pair = new Pair<MonetDBInvokeCopyIntoOperation, Map<GridNode, MutableInt>>(ops, assignedRecMap);
-        shuffleExecPool.execute(new Runnable() {
-            public void run() {
-                final GridJobFuture<Long> future = kernel.execute(MonetDBInvokeCopyIntoJob.class, pair);
-                final Long elapsed;
-                try {
-                    elapsed = future.get();
-                } catch (InterruptedException ie) {
-                    LOG.error(ie.getMessage(), ie);
-                    throw new IllegalStateException(ie);
-                } catch (ExecutionException ee) {
-                    LOG.error(ee.getMessage(), ee);
-                    throw new IllegalStateException(ee);
-                }
-                assert (elapsed != null);
-                LOG.info("Elapsed time for bulkload: " + StopWatch.elapsedTime(elapsed.longValue()));
-            }
-        });
+
+        final GridJobFuture<Long> future = kernel.execute(MonetDBInvokeCopyIntoJob.class, pair);
+        final Long elapsed;
+        try {
+            elapsed = future.get();
+        } catch (InterruptedException ie) {
+            LOG.error(ie.getMessage(), ie);
+            throw new IllegalStateException(ie);
+        } catch (ExecutionException ee) {
+            LOG.error(ee.getMessage(), ee);
+            throw new IllegalStateException(ee);
+        }
+        assert (elapsed != null);
+        LOG.info("Elapsed time for bulkload: " + StopWatch.elapsedTime(elapsed.longValue()));
     }
 
 }

@@ -153,7 +153,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         ExecutorUtils.shutdownAndAwaitTermination(shuffleExecPool);
     }
 
-    protected final void invokeShuffle(@Nonnull final ExecutorService shuffleExecPool, @Nonnull final ArrayQueue<String> queue) {
+    private final void invokeShuffle(@Nonnull final ExecutorService shuffleExecPool, @Nonnull final ArrayQueue<String> queue) {
         assert (kernel != null);
         shuffleExecPool.execute(new Runnable() {
             public void run() {

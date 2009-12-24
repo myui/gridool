@@ -55,9 +55,7 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
 
     @Override
     protected void postShuffle() {
-        if(!shuffleSink.isEmpty()) {
-            invokeShuffle(shuffleExecPool, shuffleSink);
-        }
+        super.postShuffle();
 
         String driverClassName = jobConf.getDriverClassName();
         String connectUrl = jobConf.getConnectUrl();
@@ -69,25 +67,22 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
         MonetDBParallelLoadOperation ops = new MonetDBParallelLoadOperation(driverClassName, connectUrl, tableName, createTableDDL, copyIntoQuery, alterTableDDL);
         ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
         final Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>> pair = new Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>>(ops, assignMap);
-        shuffleExecPool.execute(new Runnable() {
-            public void run() {
-                final StopWatch sw = new StopWatch();
-                final GridJobFuture<Long> future = kernel.execute(MonetDBInvokeParallelLoadJob.class, pair);
-                final Long numProcessed;
-                try {
-                    numProcessed = future.get();
-                } catch (InterruptedException ie) {
-                    LOG.error(ie.getMessage(), ie);
-                    throw new IllegalStateException(ie);
-                } catch (ExecutionException ee) {
-                    LOG.error(ee.getMessage(), ee);
-                    throw new IllegalStateException(ee);
-                }
-                assert (numProcessed != null);
-                LOG.info("Processed " + numProcessed.longValue()
-                        + "records. Elapsed time for loading is " + sw.toString());
-            }
-        });
+
+        final StopWatch sw = new StopWatch();
+        final GridJobFuture<Long> future = kernel.execute(MonetDBInvokeParallelLoadJob.class, pair);
+        final Long numProcessed;
+        try {
+            numProcessed = future.get();
+        } catch (InterruptedException ie) {
+            LOG.error(ie.getMessage(), ie);
+            throw new IllegalStateException(ie);
+        } catch (ExecutionException ee) {
+            LOG.error(ee.getMessage(), ee);
+            throw new IllegalStateException(ee);
+        }
+        assert (numProcessed != null);
+        LOG.info("Processed " + numProcessed.longValue() + "records. Elapsed time for loading is "
+                + sw.toString());
     }
 
     private static String generateCopyIntoQuery(final String tableName, final DBPartitioningJobConf jobConf) {
