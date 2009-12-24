@@ -55,14 +55,14 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     private/* final */String tableName;
     @Nonnull
     private/* final */String createTableDDL;
-    @Nonnull
+    @Nullable
     private/* final */String copyIntoQuery;
     @Nullable
     private/* final */String alterTableDDL;
 
     public MonetDBParallelLoadOperation() {}
 
-    public MonetDBParallelLoadOperation(String driverClassName, String connectUrl, @Nonnull String tableName, @Nonnull String createTableDDL, @Nonnull String copyIntoQuery, @Nullable String alterTableDDL) {
+    public MonetDBParallelLoadOperation(String driverClassName, String connectUrl, @Nonnull String tableName, @Nonnull String createTableDDL, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
         super(driverClassName, connectUrl);
         this.tableName = tableName;
         this.createTableDDL = createTableDDL;
@@ -79,6 +79,8 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     }
 
     public String getCopyIntoQuery(final int numRecords) {
+        assert (copyIntoQuery != null);
+        assert (numRecords > 0) : numRecords;
         return copyIntoQuery.replaceFirst("COPY ", "COPY " + numRecords + " RECORDS ");
     }
 
@@ -95,13 +97,15 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             LOG.error(e);
             throw new SQLException(e.getMessage());
         }
-        final int numInserted;
+        int numInserted = 0;
         try {
             // #1 create table
             prepareTable(conn, createTableDDL, tableName);
             // #2 invoke COPY INTO
             StopWatch sw = new StopWatch();
-            numInserted = invokeCopyInto(conn, copyIntoQuery, tableName);
+            if(copyIntoQuery != null) {
+                numInserted = invokeCopyInto(conn, copyIntoQuery, tableName);
+            }
             LOG.info("Elapsed time for COPY INTO: " + sw.toString());
             // #3 create indices and constraints
             if(alterTableDDL != null) {

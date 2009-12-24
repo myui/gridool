@@ -81,7 +81,7 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
             throw new IllegalStateException(ee);
         }
         assert (numProcessed != null);
-        LOG.info("Processed " + numProcessed.longValue() + "records. Elapsed time for loading is "
+        LOG.info("Processed " + numProcessed.longValue() + " records. Elapsed time for loading is "
                 + sw.toString());
     }
 

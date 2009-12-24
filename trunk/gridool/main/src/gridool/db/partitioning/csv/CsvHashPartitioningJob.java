@@ -83,7 +83,7 @@ public final class CsvHashPartitioningJob extends
         final FixedArrayList<String> fieldList = new FixedArrayList<String>(fields);
 
         final Charset charset = Charset.forName("UTF-8");
-        final int totalRecords = lines.length;
+        final int totalRecords = lines.length;        
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new IdentityHashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
         final Set<GridNode> mappedNodes = new IdentityHashSet<GridNode>(numNodes);
@@ -122,6 +122,13 @@ public final class CsvHashPartitioningJob extends
             GridTask task = new FileAppendTask(this, fileName, b);
             map.put(task, node);
         }
+        
+        for(final GridNode node: router.getAllNodes()) {
+            if(!assignedRecMap.containsKey(node)) {
+                assignedRecMap.put(node, new MutableInt(0));
+            }
+        }        
+        
         this.assignedRecMap = assignedRecMap;
         return map;
     }
