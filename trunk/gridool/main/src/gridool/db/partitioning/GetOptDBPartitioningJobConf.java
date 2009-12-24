@@ -45,13 +45,13 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     @Option(name = "-connectUrl", usage = "database connect Url (Required)", required = true)
     private String dbConnectUrl;
 
-    @Option(name = "-table", usage = "Table name into which copy records", required = true)
+    @Option(name = "-table", usage = "Table name into which copy records (Required)", required = true)
     private String tableName;
 
-    @Option(name = "-csv", usage = "File path to csv file", required = true)
+    @Option(name = "-csv", usage = "File path to csv file (Required)", required = true)
     private String csvFilePath;
 
-    @Option(name = "-createTbl", usage = "DDL for creating a table to load data", required = true)
+    @Option(name = "-createTbl", usage = "DDL for creating a table to load data (Required)", required = true)
     private String createTableDDL;
 
     // ----------------------------
