@@ -195,6 +195,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         this.tableName = IOUtils.readString(in);
         this.createTableDDL = IOUtils.readString(in);
         this.copyIntoQuery = IOUtils.readString(in);
+        this.alterTableDDL = IOUtils.readString(in);
     }
 
     @Override
@@ -203,6 +204,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         IOUtils.writeString(tableName, out);
         IOUtils.writeString(createTableDDL, out);
         IOUtils.writeString(copyIntoQuery, out);
+        IOUtils.writeString(alterTableDDL, out);
     }
 
 }
