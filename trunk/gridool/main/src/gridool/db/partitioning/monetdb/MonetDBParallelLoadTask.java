@@ -55,7 +55,9 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
 
     @Override
     protected void postShuffle() {
-        super.postShuffle();
+        if(!shuffleSink.isEmpty()) {
+            invokeShuffle(shuffleExecPool, shuffleSink);
+        }
 
         String driverClassName = jobConf.getDriverClassName();
         String connectUrl = jobConf.getConnectUrl();
