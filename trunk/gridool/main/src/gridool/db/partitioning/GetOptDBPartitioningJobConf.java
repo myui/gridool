@@ -20,6 +20,9 @@
  */
 package gridool.db.partitioning;
 
+import gridool.GridTask;
+import gridool.db.partitioning.monetdb.MonetDBParallelLoadTask;
+
 import javax.annotation.Nonnull;
 
 import org.kohsuke.args4j.CmdLineException;
@@ -128,6 +131,11 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
         return stringQuote;
     }
 
+    @Override
+    public GridTask makePartitioningTask(DBPartitioningJob job) {
+        return new MonetDBParallelLoadTask(job, this);
+    }
+    
     private static void processArgs(String[] args, Object target) {
         final CmdLineParser parser = new CmdLineParser(target);
         try {

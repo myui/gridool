@@ -21,7 +21,6 @@
 package gridool.db.partitioning;
 
 import gridool.GridTask;
-import gridool.db.partitioning.monetdb.MonetDBParallelLoadTask;
 
 import java.io.Serializable;
 import java.sql.Connection;
@@ -45,7 +44,7 @@ public abstract class DBPartitioningJobConf implements Serializable {
     private static final long serialVersionUID = 636573640789390674L;
 
     private transient Pair<int[], int[]> partitionigKeyIndices = null;
-    
+
     public DBPartitioningJobConf() {}
 
     // -------------------------------------------------------------
@@ -114,7 +113,7 @@ public abstract class DBPartitioningJobConf implements Serializable {
     public String getPassword() {
         return null;
     }
-    
+
     @Nonnull
     public abstract String getCreateTableDDL();
 
@@ -135,8 +134,7 @@ public abstract class DBPartitioningJobConf implements Serializable {
         return conn;
     }
 
-    public GridTask makePartitioningTask(DBPartitioningJob job) {
-        return new MonetDBParallelLoadTask(job, this);
-    }
+    @Nonnull
+    public abstract GridTask makePartitioningTask(DBPartitioningJob job);
 
 }
