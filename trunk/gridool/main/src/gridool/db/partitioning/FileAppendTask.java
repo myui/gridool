@@ -59,6 +59,8 @@ public final class FileAppendTask extends GridTaskAdapter {
     @SuppressWarnings("unchecked")
     public FileAppendTask(GridJob job, @Nonnull String fileName, @Nonnull byte[] rowsData) {
         super(job, false);
+        this.fileName = fileName;
+        this.rowsData = rowsData;
     }
 
     public Serializable execute() throws GridException {
