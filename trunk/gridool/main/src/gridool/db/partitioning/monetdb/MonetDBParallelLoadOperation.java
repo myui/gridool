@@ -105,7 +105,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             LOG.info("Elapsed time for COPY INTO: " + sw.toString());
             // #3 create indices and constraints
             if(alterTableDDL != null) {
-                sw.reset();
+                sw.start();
                 alterTable(conn, alterTableDDL);
                 LOG.info("Elapsed time for ALTER TABLE: " + sw.toString());
             }
