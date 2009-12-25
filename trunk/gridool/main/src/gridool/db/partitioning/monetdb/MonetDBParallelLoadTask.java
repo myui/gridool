@@ -34,7 +34,6 @@ import org.apache.commons.logging.LogFactory;
 
 import xbird.util.datetime.StopWatch;
 import xbird.util.primitive.MutableInt;
-import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
 
 /**
@@ -87,9 +86,8 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
 
     private static String generateCopyIntoQuery(final String tableName, final DBPartitioningJobConf jobConf) {
         return "COPY INTO \"" + tableName + "\" FROM '<src>' USING DELIMITERS '"
-                + StringUtils.escape(jobConf.getFieldSeparator()) + "', '"
-                + jobConf.getRecordSeparator() + "', '"
-                + StringUtils.escape(jobConf.getStringQuote()) + '\'';
+                + jobConf.getFieldSeparator() + "', '" + jobConf.getRecordSeparator() + "', '"
+                + jobConf.getStringQuote() + '\'';
     }
 
 }
