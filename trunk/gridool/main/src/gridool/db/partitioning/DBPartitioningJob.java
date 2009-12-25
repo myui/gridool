@@ -32,7 +32,11 @@ import gridool.routing.GridTaskRouter;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import xbird.util.concurrent.collections.ConcurrentIdentityHashMap;
+import xbird.util.math.MathUtils;
 import xbird.util.primitive.MutableInt;
 
 /**
@@ -44,8 +48,9 @@ import xbird.util.primitive.MutableInt;
  */
 public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, Long> {
     private static final long serialVersionUID = 7267171601356014026L;
+    private static final Log LOG = LogFactory.getLog(DBPartitioningJob.class);
 
-    private transient long numProcessed = -1L;
+    private transient long numProcessed = 0L;
 
     public DBPartitioningJob() {}
 
@@ -61,8 +66,23 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
     public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
         final ConcurrentIdentityHashMap<GridNode, MutableInt> processed = result.getResult();
         if(processed != null) {
-            for(MutableInt e : processed.values()) {
-                numProcessed += e.intValue();
+            if(LOG.isInfoEnabled()) {
+                final int numNodes = processed.size();
+                final int[] counts = new int[numNodes];
+                int i = 0;
+                for(MutableInt e : processed.values()) {
+                    int v = e.intValue();
+                    numProcessed += v;
+                    counts[i++] = v;
+                }
+                float mean = numProcessed / numNodes;
+                float sd = MathUtils.stddev(counts);
+                float percent = (sd / mean) * 100f;
+                LOG.info("STDDEV of data distribution in " + numNodes + " nodes: " + percent + '%');
+            } else {
+                for(MutableInt e : processed.values()) {
+                    numProcessed += e.intValue();
+                }
             }
         }
         return GridTaskResultPolicy.CONTINUE;
