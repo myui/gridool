@@ -64,17 +64,7 @@ public final class CsvHashPartitioningJob extends
         DBPartitioningJobConf jobConf = ops.getSecond();
         Pair<int[], int[]> partitioningKeys = jobConf.partitionigKeyIndices();
         final int[] pkeyIndicies = partitioningKeys.getFirst();
-        if(pkeyIndicies != null) {
-            for(int i = 0; i < pkeyIndicies.length; i++) {
-                pkeyIndicies[i] = pkeyIndicies[i] - 1;
-            }
-        }
         final int[] fkeyIndicies = partitioningKeys.getSecond();
-        if(fkeyIndicies != null) {
-            for(int i = 0; i < fkeyIndicies.length; i++) {
-                fkeyIndicies[i] = fkeyIndicies[i] - 1;
-            }
-        }
         final char filedSeparator = jobConf.getFieldSeparator();
         final char quoteChar = jobConf.getStringQuote();
         final String[] fields = new String[Math.max(pkeyIndicies == null ? 0 : pkeyIndicies.length, fkeyIndicies == null ? 0
@@ -83,7 +73,7 @@ public final class CsvHashPartitioningJob extends
         final FixedArrayList<String> fieldList = new FixedArrayList<String>(fields);
 
         final Charset charset = Charset.forName("UTF-8");
-        final int totalRecords = lines.length;        
+        final int totalRecords = lines.length;
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new IdentityHashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
         final Set<GridNode> mappedNodes = new IdentityHashSet<GridNode>(numNodes);
@@ -125,13 +115,13 @@ public final class CsvHashPartitioningJob extends
             GridTask task = new FileAppendTask(this, fileName, b);
             map.put(task, node);
         }
-        
-        for(final GridNode node: router.getAllNodes()) {
+
+        for(final GridNode node : router.getAllNodes()) {
             if(!assignedRecMap.containsKey(node)) {
                 assignedRecMap.put(node, new MutableInt(0));
             }
-        }        
-        
+        }
+
         this.assignedRecMap = assignedRecMap;
         return map;
     }
@@ -164,7 +154,7 @@ public final class CsvHashPartitioningJob extends
                     cnt.increment();
                 }
                 rowsBuf.write(b, 0, blen);
-                rowsBuf.write('\n');    // TODO FIXME support other record separator 
+                rowsBuf.write('\n'); // TODO FIXME support other record separator 
             }
         }
     }
