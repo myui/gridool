@@ -39,7 +39,6 @@ import java.util.Set;
 import xbird.util.collections.IdentityHashSet;
 import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.primitive.MutableInt;
-import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
 
 /**
@@ -64,10 +63,9 @@ public final class MonetDBCopyIntoJob extends GridJobBase<DBInsertOperation, Flo
         final String tableName = ops.getTableName();
         final MultiKeyRowPlaceholderRecord r = records[0];
         final String tailCopyIntoQuery = " RECORDS INTO \"" + tableName
-                + "\" FROM '<src>' USING DELIMITERS '" + StringUtils.escape(r.getFieldSeparator())
-                + "', '" + StringUtils.escape(r.getRecordSeparator()) + "', '"
-                + StringUtils.escape(r.getStringQuote()) + "' NULL AS '"
-                + StringUtils.escape(r.getNullString()) + '\'';
+                + "\" FROM '<src>' USING DELIMITERS '" + r.getFieldSeparator() + "', '"
+                + r.getRecordSeparator() + "', '" + r.getStringQuote() + "' NULL AS '"
+                + r.getNullString() + '\'';
 
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new IdentityHashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);

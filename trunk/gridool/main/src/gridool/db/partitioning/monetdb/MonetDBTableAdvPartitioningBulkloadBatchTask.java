@@ -42,7 +42,6 @@ import xbird.util.concurrent.collections.ConcurrentIdentityHashMap;
 import xbird.util.datetime.StopWatch;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.primitive.MutableInt;
-import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
 
 /**
@@ -105,11 +104,9 @@ public final class MonetDBTableAdvPartitioningBulkloadBatchTask extends
                 if(firstShuffleAttempt.compareAndSet(true, false)) {
                     MultiKeyRowPlaceholderRecord r = records[0];
                     tailCopyIntoQuery = "COPY INTO \"" + mapOutputTableName
-                            + "\" FROM '<src>' USING DELIMITERS '"
-                            + StringUtils.escape(r.getFieldSeparator()) + "', '"
-                            + StringUtils.escape(r.getRecordSeparator()) + "', '"
-                            + StringUtils.escape(r.getStringQuote()) + "' NULL AS '"
-                            + StringUtils.escape(r.getNullString()) + '\'';
+                            + "\" FROM '<src>' USING DELIMITERS '" + r.getFieldSeparator() + "', '"
+                            + r.getRecordSeparator() + "', '" + r.getStringQuote() + "' NULL AS '"
+                            + r.getNullString() + '\'';
                     createTableDDL = jobConf.getCreateMapOutputTableDDL();
                 } else {
                     createTableDDL = null;
