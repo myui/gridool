@@ -106,7 +106,8 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             if(copyIntoQuery != null) {
                 numInserted = invokeCopyInto(conn, copyIntoQuery, tableName);
             }
-            LOG.info("Elapsed time for COPY INTO: " + sw.toString());
+            LOG.info("Elapsed time for COPY " + numInserted + " RECORDS INTO " + tableName + ": "
+                    + sw.toString());
             // #3 create indices and constraints
             if(alterTableDDL != null) {
                 sw.start();

@@ -53,8 +53,8 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
     }
 
     @Override
-    protected void postShuffle() {
-        super.postShuffle();
+    protected void postShuffle(int numShuffled) {
+        super.postShuffle(numShuffled);
 
         String driverClassName = jobConf.getDriverClassName();
         String connectUrl = jobConf.getConnectUrl();
@@ -80,8 +80,8 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
             throw new IllegalStateException(ee);
         }
         assert (numProcessed != null);
-        LOG.info("Processed " + numProcessed.longValue() + " records. Elapsed time for loading is "
-                + sw.toString());
+        LOG.info("Processed/Inserted " + numShuffled + '/' + numProcessed.longValue()
+                + " records in " + sw.toString());
     }
 
     private static String generateCopyIntoQuery(final String tableName, final DBPartitioningJobConf jobConf) {

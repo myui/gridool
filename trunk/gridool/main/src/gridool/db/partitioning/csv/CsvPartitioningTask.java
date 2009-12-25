@@ -124,16 +124,18 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         this.shuffleSink = new BoundedArrayQueue<String>(shuffleUnits());
 
         final CvsReader reader = getCsvReader(jobConf);
+        int numShuffled = 0;
         try {
             String line;
             while((line = reader.getNextLine()) != null) {
                 shuffle(line);
+                numShuffled++;
             }
         } catch (IOException e) {
             LOG.error(e);
             throw new GridException(e);
         }
-        postShuffle();
+        postShuffle(numShuffled);
         return assignMap;
     }
 
@@ -146,7 +148,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         }
     }
 
-    protected void postShuffle() {
+    protected void postShuffle(int numShuffled) {
         if(!shuffleSink.isEmpty()) {
             invokeShuffle(shuffleExecPool, shuffleSink);
         }
