@@ -78,7 +78,8 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
                 float mean = numProcessed / numNodes;
                 float sd = MathUtils.stddev(counts);
                 float percent = (sd / mean) * 100.0f;
-                LOG.info("STDDEV of data distribution in " + numNodes + " nodes: " + percent + '%');
+                LOG.info("STDDEV of data distribution in " + numNodes + " nodes: " + sd + " ("
+                        + percent + "%)");
             } else {
                 for(MutableInt e : processed.values()) {
                     numProcessed += e.intValue();
