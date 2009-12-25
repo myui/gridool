@@ -94,7 +94,10 @@ public final class CsvHashPartitioningJob extends
                 CsvUtils.retrieveFields(line, pkeyIndicies, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
                 final StringBuilder pkeys = new StringBuilder(64);
-                for(String k : fields) {
+                for(final String k : fields) {
+                    if(k == null) {
+                        break;
+                    }
                     pkeys.append(k);
                 }
                 mapRecord(line, totalRecords, charset, router, nodeAssignMap, mappedNodes, pkeys.toString());
@@ -137,6 +140,9 @@ public final class CsvHashPartitioningJob extends
             throws GridException {
         final int numNodes = router.getGridSize();
         for(final String f : fields) {
+            if(f == null) {
+                break;
+            }
             final byte[] k = StringUtils.getBytes(f);
             final GridNode node = router.selectNode(k);
             if(node == null) {
