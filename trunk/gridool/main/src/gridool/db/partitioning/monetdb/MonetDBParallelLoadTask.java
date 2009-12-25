@@ -88,7 +88,7 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
     private static String generateCopyIntoQuery(final String tableName, final DBPartitioningJobConf jobConf) {
         return "COPY INTO \"" + tableName + "\" FROM '<src>' USING DELIMITERS '"
                 + StringUtils.escape(jobConf.getFieldSeparator()) + "', '"
-                + StringUtils.escape(jobConf.getRecordSeparator()) + "', '"
+                + jobConf.getRecordSeparator() + "', '"
                 + StringUtils.escape(jobConf.getStringQuote()) + '\'';
     }
 
