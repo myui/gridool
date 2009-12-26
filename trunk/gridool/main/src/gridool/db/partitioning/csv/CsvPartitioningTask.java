@@ -120,7 +120,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     public final ConcurrentIdentityHashMap<GridNode, MutableInt> execute() throws GridException {
         int numShuffleThreads = shuffleThreads();
         this.shuffleExecPool = (numShuffleThreads <= 0) ? new DirectExecutorService()
-                : ExecutorFactory.newFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
+                : ExecutorFactory.newBoundedWorkQueueFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
         this.shuffleSink = new BoundedArrayQueue<String>(shuffleUnits());
 
         final CvsReader reader = getCsvReader(jobConf);
