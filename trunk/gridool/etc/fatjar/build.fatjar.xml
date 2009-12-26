@@ -3,22 +3,25 @@
     <!--this file was created by Eclipse Runnable JAR Export Wizard-->
     <!--ANT 1.7 is required                                        -->
     <target name="create_run_jar">
-        <jar destfile="C:/Documents and Settings/myui/workspace/gridool/target/gridool-1.0.fat.jar" filesetmanifest="mergewithoutmain">
+        <jar destfile="/home/myui/workspace/gridool/target/gridool-1.1.fat.jar" filesetmanifest="mergewithoutmain">
             <manifest>
-                <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Main-Class" value="gridool.GridMain"/>
                 <attribute name="Class-Path" value="."/>
             </manifest>
-            <fileset dir="C:/Documents and Settings/myui/workspace/gridool/build"/>
-            <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/jgroups-core-2.6.3.GA.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/optional/tokyocabinet-1.14.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/jsr305.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/args4j-2.0.12.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/optional/junit-4.1.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/commons-logging-1.0.4.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/optional/log4j-1.2.13.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/optional/sigar-1.6.3.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="C:/Documents and Settings/myui/workspace/gridool/lib/xbird-open-1.0.jar"/>
+            <fileset dir="/home/myui/workspace/gridool/build"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/jgroups-core-2.6.3.GA.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/optional/tokyocabinet-1.14.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/jsr305.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/optional/junit-4.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/commons-logging-1.0.4.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/optional/log4j-1.2.13.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/optional/sigar-1.6.3.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/optional/jdbc/monetdb-1.14-jdbc.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/optional/serialization/protobuf-java-2.2.0.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/optional/serialization/libthrift.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/optional/jdbc/postgresql-8.4-701.jdbc4.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/args4j-2.0.12.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/xbird-open-1.0.jar"/>
         </jar>
     </target>
 </project>
