@@ -24,6 +24,7 @@ import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.communication.GridCommunicationMessage;
 import gridool.communication.transport.GridTransportClient;
+import gridool.util.GridUtils;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -63,7 +64,7 @@ public final class GridOioClient implements GridTransportClient {
             throw new GridException(e);
         }
 
-        final byte[] b = GridNioClient.toBytes(msg);
+        final byte[] b = GridUtils.toBytes(msg);
         if(LOG.isDebugEnabled()) {
             LOG.debug("Sending a message [" + msg.getMessageId() + " (" + b.length
                     + " bytes)] to a node [" + sockAddr + "] using a socket [" + socket + ']');

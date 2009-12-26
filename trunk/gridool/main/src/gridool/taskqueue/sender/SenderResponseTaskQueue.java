@@ -50,8 +50,8 @@ public final class SenderResponseTaskQueue implements TaskSenderListener {
         this.queueMap = new ConcurrentHashMap<String, BlockingQueue<GridTaskResult>>(16);
     }
 
-    public void addResponseQueue(@Nonnull String taskId, @Nonnull BlockingQueue<GridTaskResult> queue) {
-        queueMap.put(taskId, queue);
+    public void addResponseQueue(@Nonnull String jobId, @Nonnull BlockingQueue<GridTaskResult> queue) {
+        queueMap.put(jobId, queue);
     }
 
     @Nullable

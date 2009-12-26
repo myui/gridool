@@ -56,6 +56,7 @@ import xbird.util.csv.SimpleCvsReader;
 import xbird.util.io.FastBufferedInputStream;
 import xbird.util.primitive.MutableInt;
 import xbird.util.struct.Pair;
+import xbird.util.system.SystemUtils;
 
 /**
  * 
@@ -84,8 +85,8 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     // ------------------------
     // working resources
 
-    protected transient int shuffleUnits = 10000;
-    protected transient int shuffleThreads = Runtime.getRuntime().availableProcessors();
+    protected transient int shuffleUnits = 100000;
+    protected transient int shuffleThreads = Math.max(2, SystemUtils.availableProcessors() - 1);
     protected transient ExecutorService shuffleExecPool;
     protected transient BoundedArrayQueue<String> shuffleSink;
 

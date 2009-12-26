@@ -26,6 +26,7 @@ import gridool.GridNode;
 import gridool.GridResourceRegistry;
 import gridool.GridTask;
 import gridool.annotation.GridJobName;
+import gridool.communication.GridCommunicationMessage;
 import gridool.communication.payload.GridNodeInfo;
 import gridool.deployment.GridPerNodeClassLoader;
 import gridool.deployment.PeerClassLoader;
@@ -41,16 +42,22 @@ import javax.annotation.Nullable;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.stack.IpAddress;
 
 import xbird.util.annotation.AnnotationUtils;
 import xbird.util.compress.LZFInputStream;
 import xbird.util.compress.LZFOutputStream;
+import xbird.util.datetime.StopWatch;
 import xbird.util.io.FastByteArrayInputStream;
+import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.io.FastMultiByteArrayOutputStream;
 import xbird.util.io.IOUtils;
 import xbird.util.lang.ClassUtils;
+import xbird.util.lang.ObjectUtils;
 import xbird.util.net.NetUtils;
+import xbird.util.primitive.Primitives;
 import xbird.util.string.StringUtils;
 
 /**
@@ -61,7 +68,8 @@ import xbird.util.string.StringUtils;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class GridUtils {
-
+    private static final Log LOG = LogFactory.getLog(GridUtils.class);
+            
     private GridUtils() {}
 
     @Nonnull
@@ -176,7 +184,7 @@ public final class GridUtils {
 
     @Nonnull
     public static byte[] generateLockKey(@Nonnull String idxName, @Nonnull byte[] key) {
-        byte[] b = StringUtils.getBytes(idxName);
+        final byte[] b = StringUtils.getBytes(idxName);
         int idxNameLength = b.length;
         int keyLen = key.length;
         final byte[] ret = new byte[idxNameLength + keyLen + 2];
@@ -292,5 +300,32 @@ public final class GridUtils {
     @Nonnull
     public static String generateTableName(@Nonnull final String baseName, @Nonnull final GridTask task) {
         return baseName + task.getTaskNumber();
+    }
+    
+    public static byte[] toBytes(final GridCommunicationMessage msg) {
+        final long startTime = System.currentTimeMillis();
+        final FastByteArrayOutputStream out = new FastByteArrayOutputStream();
+        try {
+            IOUtils.writeInt(0, out);// allocate first 4 bytes for size
+            ObjectUtils.toStreamVerbose(msg, out);
+        } catch (IOException e) {
+            LOG.error(e.getMessage(), e);
+            throw new IllegalStateException(e);
+        }
+        final byte[] b = out.toByteArray();
+        final int objsize = b.length - 4;
+        Primitives.putInt(b, 0, objsize);
+
+        if(LOG.isDebugEnabled()) {
+            final long elapsedTime = System.currentTimeMillis() - startTime;
+            LOG.debug("Elapsed time for serializing (including lazy evaluation) a GridCommunicationMessage ["
+                    + msg.getMessageId()
+                    + "] of "
+                    + b.length
+                    + " bytes: "
+                    + StopWatch.elapsedTime(elapsedTime));
+        }
+
+        return b;
     }
 }

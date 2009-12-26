@@ -24,6 +24,7 @@ import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.communication.GridCommunicationMessage;
 import gridool.communication.transport.GridTransportClient;
+import gridool.util.GridUtils;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -36,14 +37,10 @@ import javax.annotation.Nonnull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import xbird.util.datetime.StopWatch;
-import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.io.IOUtils;
-import xbird.util.lang.ObjectUtils;
 import xbird.util.lang.PrintUtils;
 import xbird.util.net.NetUtils;
 import xbird.util.nio.NIOUtils;
-import xbird.util.primitive.Primitives;
 
 /**
  * 
@@ -104,36 +101,9 @@ public final class GridNioClient implements GridTransportClient {
     }
 
     private static ByteBuffer toBuffer(final GridCommunicationMessage msg) {
-        final byte[] b = toBytes(msg);
+        final byte[] b = GridUtils.toBytes(msg);
         final ByteBuffer buf = ByteBuffer.wrap(b);
         return buf;
-    }
-
-    static byte[] toBytes(final GridCommunicationMessage msg) {
-        final long startTime = System.currentTimeMillis();
-        final FastByteArrayOutputStream out = new FastByteArrayOutputStream();
-        try {
-            IOUtils.writeInt(0, out);// allocate first 4 bytes for size
-            ObjectUtils.toStreamVerbose(msg, out);
-        } catch (IOException e) {
-            LOG.error(e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
-        final byte[] b = out.toByteArray();
-        final int objsize = b.length - 4;
-        Primitives.putInt(b, 0, objsize);
-
-        if(LOG.isDebugEnabled()) {
-            final long elapsedTime = System.currentTimeMillis() - startTime;
-            LOG.debug("Elapsed time for serializing (including lazy evaluation) a GridCommunicationMessage ["
-                    + msg.getMessageId()
-                    + "] of "
-                    + b.length
-                    + " bytes: "
-                    + StopWatch.elapsedTime(elapsedTime));
-        }
-
-        return b;
     }
 
     public void start() throws GridException {}

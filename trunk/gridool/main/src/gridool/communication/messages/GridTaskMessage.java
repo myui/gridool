@@ -65,7 +65,7 @@ public abstract class GridTaskMessage implements GridCommunicationMessage, Exter
     }
 
     public String getMessageId() {
-        return taskId + '@' + senderNode;
+        return taskId + '@' + senderNode.getKey();
     }
 
     @Nonnull
