@@ -86,11 +86,27 @@ public final class GridUtils {
     }
 
     public static String getNodeIdentifier(@Nonnull InetAddress addr, int port) {
-        return addr.getHostAddress() + ':' + port;
+        final String macAddr = NetUtils.getMacAddress(addr);
+        if(macAddr == null) {
+            return addr.getHostAddress() + ':' + port;
+        }
+        return macAddr + ':' + port;
     }
 
     public static String getNodeIdentifier(@Nonnull GridNode node) {
         return getNodeIdentifier(node.getPhysicalAdress(), node.getPort());
+    }
+
+    public static String getNodeInfo(@Nonnull InetAddress addr, int port) {
+        final String macAddr = NetUtils.getMacAddress(addr);
+        if(macAddr == null) {
+            return addr.getHostAddress() + ':' + port;
+        }
+        return macAddr + '/' + addr.getHostAddress() + ':' + port;
+    }
+
+    public static String getNodeInfo(@Nonnull GridNode node) {
+        return getNodeInfo(node.getPhysicalAdress(), node.getPort());
     }
 
     @Nonnull

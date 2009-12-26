@@ -139,7 +139,7 @@ public class GridNodeInfo implements GridNode, Externalizable {
 
     @Override
     public String toString() {
-        return idenfider;
+        return GridUtils.getNodeInfo(addr, port);
     }
 
     // -----------------------------------------------------------
@@ -174,7 +174,7 @@ public class GridNodeInfo implements GridNode, Externalizable {
         this.addr = InetAddress.getByAddress(b);
         this.port = in.readInt();
         this.superNode = in.readBoolean();
-        this.idenfider = GridUtils.getNodeIdentifier(addr, port);
+        this.idenfider = IOUtils.readString(in);
     }
 
     public static final GridNodeInfo readFrom(final ObjectInput in) throws IOException,
@@ -189,6 +189,7 @@ public class GridNodeInfo implements GridNode, Externalizable {
         IOUtils.writeBytes(b, out);
         out.writeInt(port);
         out.writeBoolean(superNode);
+        IOUtils.writeString(idenfider, out);
     }
 
     // -----------------------------------------------------------
