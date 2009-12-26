@@ -195,7 +195,7 @@ public abstract class DBMapShuffleTaskBase<IN_TYPE extends DBRecord, OUT_TYPE> e
     protected void preprocess(Connection conn, ResultSet results) throws SQLException {}
 
     protected IN_TYPE prepareInputRecord() {
-        return jobConf.createMapInputRecord();
+        return jobConf.<IN_TYPE> createMapInputRecord();
     }
 
     protected void readFields(IN_TYPE record, ResultSet results) throws SQLException {

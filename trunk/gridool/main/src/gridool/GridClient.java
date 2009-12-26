@@ -129,13 +129,13 @@ public final class GridClient implements Grid {
     public <A extends Serializable, R extends Serializable> R execute(String jobClassName, A arg)
             throws RemoteException {
         prepare();
-        return gridRef.execute(jobClassName, arg);
+        return gridRef.<A, R> execute(jobClassName, arg);
     }
 
     public <A extends Serializable, R extends Serializable> R execute(Class<? extends GridJob<A, R>> jobClass, A arg)
             throws RemoteException {
         prepare();
-        return gridRef.execute(jobClass, arg);
+        return gridRef.<A, R> execute(jobClass, arg);
     }
 
     public GridNode delegate(boolean onlySuperNode) throws RemoteException {

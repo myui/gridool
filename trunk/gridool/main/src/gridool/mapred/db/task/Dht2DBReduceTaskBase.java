@@ -126,7 +126,7 @@ public abstract class Dht2DBReduceTaskBase<IN_TYPE, OUT_TYPE> extends DhtReduceT
         public IN_TYPE next() {
             final byte[] b = delegate.next();
             try {
-                return marshaller.unmarshall(b, null);
+                return marshaller.<IN_TYPE> unmarshall(b, null);
             } catch (GridException e) {// avoid irregular records
                 LOG.warn(e.getMessage());
                 return null;
