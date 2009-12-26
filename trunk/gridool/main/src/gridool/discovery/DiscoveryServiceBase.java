@@ -23,9 +23,11 @@ package gridool.discovery;
 import gridool.GridConfiguration;
 import gridool.GridNode;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -40,14 +42,20 @@ import javax.annotation.Nonnull;
 public abstract class DiscoveryServiceBase implements GridDiscoveryService {
 
     protected final GridConfiguration config;
+
     private final List<GridDiscoveryListener> listeners;
+    private final Lock rlock;
+    private final Lock wlock;
 
     public DiscoveryServiceBase(@CheckForNull GridConfiguration config) {
         if(config == null) {
             throw new IllegalArgumentException();
         }
         this.config = config;
-        this.listeners = Collections.synchronizedList(new LinkedList<GridDiscoveryListener>());
+        this.listeners = new LinkedList<GridDiscoveryListener>();
+        ReadWriteLock rwlock = new ReentrantReadWriteLock();
+        this.rlock = rwlock.readLock();
+        this.wlock = rwlock.writeLock();
     }
 
     public String getServiceName() {
@@ -55,41 +63,77 @@ public abstract class DiscoveryServiceBase implements GridDiscoveryService {
     }
 
     public void addListener(@Nonnull GridDiscoveryListener listener) {
-        assert (!listeners.contains(listener)) : listener;
-        listeners.add(listener);
+        wlock.lock();
+        try {
+            if(!listeners.add(listener)) {
+                assert false : "listner already defined: " + listener;
+            }
+        } finally {
+            wlock.unlock();
+        }
     }
 
-    public boolean removeListener(GridDiscoveryListener listener) {
-        return listeners.remove(listener);
+    public boolean removeListener(@Nonnull GridDiscoveryListener listener) {
+        wlock.lock();
+        try {
+            return listeners.remove(listener);
+        } finally {
+            wlock.unlock();
+        }
     }
 
     protected void handleJoin(@Nonnull GridNode node) {
-        for(GridDiscoveryListener listener : listeners) {
-            listener.onDiscovery(DiscoveryEvent.join, node);
+        rlock.lock();
+        try {
+            for(GridDiscoveryListener listener : listeners) {
+                listener.onDiscovery(DiscoveryEvent.join, node);
+            }
+        } finally {
+            rlock.unlock();
         }
     }
 
     protected void handleLeave(@Nonnull GridNode node) {
-        for(GridDiscoveryListener listener : listeners) {
-            listener.onDiscovery(DiscoveryEvent.leave, node);
+        rlock.lock();
+        try {
+            for(GridDiscoveryListener listener : listeners) {
+                listener.onDiscovery(DiscoveryEvent.leave, node);
+            }
+        } finally {
+            rlock.unlock();
         }
     }
 
     protected void handleDropout(@Nonnull GridNode node) {
-        for(GridDiscoveryListener listener : listeners) {
-            listener.onDiscovery(DiscoveryEvent.dropout, node);
+        rlock.lock();
+        try {
+            for(GridDiscoveryListener listener : listeners) {
+                listener.onDiscovery(DiscoveryEvent.dropout, node);
+            }
+        } finally {
+            rlock.unlock();
         }
     }
 
     protected void handleMetricsUpdate(@Nonnull GridNode node) {
-        for(GridDiscoveryListener listener : listeners) {
-            listener.onDiscovery(DiscoveryEvent.metricsUpdate, node);
+        rlock.lock();
+        try {
+            for(GridDiscoveryListener listener : listeners) {
+                listener.onDiscovery(DiscoveryEvent.metricsUpdate, node);
+            }
+        } finally {
+            rlock.unlock();
         }
     }
 
     protected void handleClose() {
-        for(GridDiscoveryListener listener : listeners) {
-            listener.onChannelClosed();
+        rlock.lock();
+        try {
+            for(GridDiscoveryListener listener : listeners) {
+                listener.onChannelClosed();
+            }
+        } finally {
+            rlock.unlock();
         }
     }
 
