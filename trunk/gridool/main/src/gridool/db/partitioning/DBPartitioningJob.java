@@ -36,6 +36,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import xbird.util.concurrent.collections.ConcurrentIdentityHashMap;
+import xbird.util.datetime.StopWatch;
 import xbird.util.math.MathUtils;
 import xbird.util.primitive.MutableInt;
 
@@ -51,11 +52,13 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
     private static final Log LOG = LogFactory.getLog(DBPartitioningJob.class);
 
     private transient long numProcessed = 0L;
+    private transient long started;
 
     public DBPartitioningJob() {}
 
     public Map<GridTask, GridNode> map(GridTaskRouter router, DBPartitioningJobConf jobConf)
             throws GridException {
+        this.started = System.currentTimeMillis();
         Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(1);
         CsvPartitioningTask dbtask = jobConf.makePartitioningTask(this);
         GridNode localNode = getJobNode();
@@ -67,6 +70,7 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
         final ConcurrentIdentityHashMap<GridNode, MutableInt> processed = result.getResult();
         if(processed != null) {
             if(LOG.isInfoEnabled()) {
+                final long elapsed = System.currentTimeMillis() - started;
                 final int numNodes = processed.size();
                 final int[] counts = new int[numNodes];
                 int i = 0;
@@ -79,7 +83,7 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
                 float sd = MathUtils.stddev(counts);
                 float percent = (sd / mean) * 100.0f;
                 LOG.info("STDDEV of data distribution in " + numNodes + " nodes: " + sd + " ("
-                        + percent + "%)");
+                        + percent + "%), Job executed in " + StopWatch.elapsedTime(elapsed));
             } else {
                 for(MutableInt e : processed.values()) {
                     numProcessed += e.intValue();
