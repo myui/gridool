@@ -130,7 +130,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     private static void prepareTable(Connection conn, String createTableDDL, String tableName)
             throws SQLException {
-        final String sql = createTableDDL + " ALTER TABLE \"" + tableName + "\" ADD \""
+        final String sql = createTableDDL + "; ALTER TABLE \"" + tableName + "\" ADD \""
                 + hiddenFieldName + "\" TINYINT;";
         try {
             JDBCUtils.update(conn, sql);

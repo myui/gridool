@@ -33,10 +33,8 @@ import gridool.routing.GridTaskRouter;
 import java.nio.charset.Charset;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import xbird.util.collections.FixedArrayList;
-import xbird.util.collections.IdentityHashSet;
 import xbird.util.csv.CsvUtils;
 import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.primitive.MutableInt;
@@ -77,11 +75,12 @@ public final class CsvHashPartitioningJob extends
         final int totalRecords = lines.length;
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new IdentityHashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
-        final Set<GridNode> mappedNodes = new IdentityHashSet<GridNode>(numNodes);
+        final Map<GridNode, MutableInt> mappedNodes = new IdentityHashMap<GridNode, MutableInt>(numNodes);
         for(int i = 0; i < totalRecords; i++) {
             int counter = 0;
             String line = lines[i];
             lines[i] = null;
+            final byte[] lineBytes = line.getBytes(charset);
             if(pkeyIndicies != null) {
                 CsvUtils.retrieveFields(line, pkeyIndicies, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
@@ -92,13 +91,13 @@ public final class CsvHashPartitioningJob extends
                     }
                     pkeys.append(k);
                 }
-                mapRecord(line, totalRecords, charset, router, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator, counter, pkeys.toString());
+                mapRecord(lineBytes, totalRecords, router, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator, counter, pkeys.toString());
                 counter++;
             }
             if(fkeyIndicies != null) {
                 CsvUtils.retrieveFields(line, fkeyIndicies, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
-                mapRecord(line, totalRecords, charset, router, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator, counter, fields);
+                mapRecord(lineBytes, totalRecords, router, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator, counter, fields);
             }
             mappedNodes.clear();
         }
@@ -129,10 +128,10 @@ public final class CsvHashPartitioningJob extends
         return map;
     }
 
-    private static void mapRecord(final String line, final int totalRecords, final Charset charset, final GridTaskRouter router, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final Set<GridNode> mappedNodes, final boolean insertHiddenField, final char filedSeparator, int counter, final String... fields)
+    private static void mapRecord(final byte[] line, final int totalRecords, final GridTaskRouter router, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final Map<GridNode, MutableInt> mappedNodes, final boolean insertHiddenField, final char filedSeparator, int counter, final String... fields)
             throws GridException {
         assert (counter < 7) : counter;
-        final int numNodes = router.getGridSize();
+
         for(final String f : fields) {
             if(f == null) {
                 break;
@@ -142,29 +141,46 @@ public final class CsvHashPartitioningJob extends
             if(node == null) {
                 throw new GridException("Could not find any node in cluster.");
             }
-            if(mappedNodes.add(node)) {// insert record if the given record is not associated yet.
-                final byte[] b = line.getBytes(charset);
-                final int blen = b.length;
-                final FastByteArrayOutputStream rowsBuf;
-                final Pair<MutableInt, FastByteArrayOutputStream> pair = nodeAssignMap.get(node);
-                if(pair == null) {
-                    int expected = (int) ((blen * (totalRecords / numNodes)) * 1.3f);
-                    rowsBuf = new FastByteArrayOutputStream(Math.max(expected, 32786));
-                    Pair<MutableInt, FastByteArrayOutputStream> newPair = new Pair<MutableInt, FastByteArrayOutputStream>(new MutableInt(1), rowsBuf);
-                    nodeAssignMap.put(node, newPair);
-                } else {
-                    rowsBuf = pair.second;
-                    MutableInt cnt = pair.first;
-                    cnt.increment();
-                }
-                rowsBuf.write(b, 0, blen);
-                if(insertHiddenField) {// workaround for MonetDB
-                    rowsBuf.write((char) 1 << counter);
-                    rowsBuf.write(filedSeparator);
-                }
-                rowsBuf.write('\n'); // TODO FIXME support other record separator 
+            MutableInt hiddenMapping = mappedNodes.get(node);
+            if(hiddenMapping == null) {
+                mappedNodes.put(node, new MutableInt(1 << counter));
+            } else {
+                int newValue = hiddenMapping.intValue() | (1 << counter);
+                hiddenMapping.setValue(newValue);
             }
             counter++;
+        }
+
+        final int lineSize = line.length;
+        final int numNodes = router.getGridSize();
+        for(Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
+            final GridNode node = e.getKey();
+            final int hiddenValue = e.getValue().intValue();
+
+            final FastByteArrayOutputStream rowsBuf;
+            final Pair<MutableInt, FastByteArrayOutputStream> pair = nodeAssignMap.get(node);
+            if(pair == null) {
+                int expected = (int) ((lineSize * (totalRecords / numNodes)) * 1.3f);
+                rowsBuf = new FastByteArrayOutputStream(Math.max(expected, 32786));
+                Pair<MutableInt, FastByteArrayOutputStream> newPair = new Pair<MutableInt, FastByteArrayOutputStream>(new MutableInt(1), rowsBuf);
+                nodeAssignMap.put(node, newPair);
+            } else {
+                rowsBuf = pair.second;
+                MutableInt cnt = pair.first;
+                cnt.increment();
+            }
+            rowsBuf.write(line, 0, lineSize);
+            if(insertHiddenField) {
+                // FIXME workaround for MonetDB 
+                final String str = Integer.toString(hiddenValue);
+                final int strlen = str.length();
+                for(int i = 0; i < strlen; i++) {
+                    char c = str.charAt(i);
+                    rowsBuf.write(c);
+                }
+                rowsBuf.write(filedSeparator);
+            }
+            rowsBuf.write('\n'); // TODO FIXME support other record separator 
         }
     }
 
