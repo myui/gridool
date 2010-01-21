@@ -35,7 +35,6 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import xbird.util.codec.UTF8Codec;
 import xbird.util.collections.FixedArrayList;
 import xbird.util.collections.IdentityHashSet;
 import xbird.util.csv.CsvUtils;
