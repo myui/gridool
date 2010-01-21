@@ -159,9 +159,9 @@ public final class CsvHashPartitioningJob extends
                     cnt.increment();
                 }
                 rowsBuf.write(b, 0, blen);
-                if(insertHiddenField) {
-                    UTF8Codec.writeUTF8(filedSeparator, rowsBuf);
-                    rowsBuf.write(1 << counter);
+                if(insertHiddenField) {// workaround for MonetDB
+                    rowsBuf.write((byte) 1 << counter);
+                    rowsBuf.write(filedSeparator);
                 }
                 rowsBuf.write('\n'); // TODO FIXME support other record separator 
             }
