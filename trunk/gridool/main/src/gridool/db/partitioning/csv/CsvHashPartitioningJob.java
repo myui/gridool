@@ -159,7 +159,7 @@ public final class CsvHashPartitioningJob extends
                 }
                 rowsBuf.write(b, 0, blen);
                 if(insertHiddenField) {// workaround for MonetDB
-                    rowsBuf.write((byte) 1 << counter);
+                    rowsBuf.write((char) 1 << counter);
                     rowsBuf.write(filedSeparator);
                 }
                 rowsBuf.write('\n'); // TODO FIXME support other record separator 
