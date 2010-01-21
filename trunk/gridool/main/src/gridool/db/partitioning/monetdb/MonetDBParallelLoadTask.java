@@ -82,7 +82,7 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
         assert (numProcessed != null);
         if(LOG.isInfoEnabled()) {
             LOG.info("Processed/Inserted " + numShuffled + '/' + numProcessed.longValue()
-                    + " records in " + sw.toString());
+                    + " records into '" + tableName + "' table in " + sw.toString());
         }
     }
 
