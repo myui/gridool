@@ -102,6 +102,10 @@ public abstract class DBPartitioningJobConf implements Serializable {
     public char getStringQuote() {
         return '\"';
     }
+    
+    public boolean insertHiddenField() {
+        return true;
+    }
 
     // -------------------------------------------------------------
     // JDBC stuffs

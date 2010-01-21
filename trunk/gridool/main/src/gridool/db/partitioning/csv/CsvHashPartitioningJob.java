@@ -39,6 +39,7 @@ import xbird.util.collections.FixedArrayList;
 import xbird.util.collections.IdentityHashSet;
 import xbird.util.csv.CsvUtils;
 import xbird.util.io.FastByteArrayOutputStream;
+import xbird.util.io.IOUtils;
 import xbird.util.primitive.MutableInt;
 import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
@@ -65,6 +66,7 @@ public final class CsvHashPartitioningJob extends
         Pair<int[], int[]> partitioningKeys = jobConf.partitionigKeyIndices();
         final int[] pkeyIndicies = partitioningKeys.getFirst();
         final int[] fkeyIndicies = partitioningKeys.getSecond();
+        final boolean insertHiddenField = jobConf.insertHiddenField();
         final char filedSeparator = jobConf.getFieldSeparator();
         final char quoteChar = jobConf.getStringQuote();
         final String[] fields = new String[Math.max(pkeyIndicies == null ? 0 : pkeyIndicies.length, fkeyIndicies == null ? 0
@@ -78,6 +80,7 @@ public final class CsvHashPartitioningJob extends
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new IdentityHashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
         final Set<GridNode> mappedNodes = new IdentityHashSet<GridNode>(numNodes);
         for(int i = 0; i < totalRecords; i++) {
+            int counter = 0;
             String line = lines[i];
             lines[i] = null;
             if(pkeyIndicies != null) {
@@ -90,12 +93,13 @@ public final class CsvHashPartitioningJob extends
                     }
                     pkeys.append(k);
                 }
-                mapRecord(line, totalRecords, charset, router, nodeAssignMap, mappedNodes, pkeys.toString());
+                mapRecord(line, totalRecords, charset, router, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator, counter, pkeys.toString());
+                counter++;
             }
             if(fkeyIndicies != null) {
                 CsvUtils.retrieveFields(line, fkeyIndicies, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
-                mapRecord(line, totalRecords, charset, router, nodeAssignMap, mappedNodes, fields);
+                mapRecord(line, totalRecords, charset, router, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator, counter, fields);
             }
             mappedNodes.clear();
         }
@@ -126,8 +130,9 @@ public final class CsvHashPartitioningJob extends
         return map;
     }
 
-    private static void mapRecord(final String line, final int totalRecords, final Charset charset, final GridTaskRouter router, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final Set<GridNode> mappedNodes, final String... fields)
+    private static void mapRecord(final String line, final int totalRecords, final Charset charset, final GridTaskRouter router, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final Set<GridNode> mappedNodes, final boolean insertHiddenField, final char filedSeparator, int counter, final String... fields)
             throws GridException {
+        assert (counter < 7) : counter;
         final int numNodes = router.getGridSize();
         for(final String f : fields) {
             if(f == null) {
@@ -154,8 +159,13 @@ public final class CsvHashPartitioningJob extends
                     cnt.increment();
                 }
                 rowsBuf.write(b, 0, blen);
+                if(insertHiddenField) {
+                    IOUtils.writeChar(filedSeparator, rowsBuf);
+                    rowsBuf.write(1 << counter);
+                }
                 rowsBuf.write('\n'); // TODO FIXME support other record separator 
             }
+            counter++;
         }
     }
 

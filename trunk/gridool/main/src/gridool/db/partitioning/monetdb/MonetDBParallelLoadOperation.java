@@ -35,6 +35,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import xbird.config.Settings;
 import xbird.storage.DbCollection;
 import xbird.util.datetime.StopWatch;
 import xbird.util.io.IOUtils;
@@ -50,6 +51,8 @@ import xbird.util.jdbc.JDBCUtils;
 public final class MonetDBParallelLoadOperation extends DBOperation {
     private static final long serialVersionUID = 2815346044185945907L;
     private static final Log LOG = LogFactory.getLog(MonetDBParallelLoadOperation.class);
+
+    private static final String hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
 
     @Nonnull
     private/* final */String tableName;
@@ -101,8 +104,11 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         try {
             // #1 create table
             prepareTable(conn, createTableDDL, tableName);
+            // #1.5 alter table
+            alterTable(conn, "ALTER TABLE \"" + tableName + "\" ADD \"" + hiddenFieldName
+                    + "\" TINYINT;");
             // #2 invoke COPY INTO
-            StopWatch sw = new StopWatch();
+            final StopWatch sw = new StopWatch();
             if(copyIntoQuery != null) {
                 numInserted = invokeCopyInto(conn, copyIntoQuery, tableName);
             }
@@ -112,7 +118,8 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             if(alterTableDDL != null) {
                 sw.start();
                 alterTable(conn, alterTableDDL);
-                LOG.info("Elapsed time for ALTER TABLE: " + sw.toString());
+                LOG.info("Elapsed time for creating indices and constraints on table '" + tableName
+                        + "': " + sw.toString());
             }
         } finally {
             try {
