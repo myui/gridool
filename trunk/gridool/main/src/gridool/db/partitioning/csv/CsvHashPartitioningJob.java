@@ -91,14 +91,20 @@ public final class CsvHashPartitioningJob extends
                     }
                     pkeys.append(k);
                 }
-                mapRecord(lineBytes, totalRecords, router, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator, counter, pkeys.toString());
+                decideRecordMapping(router, mappedNodes, counter, pkeys.toString());
                 counter++;
             }
             if(fkeyIndicies != null) {
                 CsvUtils.retrieveFields(line, fkeyIndicies, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
-                mapRecord(lineBytes, totalRecords, router, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator, counter, fields);
+                decideRecordMapping(router, mappedNodes, counter, fields);
             }
+
+            if(mappedNodes.isEmpty()) {
+                throw new IllegalStateException("Could not map records because there is neither PK nor FK in table '"
+                        + jobConf.getTableName() + '\'');
+            }
+            mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator);
             mappedNodes.clear();
         }
 
@@ -128,10 +134,9 @@ public final class CsvHashPartitioningJob extends
         return map;
     }
 
-    private static void mapRecord(final byte[] line, final int totalRecords, final GridTaskRouter router, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final Map<GridNode, MutableInt> mappedNodes, final boolean insertHiddenField, final char filedSeparator, int counter, final String... fields)
+    private static void decideRecordMapping(final GridTaskRouter router, final Map<GridNode, MutableInt> mappedNodes, int counter, final String... fields)
             throws GridException {
         assert (counter < 7) : counter;
-
         for(final String f : fields) {
             if(f == null) {
                 break;
@@ -150,9 +155,10 @@ public final class CsvHashPartitioningJob extends
             }
             counter++;
         }
+    }
 
+    private static void mapRecord(final byte[] line, final int totalRecords, final int numNodes, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final Map<GridNode, MutableInt> mappedNodes, final boolean insertHiddenField, final char filedSeparator) {
         final int lineSize = line.length;
-        final int numNodes = router.getGridSize();
         for(Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
             final GridNode node = e.getKey();
             final int hiddenValue = e.getValue().intValue();
