@@ -104,17 +104,14 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         try {
             // #1 create table
             prepareTable(conn, createTableDDL, tableName);
-            // #2 alter table
-            alterTable(conn, "ALTER TABLE \"" + tableName + "\" ADD \"" + hiddenFieldName
-                    + "\" TINYINT;");
-            // #3 invoke COPY INTO
+            // #2 invoke COPY INTO
             final StopWatch sw = new StopWatch();
             if(copyIntoQuery != null) {
                 numInserted = invokeCopyInto(conn, copyIntoQuery, tableName);
             }
             LOG.info("Elapsed time for COPY " + numInserted + " RECORDS INTO " + tableName + ": "
                     + sw.toString());
-            // #4 create indices and constraints
+            // #3 create indices and constraints
             if(alterTableDDL != null) {
                 sw.start();
                 alterTable(conn, alterTableDDL);
@@ -133,8 +130,10 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     private static void prepareTable(Connection conn, String createTableDDL, String tableName)
             throws SQLException {
+        final String sql = createTableDDL + " ALTER TABLE \"" + tableName + "\" ADD \""
+                + hiddenFieldName + "\" TINYINT;";
         try {
-            JDBCUtils.update(conn, createTableDDL);
+            JDBCUtils.update(conn, sql);
         } catch (SQLException e) {
             conn.rollback();
             if(LOG.isDebugEnabled()) {
