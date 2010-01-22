@@ -143,7 +143,8 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
             Thread.currentThread().setContextClassLoader(origLdr);
             if(LOG.isInfoEnabled()) {
                 long elapsedTime = System.currentTimeMillis() - startTime;
-                LOG.info(job.getJobId() + " finished in " + StopWatch.elapsedTime(elapsedTime));
+                LOG.info(ClassUtils.getSimpleClassName(job) + " [" + job.getJobId()
+                        + "] finished in " + StopWatch.elapsedTime(elapsedTime));
             }
             monitor.onJobFinished(job);
         }
