@@ -44,7 +44,7 @@ public final class ReplicationEventLogger implements ReplicaCoordinatorListener 
     public boolean onConfigureReplica(GridNode masterNode, List<GridNode> oldReplicas, List<GridNode> newReplicas) {
         if(LOG.isInfoEnabled()) {
             LOG.info("Configure new replicas '" + newReplicas + "' for node '" + masterNode
-                    + "'. Old replicas are '" + oldReplicas + '\'');
+                    + "'.\nOld replicas are '" + oldReplicas + '\'');
         }
         return true;
     }
