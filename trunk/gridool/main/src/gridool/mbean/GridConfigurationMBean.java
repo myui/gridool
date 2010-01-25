@@ -20,6 +20,7 @@
  */
 package gridool.mbean;
 
+import gridool.communication.payload.GridNodeInfo;
 import gridool.directory.ILocalDirectory.DirectoryIndexType;
 import gridool.loadblancing.GridLoadProbe;
 import gridool.routing.GridNodeSelector;
@@ -66,9 +67,9 @@ public interface GridConfigurationMBean extends Serializable {
     void setMetricsSyncFrequency(@Nonnegative long freq);
 
     long getMetricsSyncInitialDelay();
-    
+
     int getMetricsHistorySize();
-    
+
     void setMetricsHistorySize(int size);
 
     @Nonnegative
@@ -113,4 +114,6 @@ public interface GridConfigurationMBean extends Serializable {
     @Nonnull
     DirectoryIndexType getDirectoryIndexType();
 
+    @Nonnull
+    GridNodeInfo getLocalNode();
 }

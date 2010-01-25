@@ -21,6 +21,7 @@
 package gridool;
 
 import java.net.InetAddress;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -44,6 +45,10 @@ public interface GridNode extends GridLocatable {
 
     void setMetrics(@Nonnull GridNodeMetrics metrics);
 
+    @Deprecated
     boolean isSuperNode();
+
+    @Nonnull
+    List<GridNode> getReplicas();
 
 }

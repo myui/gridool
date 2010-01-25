@@ -252,7 +252,7 @@ public final class GridTaskMover {
         @Override
         public GridNode getJobNode() {
             GridCommunicationManager communicator = registry.getCommunicationManager();
-            GridNode node = communicator.getLocalNodeInfo();
+            GridNode node = communicator.getLocalNode();
             return node;
         }
 

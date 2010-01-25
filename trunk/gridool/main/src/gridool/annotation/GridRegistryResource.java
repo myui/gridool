@@ -32,6 +32,7 @@ import java.lang.annotation.Target;
  * <DIV lang="ja"></DIV>
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @see gridool.GridResourceRegistry
  */
 @Documented
 @Target(ElementType.FIELD)

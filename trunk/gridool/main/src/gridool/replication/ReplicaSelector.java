@@ -20,10 +20,11 @@
  */
 package gridool.replication;
 
-import javax.annotation.Nonnegative;
-import javax.annotation.Nonnull;
+import java.util.List;
 
 import gridool.GridNode;
+
+import javax.annotation.Nonnegative;
 
 /**
  * 
@@ -33,8 +34,7 @@ import gridool.GridNode;
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
 public interface ReplicaSelector {
-    
-    //TODO
-    public GridNode[] selectReplica(@Nonnull GridNode masterNode, @Nonnegative int numOfReplicas);
+
+    public List<GridNode> selectReplica(@Nonnegative int numReplicas);
 
 }

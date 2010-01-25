@@ -22,7 +22,11 @@ package gridool.util;
 
 import gridool.GridNode;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -30,6 +34,9 @@ import java.util.TreeMap;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * 
@@ -40,6 +47,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 public final class ConsistentHash {
+    private static final Log LOG = LogFactory.getLog(ConsistentHash.class);
 
     private final HashFunction hashFunction;
     private final int numberOfVirtualNodes;
@@ -97,6 +105,49 @@ public final class ConsistentHash {
         SortedMap<Long, GridNode> tailMap = circle.tailMap(hash);
         hash = tailMap.isEmpty() ? circle.firstKey() : tailMap.firstKey();
         return circle.get(hash);
+    }
+
+    public List<GridNode> listSuccessors(@Nonnull byte[] fromKey, int numToGets, boolean exclusive) {
+        if(circle.isEmpty()) {
+            return Collections.emptyList();
+        }
+        numToGets = Math.min(numToGets, circle.size());
+        final List<GridNode> retNodes = new ArrayList<GridNode>(numToGets);
+        int accquired = 0;
+
+        final Long hash = hashFunction.hash(fromKey);
+
+        if(exclusive && LOG.isWarnEnabled()) {
+            if(!circle.containsKey(hash)) {
+                LOG.warn("Routing table does not have a required node");
+            }
+        }
+
+        final SortedMap<Long, GridNode> tailMap = circle.tailMap(hash);
+        final boolean noTail = tailMap.isEmpty();
+        if(!noTail) {
+            final Iterator<GridNode> tail = tailMap.values().iterator();
+            if(exclusive) {
+                assert (tail.hasNext());
+                tail.next(); // skip
+            }
+            for(; tail.hasNext() && accquired < numToGets; accquired++) {
+                GridNode n = tail.next();
+                retNodes.add(n);
+            }
+        }
+        if(accquired < numToGets) {
+            final Iterator<GridNode> head = circle.values().iterator();
+            if(exclusive && noTail) {
+                assert (head.hasNext());
+                head.next(); // skip
+            }
+            for(; head.hasNext() && accquired < numToGets; accquired++) {
+                GridNode n = head.next();
+                retNodes.add(n);
+            }
+        }
+        return retNodes;
     }
 
     public GridNode[] getAll() {

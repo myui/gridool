@@ -30,7 +30,6 @@ import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
 import gridool.annotation.GridAnnotationProcessor;
 import gridool.communication.GridCommunicationManager;
-import gridool.communication.payload.GridNodeInfo;
 import gridool.deployment.GridPerNodeClassLoader;
 import gridool.discovery.GridDiscoveryListener;
 import gridool.discovery.GridDiscoveryService;
@@ -102,7 +101,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
         this.config = config;
         int poolSize = config.getTaskAssignorPoolSize();
         this.execPool = ExecutorFactory.newFixedThreadPool(poolSize, "GridTaskAssignor");
-        GridNodeInfo localNodeInfo = communicationMgr.getLocalNodeInfo();
+        GridNode localNodeInfo = communicationMgr.getLocalNode();
         job.setJobNode(localNodeInfo);
         this.nodeClassLoader = resourceRegistry.getNodeClassLoader(localNodeInfo);
     }

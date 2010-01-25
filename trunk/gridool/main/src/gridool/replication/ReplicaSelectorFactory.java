@@ -18,35 +18,33 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.discovery.jgroups;
+package gridool.replication;
 
-import gridool.GridNode;
-import gridool.GridNodeMetrics;
+import gridool.GridConfiguration;
+import gridool.GridResourceRegistry;
 import gridool.communication.payload.GridNodeInfo;
+import gridool.replication.strategy.ChainedDeclusteringSelector;
+import gridool.routing.GridTaskRouter;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * 
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405@gmail.com)
+ * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class JGroupsNode extends GridNodeInfo {
-    private static final long serialVersionUID = 3267598911950560687L;
+public final class ReplicaSelectorFactory {
 
-    public JGroupsNode() {
-        super();
-    }// for Externalizable
+    private ReplicaSelectorFactory() {}
 
-    public JGroupsNode(@Nonnull GridNode node, @Nullable GridNodeMetrics metrics) {
-        super(node, metrics);
-    }
+    public static void registerReplicaSelector(@Nonnull GridResourceRegistry registry, @Nonnull GridConfiguration config) {
+        GridNodeInfo localNode = config.getLocalNode();
+        GridTaskRouter router = registry.getTaskRouter();
 
-    public JGroupsNode(@Nonnull GridNode node) {
-        super(node, null);
+        ReplicaSelector replicaSelector = new ChainedDeclusteringSelector(localNode, router);
+        registry.setReplicaSelector(replicaSelector);
     }
 
 }

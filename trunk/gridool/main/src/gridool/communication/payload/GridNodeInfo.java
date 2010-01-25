@@ -1,7 +1,7 @@
 /*
  * @(#)$Id$
  *
- * Copyright 2006-2008 Makoto YUI
+ * Copyright 2006-2010 Makoto YUI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,12 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import xbird.util.io.IOUtils;
 import xbird.util.primitive.Primitives;
@@ -55,9 +58,22 @@ public class GridNodeInfo implements GridNode, Externalizable {
     private String idenfider;
     private boolean superNode;
 
+    // -----------------------------------------------------------
+
+    @Nullable
+    private transient GridNodeMetrics metrics;
+    @Nonnull
+    private transient List<GridNode> replicas = new ArrayList<GridNode>(4);
+
+    // -----------------------------------------------------------
+
     public GridNodeInfo() {}//for Externalizable
 
     public GridNodeInfo(@CheckForNull InetAddress addr, int port, boolean superNode) {
+        this(addr, port, superNode, null);
+    }
+
+    public GridNodeInfo(@CheckForNull InetAddress addr, int port, boolean superNode, @Nullable GridNodeMetrics metrics) {
         if(addr == null) {
             throw new IllegalArgumentException();
         }
@@ -67,7 +83,7 @@ public class GridNodeInfo implements GridNode, Externalizable {
         this.superNode = superNode;
     }
 
-    public GridNodeInfo(@CheckForNull GridNode copyNode) {
+    public GridNodeInfo(@CheckForNull GridNode copyNode, @Nullable GridNodeMetrics metrics) {
         if(copyNode == null) {
             throw new IllegalArgumentException();
         }
@@ -75,6 +91,7 @@ public class GridNodeInfo implements GridNode, Externalizable {
         this.port = copyNode.getPort();
         this.superNode = copyNode.isSuperNode();
         this.idenfider = copyNode.getKey();
+        this.metrics = metrics;
     }
 
     public final InetAddress getPhysicalAdress() {
@@ -91,14 +108,6 @@ public class GridNodeInfo implements GridNode, Externalizable {
 
     public final boolean isSuperNode() {
         return superNode;
-    }
-
-    public GridNodeMetrics getMetrics() {
-        throw new UnsupportedOperationException();
-    }
-
-    public void setMetrics(GridNodeMetrics metrics) {
-        throw new UnsupportedOperationException();
     }
 
     // -----------------------------------------------------------
@@ -194,13 +203,22 @@ public class GridNodeInfo implements GridNode, Externalizable {
 
     // -----------------------------------------------------------
 
-    public static final GridNodeInfo createInstance(final GridNode copyNode) {
-        if(copyNode == null) {
+    public final GridNodeMetrics getMetrics() {
+        return metrics;
+    }
+
+    public final void setMetrics(@Nonnull GridNodeMetrics metrics) {
+        if(metrics == null) {
             throw new IllegalArgumentException();
         }
-        if(copyNode instanceof GridNodeInfo) {
-            return (GridNodeInfo) copyNode;
-        }
-        return new GridNodeInfo(copyNode);
+        this.metrics = metrics;
+    }
+
+    public List<GridNode> getReplicas() {
+        return replicas;
+    }
+
+    public void setReplicas(@Nonnull List<GridNode> replicas) {
+        this.replicas = replicas;
     }
 }

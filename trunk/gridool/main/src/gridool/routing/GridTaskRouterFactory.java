@@ -20,11 +20,11 @@
  */
 package gridool.routing;
 
-import javax.annotation.Nonnull;
-
 import gridool.GridConfiguration;
 import gridool.GridResourceRegistry;
 import gridool.routing.strategy.ConsistentHashRouter;
+
+import javax.annotation.Nonnull;
 
 /**
  * 

@@ -25,7 +25,6 @@ import gridool.GridNode;
 import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.communication.GridCommunicationManager;
-import gridool.communication.payload.GridNodeInfo;
 import gridool.communication.payload.GridTaskResultImpl;
 import gridool.processors.task.GridTaskProcessor;
 
@@ -50,7 +49,7 @@ public final class GridTaskAssignor implements Runnable {
     private final GridTask task;
     private final GridNode dstNode;
 
-    private final GridNodeInfo localNodeProbe;
+    private final GridNode localNodeProbe;
     private final GridTaskProcessor taskProc;
     private final GridCommunicationManager communicationMgr;
     private final BlockingQueue<GridTaskResult> resultQueue;
@@ -64,7 +63,7 @@ public final class GridTaskAssignor implements Runnable {
         this.taskProc = taskProc;
         this.communicationMgr = communicationMgr;
         this.resultQueue = resultQueue;
-        this.localNodeProbe = communicationMgr.getLocalNodeInfo();
+        this.localNodeProbe = communicationMgr.getLocalNode();
         assert (localNodeProbe != null);
     }
 

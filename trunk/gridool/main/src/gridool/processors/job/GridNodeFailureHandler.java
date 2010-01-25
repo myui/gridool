@@ -20,19 +20,21 @@
  */
 package gridool.processors.job;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
-
-import javax.annotation.Nonnull;
-
 import gridool.GridNode;
 import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.communication.payload.GridTaskResultImpl;
 import gridool.discovery.DiscoveryEvent;
 import gridool.discovery.GridDiscoveryListener;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
+
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.GuardedBy;
+
 import xbird.util.struct.Pair;
 
 /**
@@ -49,6 +51,7 @@ public final class GridNodeFailureHandler implements GridDiscoveryListener {
     private final BlockingQueue<GridTaskResult> resultQueue;
 
     private final Object lock = new Object();
+    @GuardedBy("lock")
     private Map<GridNode, String> node2taskMap = null;
 
     public GridNodeFailureHandler(@Nonnull final Map<GridTask, GridNode> mappedTasks, @Nonnull final Map<String, Pair<GridTask, Future<?>>> taskMap, @Nonnull final BlockingQueue<GridTaskResult> resultQueue) {
@@ -57,8 +60,7 @@ public final class GridNodeFailureHandler implements GridDiscoveryListener {
         this.resultQueue = resultQueue;
     }
 
-    public void onChannelClosed() {// nop
-    }
+    public void onChannelClosed() {} // nop
 
     public void onDiscovery(DiscoveryEvent event, GridNode node) {
         switch(event) {

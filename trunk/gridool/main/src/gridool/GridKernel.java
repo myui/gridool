@@ -101,7 +101,7 @@ public final class GridKernel {
         GridCommunicationService communicationServ = CommunicationServiceProvider.createService(taskManager, config);
         GridCommunicationManager communicationMgr = new GridCommunicationManager(resourceRegistry, communicationServ);
 
-        GridExecutionMonitor monitor = GridMonitorFactory.createExecutionMonitor(resourceRegistry);
+        GridExecutionMonitor monitor = GridMonitorFactory.createExecutionMonitor(resourceRegistry);        
 
         GridTaskProcessorService taskProcServ = GridProcessorProvider.createTaskProcessorService(communicationMgr, monitor, resourceRegistry, config);
         DirectoryService dirServ = new DirectoryService(config, resourceRegistry);

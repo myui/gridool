@@ -46,10 +46,10 @@ public interface GridTaskRouter extends GridDiscoveryListener {
     @Nonnull
     GridNode selectNode(@Nonnull byte[] key);
 
-    @Nonnull
+    @Deprecated
     List<GridNode> selectNodes(@Nonnull byte[] key);
 
     @Nonnull
-    List<GridNode> selectNodes(@Nonnull byte[] key, int maxNodesToSelect);
+    List<GridNode> listSuccessorNodes(@Nonnull byte[] key, boolean inclusive, int maxNodesToSelect);
 
 }

@@ -96,7 +96,7 @@ public final class JGroupsDiscoveryService extends DiscoveryServiceBase {
         super(config);
         GridNodeMetricsService merticsServ = registry.getNodeMetricsService();
         this.metricsProvider = merticsServ.getMetricsProvider();
-        this.localTransportNodeInfo = GridUtils.getLocalNode(config);
+        this.localTransportNodeInfo = config.getLocalNode();
     }
 
     public void start() throws GridException {

@@ -30,7 +30,6 @@ import gridool.routing.GridTaskRouter;
 
 import java.io.Serializable;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Map;
 
 import xbird.util.string.StringUtils;
@@ -57,8 +56,7 @@ public class Sample1 extends GridJobBase<String, String> {
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>();
         for(final String phrase : args) {
             GridTask key = new Sample1Task(this, false, phrase);
-            List<GridNode> nodes = router.selectNodes(StringUtils.getBytes(phrase));
-            GridNode node = nodes.get(0);
+            GridNode node = router.selectNode(StringUtils.getBytes(phrase));
             map.put(key, node);
         }
         return map;
@@ -73,10 +71,10 @@ public class Sample1 extends GridJobBase<String, String> {
     public String reduce() throws GridException {
         return aggregate;
     }
-    
+
     private final class Sample1Task extends GridTaskAdapter {
         private static final long serialVersionUID = -5358475010641915459L;
-        
+
         private final String phrase;
 
         @SuppressWarnings("unchecked")

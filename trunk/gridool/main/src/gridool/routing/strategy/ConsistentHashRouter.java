@@ -48,6 +48,7 @@ import javax.annotation.concurrent.ThreadSafe;
 public final class ConsistentHashRouter implements GridTaskRouter {
 
     @Nonnull
+    @Deprecated
     private final GridConfiguration config;
 
     @Nonnull
@@ -123,14 +124,20 @@ public final class ConsistentHashRouter implements GridTaskRouter {
         return node;
     }
 
+    @Deprecated
     public List<GridNode> selectNodes(byte[] key) {
-        return selectNodes(key, Integer.MAX_VALUE);
+        return listSuccessorNodes(key, true, Integer.MAX_VALUE);
     }
 
-    public List<GridNode> selectNodes(byte[] key, int maxNumSelect) {
-        GridNode node = selectNode(key);
-        GridNodeSelector selector = config.getNodeSelector();
-        return selector.selectNodesSorted(node, maxNumSelect, config);
+    @Nonnull
+    public List<GridNode> listSuccessorNodes(byte[] key, boolean inclusive, int maxNumSelect) {
+        final Lock rlock = rwLock.readLock();
+        rlock.lock();
+        try {
+            return consistentHash.listSuccessors(key, maxNumSelect, !inclusive);
+        } finally {
+            rlock.unlock();
+        }
     }
 
     public void onChannelClosed() {

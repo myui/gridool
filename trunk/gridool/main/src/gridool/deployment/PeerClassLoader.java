@@ -101,7 +101,7 @@ public final class PeerClassLoader extends ClassLoader {
             LOG.info("Loading a class '" + name + "' from " + remoteNode);
         }
 
-        GridNode localNode = communicator.getLocalNodeInfo();
+        GridNode localNode = communicator.getLocalNode();
         final GridGetClassTask task = new GridGetClassTask(jobId, localNode, name);
         try {// send a class-loading request
             communicator.sendTaskRequest(task, remoteNode);

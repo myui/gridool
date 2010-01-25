@@ -61,7 +61,7 @@ public final class DirectoryMultiGetJob extends
         final Map<GridNode, List<byte[]>> nodeMap = new HashMap<GridNode, List<byte[]>>(gridsize);
         final byte[][] keys = ops.getKeys();
         for(byte[] k : keys) {
-            final List<GridNode> nodes = router.selectNodes(k, 1);
+            final List<GridNode> nodes = router.listSuccessorNodes(k, true, 1);
             if(nodes.isEmpty()) {
                 throw new GridException("Could not find any grid node for key: "
                         + String.valueOf(k));

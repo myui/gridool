@@ -27,7 +27,6 @@ import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.communication.messages.GridTaskRequestMessage;
 import gridool.communication.messages.GridTaskResponseMessage;
-import gridool.communication.payload.GridNodeInfo;
 import gridool.marshaller.GridMarshaller;
 import gridool.taskqueue.GridTaskQueueManager;
 import gridool.taskqueue.sender.TaskSenderListener;
@@ -50,7 +49,7 @@ public final class GridCommunicationManager {
 
     private final GridCommunicationService service;
     private final TaskSenderListener senderListener;
-    private final GridNodeInfo localNodeProbe;
+    private final GridNode localNode;
     private final GridMarshaller<GridTask> marshaller;
 
     public GridCommunicationManager(@Nonnull GridResourceRegistry resourceRegistry, @Nonnull GridCommunicationService srvc) {
@@ -58,14 +57,13 @@ public final class GridCommunicationManager {
         GridTaskQueueManager taskMgr = resourceRegistry.getTaskManager();
         this.senderListener = taskMgr.getSenderResponseQueue();
         assert (senderListener != null);
-        GridNode localNode = service.getLocalNode();
-        this.localNodeProbe = GridNodeInfo.createInstance(localNode);
+        this.localNode = srvc.getLocalNode();
         this.marshaller = resourceRegistry.getTaskMarshaller();
         resourceRegistry.setCommunicationManager(this);
     }
 
-    public GridNodeInfo getLocalNodeInfo() {
-        return localNodeProbe;
+    public GridNode getLocalNode() {
+        return localNode;
     }
 
     public void sendTaskRequest(@Nonnull GridTask task, @Nonnull GridNode dstNode)
@@ -85,8 +83,8 @@ public final class GridCommunicationManager {
     public void sendTaskResponse(@Nonnull GridTaskResult result, @Nonnull GridNode dstNode)
             throws GridException {
         final GridTaskResponseMessage msg = new GridTaskResponseMessage(result);
-        if(localNodeProbe.equals(dstNode)) {
-            msg.setSenderNode(localNodeProbe);
+        if(localNode.equals(dstNode)) {
+            msg.setSenderNode(localNode);
             senderListener.onResponse(msg);
         } else {
             service.sendMessage(dstNode, msg);

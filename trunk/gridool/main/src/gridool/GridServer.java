@@ -98,7 +98,7 @@ public final class GridServer extends RemoteBase implements Grid {
             throws RemoteException {
         GridResourceRegistry registry = kernel.getResourceRegistry();
         GridCommunicationManager communicator = registry.getCommunicationManager();
-        GridNode localNode = communicator.getLocalNodeInfo();
+        GridNode localNode = communicator.getLocalNode();
         GridPerNodeClassLoader ldr = registry.getNodeClassLoader(localNode);
         final Class<? extends GridJob<A, R>> jobClass;
         try {

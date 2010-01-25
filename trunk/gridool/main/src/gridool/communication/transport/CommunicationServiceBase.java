@@ -1,6 +1,14 @@
 package gridool.communication.transport;
 
-import java.net.InetAddress;
+import gridool.GridConfiguration;
+import gridool.GridNode;
+import gridool.communication.CommunicationMessageListener;
+import gridool.communication.GridCommunicationMessage;
+import gridool.communication.GridCommunicationService;
+import gridool.communication.GridTopic;
+import gridool.communication.GridTransportListener;
+import gridool.communication.payload.GridNodeInfo;
+
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -10,16 +18,6 @@ import javax.annotation.Nonnull;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import gridool.GridConfiguration;
-import gridool.GridNode;
-import gridool.communication.CommunicationMessageListener;
-import gridool.communication.GridCommunicationMessage;
-import gridool.communication.GridCommunicationService;
-import gridool.communication.GridTopic;
-import gridool.communication.GridTransportListener;
-import gridool.communication.payload.GridNodeInfo;
-import xbird.util.net.NetUtils;
 
 /**
  * 
@@ -35,16 +33,12 @@ public abstract class CommunicationServiceBase
 
     protected final GridConfiguration config;
     protected final Map<GridTopic, List<CommunicationMessageListener>> listenerMap;
-    protected final GridNode localNode;
+    protected final GridNodeInfo localNode;
 
     public CommunicationServiceBase(@Nonnull GridConfiguration config) {
         this.config = config;
         this.listenerMap = new IdentityHashMap<GridTopic, List<CommunicationMessageListener>>(2);
-
-        InetAddress addr = NetUtils.getLocalHost();
-        int port = config.getTransportServerPort();
-        boolean superNode = config.isSuperNode();
-        this.localNode = new GridNodeInfo(addr, port, superNode);
+        this.localNode = config.getLocalNode();
     }
 
     public String getServiceName() {

@@ -18,35 +18,37 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.discovery.jgroups;
+package gridool.replication;
 
-import gridool.GridNode;
-import gridool.GridNodeMetrics;
 import gridool.communication.payload.GridNodeInfo;
+import gridool.routing.GridTaskRouter;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * 
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405@gmail.com)
+ * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class JGroupsNode extends GridNodeInfo {
-    private static final long serialVersionUID = 3267598911950560687L;
+public abstract class ReplicaSelectorBase implements ReplicaSelector {
 
-    public JGroupsNode() {
-        super();
-    }// for Externalizable
+    @Nonnull
+    protected final GridNodeInfo localNode;
+    @Nonnull
+    protected final GridTaskRouter router;
 
-    public JGroupsNode(@Nonnull GridNode node, @Nullable GridNodeMetrics metrics) {
-        super(node, metrics);
-    }
-
-    public JGroupsNode(@Nonnull GridNode node) {
-        super(node, null);
+    public ReplicaSelectorBase(@CheckForNull GridNodeInfo localNode, @CheckForNull GridTaskRouter router) {
+        if(localNode == null) {
+            throw new IllegalArgumentException();
+        }
+        if(router == null) {
+            throw new IllegalArgumentException();
+        }
+        this.localNode = localNode;
+        this.router = router;
     }
 
 }

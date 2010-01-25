@@ -20,7 +20,6 @@
  */
 package gridool.util;
 
-import gridool.GridConfiguration;
 import gridool.GridJob;
 import gridool.GridNode;
 import gridool.GridResourceRegistry;
@@ -69,7 +68,7 @@ import xbird.util.string.StringUtils;
  */
 public final class GridUtils {
     private static final Log LOG = LogFactory.getLog(GridUtils.class);
-            
+
     private GridUtils() {}
 
     @Nonnull
@@ -155,13 +154,6 @@ public final class GridUtils {
             return null;
         }
         return GridNodeInfo.fromBytes(payload);
-    }
-
-    public static GridNodeInfo getLocalNode(GridConfiguration config) {
-        InetAddress addr = NetUtils.getLocalHost();
-        int port = config.getTransportServerPort();
-        boolean superNode = config.isSuperNode();
-        return new GridNodeInfo(addr, port, superNode);
     }
 
     @Nonnull
@@ -301,7 +293,7 @@ public final class GridUtils {
     public static String generateTableName(@Nonnull final String baseName, @Nonnull final GridTask task) {
         return baseName + task.getTaskNumber();
     }
-    
+
     public static byte[] toBytes(final GridCommunicationMessage msg) {
         final long startTime = System.currentTimeMillis();
         final FastByteArrayOutputStream out = new FastByteArrayOutputStream();
