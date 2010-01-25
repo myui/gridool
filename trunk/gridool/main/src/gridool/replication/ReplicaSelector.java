@@ -20,11 +20,14 @@
  */
 package gridool.replication;
 
+import gridool.GridNode;
+import gridool.communication.payload.GridNodeInfo;
+import gridool.routing.GridTaskRouter;
+
 import java.util.List;
 
-import gridool.GridNode;
-
 import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 
 /**
  * 
@@ -35,6 +38,6 @@ import javax.annotation.Nonnegative;
  */
 public interface ReplicaSelector {
 
-    public List<GridNode> selectReplica(@Nonnegative int numReplicas);
+    public List<GridNode> selectReplica(@Nonnull GridTaskRouter router, @Nonnull GridNodeInfo masterNode, @Nonnegative int numReplicas);
 
 }

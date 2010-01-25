@@ -20,11 +20,10 @@
  */
 package gridool.replication;
 
-import gridool.GridConfiguration;
-import gridool.GridResourceRegistry;
-import gridool.communication.payload.GridNodeInfo;
-import gridool.replication.strategy.ChainedDeclusteringSelector;
-import gridool.routing.GridTaskRouter;
+import gridool.GridNode;
+import gridool.discovery.GridDiscoveryListener;
+
+import java.util.List;
 
 import javax.annotation.Nonnull;
 
@@ -35,16 +34,8 @@ import javax.annotation.Nonnull;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class ReplicaSelectorFactory {
+public interface ReplicaCoordinatorListener extends GridDiscoveryListener {
 
-    private ReplicaSelectorFactory() {}
-
-    public static void registerReplicaSelector(@Nonnull GridResourceRegistry registry, @Nonnull GridConfiguration config) {
-        GridNodeInfo localNode = config.getLocalNode();
-        GridTaskRouter router = registry.getTaskRouter();
-
-        ReplicaSelector replicaSelector = new ChainedDeclusteringSelector(localNode, router);
-        registry.setReplicaSelector(replicaSelector);
-    }
+    boolean onConfigureReplica(@Nonnull GridNode masterNode, @Nonnull List<GridNode> oldReplicas, @Nonnull List<GridNode> newReplicas);
 
 }

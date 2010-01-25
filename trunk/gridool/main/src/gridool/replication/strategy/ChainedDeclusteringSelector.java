@@ -22,7 +22,7 @@ package gridool.replication.strategy;
 
 import gridool.GridNode;
 import gridool.communication.payload.GridNodeInfo;
-import gridool.replication.ReplicaSelectorBase;
+import gridool.replication.ReplicaSelector;
 import gridool.routing.GridTaskRouter;
 
 import java.util.List;
@@ -34,14 +34,12 @@ import java.util.List;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class ChainedDeclusteringSelector extends ReplicaSelectorBase {
+public final class ChainedDeclusteringSelector implements ReplicaSelector {
 
-    public ChainedDeclusteringSelector(GridNodeInfo localNode, GridTaskRouter router) {
-        super(localNode, router);
-    }
+    public ChainedDeclusteringSelector() {}
 
-    public List<GridNode> selectReplica(int numReplicas) {
-        byte[] key = localNode.toBytes();
+    public List<GridNode> selectReplica(GridTaskRouter router, GridNodeInfo masterNode, int numReplicas) {
+        byte[] key = masterNode.toBytes();
         List<GridNode> nodes = router.listSuccessorNodes(key, false, numReplicas);
         return nodes;
     }

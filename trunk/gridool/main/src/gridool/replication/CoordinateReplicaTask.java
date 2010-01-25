@@ -20,12 +20,16 @@
  */
 package gridool.replication;
 
+import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.GridJob;
 import gridool.GridNode;
 import gridool.GridResourceRegistry;
+import gridool.annotation.GridConfigResource;
 import gridool.annotation.GridRegistryResource;
+import gridool.communication.payload.GridNodeInfo;
 import gridool.construct.GridTaskAdapter;
+import gridool.routing.GridTaskRouter;
 
 import java.util.List;
 
@@ -44,6 +48,8 @@ public final class CoordinateReplicaTask extends GridTaskAdapter {
     @Nonnull
     private final CoordinateReplicaJob.JobConf jobConf;
 
+    @GridConfigResource
+    private GridConfiguration conf;    
     @GridRegistryResource
     private GridResourceRegistry registry;
 
@@ -59,13 +65,16 @@ public final class CoordinateReplicaTask extends GridTaskAdapter {
     }
 
     public Integer execute() throws GridException {
-        ReplicaSelector selector = registry.getReplicaSelector();
-
-        int numReplicas = jobConf.getNumReplicas();
-        List<GridNode> replicas = selector.selectReplica(numReplicas);
-
+        ReplicaSelector selector = registry.getReplicaSelector();        
+        GridTaskRouter router = registry.getTaskRouter();        
+        GridNodeInfo localNode = conf.getLocalNode();
         
-                
+        int numReplicas = jobConf.getNumReplicas();
+        List<GridNode> replicas = selector.selectReplica(router, localNode, numReplicas);
+        
+        ReplicaCoordinator coord = registry.getReplicaCoordinator();
+        coord.configureReplica(localNode, replicas);
+        
         return replicas.size();
     }
 

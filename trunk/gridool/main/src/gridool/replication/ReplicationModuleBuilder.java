@@ -20,10 +20,11 @@
  */
 package gridool.replication;
 
+import gridool.GridConfiguration;
 import gridool.communication.payload.GridNodeInfo;
-import gridool.routing.GridTaskRouter;
+import gridool.replication.listener.ReplicationEventLogger;
+import gridool.replication.strategy.ChainedDeclusteringSelector;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
 /**
@@ -33,22 +34,24 @@ import javax.annotation.Nonnull;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public abstract class ReplicaSelectorBase implements ReplicaSelector {
+public final class ReplicationModuleBuilder {
 
-    @Nonnull
-    protected final GridNodeInfo localNode;
-    @Nonnull
-    protected final GridTaskRouter router;
+    private ReplicationModuleBuilder() {}
 
-    public ReplicaSelectorBase(@CheckForNull GridNodeInfo localNode, @CheckForNull GridTaskRouter router) {
-        if(localNode == null) {
-            throw new IllegalArgumentException();
-        }
-        if(router == null) {
-            throw new IllegalArgumentException();
-        }
-        this.localNode = localNode;
-        this.router = router;
+    public static ReplicaSelector createReplicaSelector() {
+        final ReplicaSelector replicaSelector = new ChainedDeclusteringSelector();
+        // TODO
+        return replicaSelector;
+    }
+
+    public static ReplicaCoordinator createReplicaCoordinator(@Nonnull GridConfiguration config) {
+        GridNodeInfo localNode = config.getLocalNode();
+        final ReplicaCoordinator coord = new ReplicaCoordinator(localNode);
+
+        // TODO
+        coord.addListeners(new ReplicationEventLogger());
+
+        return coord;
     }
 
 }

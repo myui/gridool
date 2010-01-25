@@ -31,7 +31,9 @@ import gridool.metrics.GridNodeMetricsService;
 import gridool.metrics.runtime.GridTaskMetricsCounter;
 import gridool.monitor.GridExecutionMonitor;
 import gridool.processors.task.GridTaskProcessor;
+import gridool.replication.ReplicaCoordinator;
 import gridool.replication.ReplicaSelector;
+import gridool.replication.ReplicationModuleBuilder;
 import gridool.routing.GridTaskRouter;
 import gridool.taskqueue.GridTaskQueueManager;
 
@@ -70,15 +72,18 @@ public final class GridResourceRegistry {
     private GridTaskProcessor taskProcessor;
     private ILocalDirectory directory;
     private GridExecutionMonitor executionMonitor;
-    private ReplicaSelector replicaSelector;
+    private final ReplicaSelector replicaSelector;
+    private final ReplicaCoordinator replicaCoordinator;
 
-    public GridResourceRegistry(GridKernel kernel) {
+    public GridResourceRegistry(@Nonnull GridKernel kernel, @Nonnull GridConfiguration config) {
         this.kernel = kernel;
         this.serviceRegistry = new HashMap<String, GridService>();
         this.marshaller = GridMarshallerFactory.createMarshaller();
         this.ldrMap = new ConcurrentHashMap<GridNode, GridPerNodeClassLoader>();
         GridTaskMetricsCounter counter = new GridTaskMetricsCounter();
         this.taskMetricsCounter = new AtomicReference<GridTaskMetricsCounter>(counter);
+        this.replicaSelector = ReplicationModuleBuilder.createReplicaSelector();
+        this.replicaCoordinator = ReplicationModuleBuilder.createReplicaCoordinator(config);
     }
 
     public GridKernel getGridKernel() {
@@ -224,8 +229,9 @@ public final class GridResourceRegistry {
         return replicaSelector;
     }
 
-    public void setReplicaSelector(@Nonnull ReplicaSelector replicaSelector) {
-        this.replicaSelector = replicaSelector;
+    @Nonnull
+    public ReplicaCoordinator getReplicaCoordinator() {
+        return replicaCoordinator;
     }
 
     private static final class GridResourceNotFoundException extends GridRuntimeException {
