@@ -44,8 +44,7 @@ import org.apache.commons.logging.LogFactory;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class ReplicateTaskJob extends
-        GridJobBase<ReplicateTaskJob.JobConf, java.lang.Boolean> {
+public final class ReplicateTaskJob extends GridJobBase<ReplicateTaskJob.JobConf, Boolean> {
     private static final long serialVersionUID = -7198833169724654323L;
     private static final Log LOG = LogFactory.getLog(ReplicateTaskJob.class);
 
