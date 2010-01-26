@@ -107,7 +107,6 @@ public final class CoordinateReplicaJob extends GridJobBase<CoordinateReplicaJob
             out.writeInt(numReplicas);
             out.writeBoolean(reorg);
         }
-
     }
 
 }
