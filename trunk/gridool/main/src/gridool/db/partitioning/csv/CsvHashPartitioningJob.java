@@ -120,7 +120,7 @@ public final class CsvHashPartitioningJob extends
             FastByteArrayOutputStream rows = pair.second;
             byte[] b = rows.toByteArray();
             pair.clear();
-            GridTask task = new FileAppendTask(this, fileName, b);
+            GridTask task = new FileAppendTask(this, fileName, b, true);
             map.put(task, node);
         }
 

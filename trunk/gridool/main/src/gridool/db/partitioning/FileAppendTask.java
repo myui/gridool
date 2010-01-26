@@ -58,13 +58,7 @@ public final class FileAppendTask extends GridTaskAdapter {
 
     private boolean replicate;
 
-    @SuppressWarnings("unchecked")
-    public FileAppendTask(GridJob job, @Nonnull String fileName, @Nonnull byte[] rowsData) {
-        this(job, fileName, rowsData, true);
-    }
-
-    @SuppressWarnings("unchecked")
-    public FileAppendTask(GridJob job, @Nonnull String fileName, @Nonnull byte[] rowsData, boolean replicate) {
+    public FileAppendTask(GridJob<?, ?> job, @Nonnull String fileName, @Nonnull byte[] rowsData, boolean replicate) {
         super(job, false);
         this.fileName = fileName;
         this.rowsData = rowsData;

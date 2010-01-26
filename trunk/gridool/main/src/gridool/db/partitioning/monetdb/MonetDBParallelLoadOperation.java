@@ -96,11 +96,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     }
 
     @Override
-    public boolean isReplicatable() {
-        return true;
-    }
-
-    @Override
     public Integer execute() throws SQLException {
         final Connection conn;
         try {
