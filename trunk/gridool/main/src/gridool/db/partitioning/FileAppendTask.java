@@ -56,7 +56,7 @@ public final class FileAppendTask extends GridTaskAdapter {
     @Nonnull
     private transient/* final */byte[] rowsData;
 
-    private boolean replicate;
+    private transient final boolean replicate;
 
     public FileAppendTask(GridJob<?, ?> job, @Nonnull String fileName, @Nonnull byte[] rowsData, boolean replicate) {
         super(job, false);

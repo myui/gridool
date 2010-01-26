@@ -55,7 +55,7 @@ import xbird.util.csv.CvsReader;
 import xbird.util.csv.SimpleCvsReader;
 import xbird.util.io.FastBufferedInputStream;
 import xbird.util.primitive.MutableInt;
-import xbird.util.struct.Pair;
+import xbird.util.struct.Triple;
 import xbird.util.system.SystemUtils;
 
 /**
@@ -90,6 +90,8 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     protected transient ExecutorService shuffleExecPool;
     protected transient BoundedArrayQueue<String> shuffleSink;
 
+    protected transient String csvFileName;
+
     @SuppressWarnings("unchecked")
     public CsvPartitioningTask(GridJob job, DBPartitioningJobConf jobConf) {
         super(job, false);
@@ -123,6 +125,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         this.shuffleExecPool = (numShuffleThreads <= 0) ? new DirectExecutorService()
                 : ExecutorFactory.newBoundedWorkQueueFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
         this.shuffleSink = new BoundedArrayQueue<String>(shuffleUnits());
+        this.csvFileName = generateCsvFileName();
 
         final CvsReader reader = getCsvReader(jobConf);
         int numShuffled = 0;
@@ -138,6 +141,14 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         }
         postShuffle(numShuffled);
         return assignMap;
+    }
+
+    private String generateCsvFileName() {
+        assert (kernel != null);
+        String tblName = jobConf.getTableName();
+        GridNode node = getSenderNode();
+        String addr = node.getPhysicalAdress().getHostAddress();
+        return tblName + addr + ".csv";
     }
 
     private void shuffle(@Nonnull final String record) {
@@ -158,10 +169,11 @@ public class CsvPartitioningTask extends GridTaskAdapter {
 
     private final void invokeShuffle(@Nonnull final ExecutorService shuffleExecPool, @Nonnull final ArrayQueue<String> queue) {
         assert (kernel != null);
+        final String fileName = csvFileName;
         shuffleExecPool.execute(new Runnable() {
             public void run() {
                 String[] lines = queue.toArray(String.class);
-                Pair<String[], DBPartitioningJobConf> ops = new Pair<String[], DBPartitioningJobConf>(lines, jobConf);
+                Triple<String[], String, DBPartitioningJobConf> ops = new Triple<String[], String, DBPartitioningJobConf>(lines, fileName, jobConf);
                 final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(CsvHashPartitioningJob.class, ops);
                 final Map<GridNode, MutableInt> map;
                 try {

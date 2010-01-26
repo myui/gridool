@@ -85,6 +85,8 @@ public final class CoordinateReplicaJob extends GridJobBase<CoordinateReplicaJob
         private int numReplicas;
         private boolean reorg;
 
+        public JobConf() {}// for Externalizable
+
         public JobConf(int numReplicas, boolean reorg) {
             this.numReplicas = numReplicas;
             this.reorg = reorg;

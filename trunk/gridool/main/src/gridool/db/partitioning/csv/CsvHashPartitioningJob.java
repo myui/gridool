@@ -40,6 +40,7 @@ import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.primitive.MutableInt;
 import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
+import xbird.util.struct.Triple;
 
 /**
  * 
@@ -49,17 +50,19 @@ import xbird.util.struct.Pair;
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
 public final class CsvHashPartitioningJob extends
-        GridJobBase<Pair<String[], DBPartitioningJobConf>, Map<GridNode, MutableInt>> {
+        GridJobBase<Triple<String[], String, DBPartitioningJobConf>, Map<GridNode, MutableInt>> {
     private static final long serialVersionUID = 149683992715077498L;
 
     private transient Map<GridNode, MutableInt> assignedRecMap;
 
     public CsvHashPartitioningJob() {}
 
-    public Map<GridTask, GridNode> map(final GridTaskRouter router, final Pair<String[], DBPartitioningJobConf> ops)
+    public Map<GridTask, GridNode> map(final GridTaskRouter router, final Triple<String[], String, DBPartitioningJobConf> ops)
             throws GridException {
         final String[] lines = ops.getFirst();
-        DBPartitioningJobConf jobConf = ops.getSecond();
+        final String csvFileName = ops.getSecond();
+        final DBPartitioningJobConf jobConf = ops.getThird();
+
         Pair<int[], int[]> partitioningKeys = jobConf.partitionigKeyIndices();
         final int[] pkeyIndicies = partitioningKeys.getFirst();
         final int[] fkeyIndicies = partitioningKeys.getSecond();
@@ -108,8 +111,6 @@ public final class CsvHashPartitioningJob extends
             mappedNodes.clear();
         }
 
-        String tableName = jobConf.getTableName();
-        final String fileName = tableName + ".csv";
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
         final Map<GridNode, MutableInt> assignedRecMap = new IdentityHashMap<GridNode, MutableInt>(numNodes);
         for(final Map.Entry<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> e : nodeAssignMap.entrySet()) {
@@ -120,7 +121,7 @@ public final class CsvHashPartitioningJob extends
             FastByteArrayOutputStream rows = pair.second;
             byte[] b = rows.toByteArray();
             pair.clear();
-            GridTask task = new FileAppendTask(this, fileName, b, true);
+            GridTask task = new FileAppendTask(this, csvFileName, b, true);
             map.put(task, node);
         }
 

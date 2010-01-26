@@ -61,6 +61,8 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     @Nonnull
     private/* final */String tableName;
     @Nonnull
+    private/* final */String csvFileName;
+    @Nonnull
     private/* final */String createTableDDL;
     @Nullable
     private/* final */String copyIntoQuery;
@@ -69,9 +71,10 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     public MonetDBParallelLoadOperation() {}
 
-    public MonetDBParallelLoadOperation(@Nonnull String connectUrl, @Nullable String replicaConnectUrl, @Nonnull String tableName, @Nonnull String createTableDDL, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
+    public MonetDBParallelLoadOperation(@Nonnull String connectUrl, @Nullable String replicaConnectUrl, @Nonnull String tableName, @Nonnull String csvFileName, @Nonnull String createTableDDL, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
         super(driverClassName, replicaConnectUrl, connectUrl);
         this.tableName = tableName;
+        this.csvFileName = csvFileName;
         this.createTableDDL = createTableDDL;
         this.copyIntoQuery = copyIntoQuery;
         this.alterTableDDL = alterTableDDL;
@@ -79,6 +82,10 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     public String getTableName() {
         return tableName;
+    }
+
+    public String getCsvFileName() {
+        return csvFileName;
     }
 
     public String getCreateTableDDL() {
@@ -111,7 +118,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             // #2 invoke COPY INTO
             final StopWatch sw = new StopWatch();
             if(copyIntoQuery != null) {
-                numInserted = invokeCopyInto(conn, copyIntoQuery, tableName);
+                numInserted = invokeCopyInto(conn, copyIntoQuery, csvFileName);
             }
             LOG.info("Elapsed time for COPY " + numInserted + " RECORDS INTO " + tableName + ": "
                     + sw.toString());
@@ -148,9 +155,9 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         }
     }
 
-    private static int invokeCopyInto(Connection conn, String copyIntoQuery, String tableName)
+    private static int invokeCopyInto(Connection conn, String copyIntoQuery, String fileName)
             throws SQLException {
-        final File loadFile = prepareLoadFile(tableName);
+        final File loadFile = prepareLoadFile(fileName);
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
         final int ret;
         try {
@@ -185,14 +192,14 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         JDBCUtils.update(conn, dml);
     }
 
-    private static File prepareLoadFile(final String tableName) {
+    private static File prepareLoadFile(final String fileName) {
         DbCollection rootColl = DbCollection.getRootCollection();
         File colDir = rootColl.getDirectory();
         if(!colDir.exists()) {
             throw new IllegalStateException("Database directory not found: "
                     + colDir.getAbsoluteFile());
         }
-        final File file = new File(colDir, tableName + ".csv");
+        final File file = new File(colDir, fileName);
         if(!file.exists()) {
             throw new IllegalStateException("Loading file not found: " + file.getAbsolutePath());
         }
@@ -208,6 +215,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
         this.tableName = IOUtils.readString(in);
+        this.csvFileName = IOUtils.readString(in);
         this.createTableDDL = IOUtils.readString(in);
         this.copyIntoQuery = IOUtils.readString(in);
         this.alterTableDDL = IOUtils.readString(in);
@@ -217,6 +225,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
         IOUtils.writeString(tableName, out);
+        IOUtils.writeString(csvFileName, out);
         IOUtils.writeString(createTableDDL, out);
         IOUtils.writeString(copyIntoQuery, out);
         IOUtils.writeString(alterTableDDL, out);
