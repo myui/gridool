@@ -18,6 +18,6 @@
 	<classpathentry kind="lib" path="lib/optional/jdbc/monetdb-1.14-jdbc.jar" sourcepath="lib/src/MonetDB-java-1.32.4.zip"/>
 	<classpathentry kind="lib" path="lib/optional/jdbc/postgresql-8.4-701.jdbc4.jar" sourcepath="lib/src/postgresql-jdbc-8.4-701.src.zip"/>
 	<classpathentry kind="lib" path="lib/args4j-2.0.12.jar"/>
-	<classpathentry kind="lib" path="lib/xbird-open-1.0.jar" sourcepath="/xbird-open/main/src/java"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/xbird-open"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>
