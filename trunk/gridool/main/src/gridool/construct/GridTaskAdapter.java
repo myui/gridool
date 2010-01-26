@@ -61,13 +61,14 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
     @Nonnull
     protected final String taskId;
     @Nonnull
-    protected final GridNode senderNode;    
+    protected final GridNode senderNode;
     protected int taskNumber = -1;
-    
+
     protected long startedTime = -1L;
     protected long finishedTime = -1L;
 
     private final boolean isFailoverActive;
+    private boolean replicated = false;
 
     protected volatile boolean canceled = false;
     private transient volatile FutureTask<Serializable> running;
@@ -118,7 +119,7 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
     public int getTaskNumber() {
         return taskNumber;
     }
-    
+
     public void setTaskNumber(int i) {
         this.taskNumber = i;
     }
@@ -202,6 +203,12 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
 
     public boolean isReplicatable() {
         return false;
+    }
+
+    public void setReplication() {}
+
+    public boolean isReplicated() {
+        return replicated;
     }
 
     public int compareTo(GridLocatable other) {

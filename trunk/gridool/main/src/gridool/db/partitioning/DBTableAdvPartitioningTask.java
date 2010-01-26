@@ -134,7 +134,7 @@ public final class DBTableAdvPartitioningTask extends
         shuffleExecPool.execute(new Runnable() {
             public void run() {
                 String driverClassName = jobConf.getDriverClassName();
-                String connectUrl = jobConf.getConnectUrl();
+                String connectUrl = jobConf.getConnectUrl();                
                 final String createTableDDL;
                 if(firstShuffleAttempt) {
                     createTableDDL = jobConf.getCreateMapOutputTableDDL();

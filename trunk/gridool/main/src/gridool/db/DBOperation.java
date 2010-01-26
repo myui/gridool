@@ -50,13 +50,17 @@ public abstract class DBOperation implements Externalizable {
     @Nonnull
     protected/* final */String connectUrl;
     @Nullable
+    protected/* final */String replicaConnectUrl;
+    @Nullable
     protected String userName = null;
     @Nullable
     protected String password = null;
 
+    private boolean replicated = false;
+
     public DBOperation() {}// Externalizable
 
-    public DBOperation(@CheckForNull String driverClassName, @CheckForNull String connectUrl) {
+    public DBOperation(@CheckForNull String driverClassName, @CheckForNull String connectUrl, @Nullable String replicaConnectUrl) {
         if(driverClassName == null) {
             throw new IllegalArgumentException("Driver class must be specified");
         }
@@ -65,6 +69,7 @@ public abstract class DBOperation implements Externalizable {
         }
         this.driverClassName = driverClassName;
         this.connectUrl = connectUrl;
+        this.replicaConnectUrl = replicaConnectUrl;
     }
 
     public String getDriverClassName() {
@@ -73,6 +78,10 @@ public abstract class DBOperation implements Externalizable {
 
     public String getConnectUrl() {
         return connectUrl;
+    }
+
+    public String getReplicaConnectUrl() {
+        return replicaConnectUrl;
     }
 
     public String getUserName() {
@@ -88,13 +97,27 @@ public abstract class DBOperation implements Externalizable {
         this.password = password;
     }
 
+    public boolean isReplicatable() {
+        return true;
+    }
+
+    public void setReplication() {
+        this.replicated = true;
+    }
+
     public final Connection getConnection() throws ClassNotFoundException, SQLException {
         Class.forName(driverClassName);
+        final String dburl;
+        if(replicated) {
+            dburl = connectUrl;
+        } else {
+            dburl = replicaConnectUrl;
+        }
         final Connection conn;
         if(userName == null) {
-            conn = DriverManager.getConnection(connectUrl);
+            conn = DriverManager.getConnection(dburl);
         } else {
-            conn = DriverManager.getConnection(connectUrl, userName, password);
+            conn = DriverManager.getConnection(dburl, userName, password);
         }
         configureConnection(conn);
         return conn;
@@ -109,14 +132,18 @@ public abstract class DBOperation implements Externalizable {
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeString(driverClassName, out);
         IOUtils.writeString(connectUrl, out);
+        IOUtils.writeString(replicaConnectUrl, out);
         IOUtils.writeString(userName, out);
         IOUtils.writeString(password, out);
+        out.writeBoolean(replicated);
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.driverClassName = IOUtils.readString(in);
         this.connectUrl = IOUtils.readString(in);
+        this.replicaConnectUrl = IOUtils.readString(in);
         this.userName = IOUtils.readString(in);
         this.password = IOUtils.readString(in);
+        this.replicated = in.readBoolean();
     }
 }

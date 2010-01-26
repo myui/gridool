@@ -162,4 +162,8 @@ public final class GridTaskInfo implements GridTask {
         throw new UnsupportedOperationException();
     }
 
+    public void setReplication() {
+        throw new UnsupportedOperationException();
+    }
+
 }

@@ -102,7 +102,7 @@ public abstract class DBPartitioningJobConf implements Serializable {
     public char getStringQuote() {
         return '\"';
     }
-    
+
     public boolean insertHiddenField() {
         return true;
     }
@@ -115,6 +115,9 @@ public abstract class DBPartitioningJobConf implements Serializable {
 
     @Nonnull
     public abstract String getConnectUrl();
+
+    @Nonnull
+    public abstract String getReplicaConnectUrl();
 
     @Nullable
     public String getUserName() {

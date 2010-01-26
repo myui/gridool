@@ -57,6 +57,8 @@ public final class ReplicateTaskJob extends
 
     public Map<GridTask, GridNode> map(GridTaskRouter router, JobConf jobConf) throws GridException {
         final GridTask taskToReplicate = jobConf.getTask();
+        taskToReplicate.setReplication();
+
         final List<GridNode> destNodes = jobConf.getDestNodes();
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(destNodes.size());
         for(GridNode node : destNodes) {

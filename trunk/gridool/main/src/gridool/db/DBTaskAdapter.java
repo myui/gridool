@@ -52,6 +52,16 @@ public final class DBTaskAdapter extends GridTaskAdapter {
         this.opr = opr;
     }
 
+    @Override
+    public boolean isReplicatable() {
+        return opr.isReplicatable();
+    }
+
+    @Override
+    public void setReplication() {
+        
+    }
+
     public Serializable execute() throws GridException {
         try {
             return opr.execute();

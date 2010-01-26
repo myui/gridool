@@ -113,6 +113,8 @@ public final class DBCountPageView {
         String driverClassName = "nl.cwi.monetdb.jdbc.MonetDriver";
         @Option(name = "-connectUrl", usage = "database connect Url")
         String dbConnectUrl = "jdbc:monetdb://localhost/URLAccess";
+        @Option(name = "-replicaUrl", usage = "database connect Url")
+        String replicaUrl = "jdbc:monetdb://localhost/URLAccess2";
         @Option(name = "-user", usage = "database user name")
         String dbUserName = null;
         @Option(name = "-passwd", usage = "database password")
@@ -141,6 +143,11 @@ public final class DBCountPageView {
         @Override
         public String getConnectUrl() {
             return dbConnectUrl;
+        }
+
+        @Override
+        public String getReplicaConnectUrl() {
+            return replicaUrl;
         }
 
         @Override
@@ -175,7 +182,7 @@ public final class DBCountPageView {
         }
 
         @Override
-        public String getReduceOutputDestinationDbUrl() {
+        public String getReduceOutputDbUrl() {
             return reduceOutputDestinationDbUrl;
         }
 
@@ -322,7 +329,7 @@ public final class DBCountPageView {
     private static boolean verify(final DBMapReduceJobConf jobConf, final long totalPageview)
             throws SQLException {
         //check total num pageview
-        String dbUrl = jobConf.getReduceOutputDestinationDbUrl();
+        String dbUrl = jobConf.getReduceOutputDbUrl();
         final Connection conn;
         try {
             conn = jobConf.getConnection(dbUrl, true);

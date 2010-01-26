@@ -64,6 +64,14 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
         this.delegated = task;
     }
 
+    public boolean isReplicatable() {
+        return false;
+    }
+
+    public void setReplication() {
+        throw new IllegalStateException();
+    }
+
     public String getKey() {
         return taskId;
     }
@@ -94,10 +102,6 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
 
     public List<GridNode> listFailoverCandidates(GridTask task, GridTaskRouter router) {
         return Collections.emptyList();
-    }
-
-    public boolean isReplicatable() {
-        return false;
     }
 
     public final long getStartedTime() {

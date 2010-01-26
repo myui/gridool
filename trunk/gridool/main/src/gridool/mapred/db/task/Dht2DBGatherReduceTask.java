@@ -50,7 +50,7 @@ public abstract class Dht2DBGatherReduceTask<IN_TYPE> extends
     }
 
     protected String getReduceOutputDestinationDbUrl() {//REVIEWME
-        return jobConf.getReduceOutputDestinationDbUrl();
+        return jobConf.getReduceOutputDbUrl();
     }
 
     protected String getDriverClassName() {
@@ -82,7 +82,7 @@ public abstract class Dht2DBGatherReduceTask<IN_TYPE> extends
                 String mapOutputTableName = getReduceOutputTableName();
                 String[] fieldNames = jobConf.getReduceOutputFieldNames();
                 DBRecord[] records = queue.toArray(DBRecord.class);
-                final DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, mapOutputTableName, fieldNames, records);
+                final DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, null, mapOutputTableName, fieldNames, records);
                 ops.setAuth(getUserName(), getPassword());
                 try {
                     ops.execute();

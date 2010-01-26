@@ -41,6 +41,9 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     @Option(name = "-connectUrl", usage = "database connect Url (Required)", required = true)
     private String dbConnectUrl;
 
+    @Option(name = "-replicaUrl", usage = "replica database connect Url (Required)", required = true)
+    private String replicaConnectUrl;
+
     @Option(name = "-table", usage = "Table name into which copy records (Required)", required = true)
     private String tableName;
 
@@ -91,6 +94,11 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     @Override
     public final String getConnectUrl() {
         return dbConnectUrl;
+    }
+
+    @Override
+    public final String getReplicaConnectUrl() {
+        return replicaConnectUrl;
     }
 
     @Override

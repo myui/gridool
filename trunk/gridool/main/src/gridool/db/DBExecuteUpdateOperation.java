@@ -47,12 +47,12 @@ public final class DBExecuteUpdateOperation extends DBOperation {
     private static final Log LOG = LogFactory.getLog(DBExecuteUpdateOperation.class);
 
     @Nonnull
-    private /* final */ String sql;
-    
+    private/* final */String sql;
+
     public DBExecuteUpdateOperation() {}// for Externalizable
 
-    public DBExecuteUpdateOperation(@Nonnull String driverClassName, @Nonnull String connectUrl, @Nonnull String sql) {
-        super(driverClassName, connectUrl);
+    public DBExecuteUpdateOperation(@Nonnull String driverClassName, @Nonnull String connectUrl, @Nonnull String replicaUrl, @Nonnull String sql) {
+        super(driverClassName, connectUrl, replicaUrl);
         this.sql = sql;
     }
 

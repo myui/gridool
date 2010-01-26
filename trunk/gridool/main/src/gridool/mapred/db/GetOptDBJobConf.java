@@ -50,6 +50,9 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
     @Option(name = "-connectUrl", usage = "database connect Url (Required)", required = true)
     private String dbConnectUrl;
 
+    @Option(name = "-replicaUrl", usage = "database replica connect Url (Required)", required = true)
+    private String replicaUrl;
+
     @Option(name = "-user", usage = "database user name")
     private String dbUserName = null;
 
@@ -98,6 +101,11 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
     @Override
     public String getConnectUrl() {
         return dbConnectUrl;
+    }
+
+    @Override
+    public String getReplicaConnectUrl() {
+        return replicaUrl;
     }
 
     @Override
@@ -156,7 +164,7 @@ public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
     }
 
     @Override
-    public String getReduceOutputDestinationDbUrl() {
+    public String getReduceOutputDbUrl() {
         return reduceOutputDestinationDbUrl;
     }
 

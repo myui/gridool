@@ -48,7 +48,7 @@ public abstract class DBMapReduceJobConf implements Serializable {
 
     protected String mapOutputTableName = null;
     protected String reduceOutputTableName = null;
-    protected String reduceOutputDestinationDbUrl;
+    protected String reduceOutputDbUrl;
 
     public DBMapReduceJobConf() {}
 
@@ -78,6 +78,8 @@ public abstract class DBMapReduceJobConf implements Serializable {
     public abstract String getDriverClassName();
 
     public abstract String getConnectUrl();
+
+    public abstract String getReplicaConnectUrl();
 
     public String getUserName() {
         return null;
@@ -138,7 +140,7 @@ public abstract class DBMapReduceJobConf implements Serializable {
         return new JdkMarshaller();
     }
 
-    public String getReduceOutputDestinationDbUrl() {
+    public String getReduceOutputDbUrl() {
         return getConnectUrl();
     }
 

@@ -67,7 +67,7 @@ public class DBReduceJob extends GridJobBase<DBMapReduceJobConf, String> {
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(nodes.length);
         final String createTableTemplate = jobConf.getQueryTemplateForCreatingViewComposite();
         if(createTableTemplate != null) {
-            final String dstDbUrl = jobConf.getReduceOutputDestinationDbUrl();
+            final String dstDbUrl = jobConf.getReduceOutputDbUrl();
             if(dstDbUrl == null) {
                 throw new GridException("ReduceOutputDestinationDbUrl should be specified when using a view in reduce phase");
             }
