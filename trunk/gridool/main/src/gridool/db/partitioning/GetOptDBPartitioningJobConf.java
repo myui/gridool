@@ -38,9 +38,6 @@ import org.kohsuke.args4j.Option;
 public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     private static final long serialVersionUID = -2839327000541349951L;
 
-    @Option(name = "-driver", usage = "Class name of the database driver (Required)", required = true)
-    private String driverClassName;
-
     @Option(name = "-connectUrl", usage = "database connect Url (Required)", required = true)
     private String dbConnectUrl;
 
@@ -55,6 +52,9 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
 
     // ----------------------------
     // optional stuffs
+
+    @Option(name = "-driver", usage = "Class name of the database driver (default: nl.cwi.monetdb.jdbc.MonetDriver)")
+    private String driverClassName = "nl.cwi.monetdb.jdbc.MonetDriver";
 
     @Option(name = "-alterTbl", usage = "DDL used after creating a table to load data")
     private String alterTableDDL;

@@ -200,6 +200,10 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
         return Arrays.asList(nodes);
     }
 
+    public boolean isReplicatable() {
+        return false;
+    }
+
     public int compareTo(GridLocatable other) {
         String otherKey = other.getKey();
         String selfKey = getKey();

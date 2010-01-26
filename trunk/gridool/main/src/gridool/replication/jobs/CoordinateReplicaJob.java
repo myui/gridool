@@ -18,7 +18,7 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.replication;
+package gridool.replication.jobs;
 
 import gridool.GridException;
 import gridool.GridNode;

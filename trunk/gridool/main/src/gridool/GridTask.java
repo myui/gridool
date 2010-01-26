@@ -97,4 +97,9 @@ public interface GridTask extends GridLocatable, GridAnnotatable {
     @Nonnull
     List<GridNode> listFailoverCandidates(@Nonnull GridTask task, @Nonnull GridTaskRouter router);
 
+    // ----------------------
+    // replication
+
+    boolean isReplicatable();
+
 }

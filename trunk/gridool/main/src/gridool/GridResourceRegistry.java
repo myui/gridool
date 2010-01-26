@@ -31,9 +31,7 @@ import gridool.metrics.GridNodeMetricsService;
 import gridool.metrics.runtime.GridTaskMetricsCounter;
 import gridool.monitor.GridExecutionMonitor;
 import gridool.processors.task.GridTaskProcessor;
-import gridool.replication.ReplicaCoordinator;
-import gridool.replication.ReplicaSelector;
-import gridool.replication.ReplicationModuleBuilder;
+import gridool.replication.ReplicationManager;
 import gridool.routing.GridTaskRouter;
 import gridool.taskqueue.GridTaskQueueManager;
 
@@ -72,8 +70,7 @@ public final class GridResourceRegistry {
     private GridTaskProcessor taskProcessor;
     private ILocalDirectory directory;
     private GridExecutionMonitor executionMonitor;
-    private final ReplicaSelector replicaSelector;
-    private final ReplicaCoordinator replicaCoordinator;
+    private final ReplicationManager replicationManager;
 
     public GridResourceRegistry(@Nonnull GridKernel kernel, @Nonnull GridConfiguration config) {
         this.kernel = kernel;
@@ -82,8 +79,7 @@ public final class GridResourceRegistry {
         this.ldrMap = new ConcurrentHashMap<GridNode, GridPerNodeClassLoader>();
         GridTaskMetricsCounter counter = new GridTaskMetricsCounter();
         this.taskMetricsCounter = new AtomicReference<GridTaskMetricsCounter>(counter);
-        this.replicaSelector = ReplicationModuleBuilder.createReplicaSelector();
-        this.replicaCoordinator = ReplicationModuleBuilder.createReplicaCoordinator(config);
+        this.replicationManager = new ReplicationManager(kernel, config);
     }
 
     public GridKernel getGridKernel() {
@@ -225,13 +221,8 @@ public final class GridResourceRegistry {
     }
 
     @Nonnull
-    public ReplicaSelector getReplicaSelector() {
-        return replicaSelector;
-    }
-
-    @Nonnull
-    public ReplicaCoordinator getReplicaCoordinator() {
-        return replicaCoordinator;
+    public ReplicationManager getReplicationManager() {
+        return replicationManager;
     }
 
     private static final class GridResourceNotFoundException extends GridRuntimeException {

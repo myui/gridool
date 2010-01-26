@@ -51,8 +51,12 @@ import xbird.util.jdbc.JDBCUtils;
 public final class MonetDBParallelLoadOperation extends DBOperation {
     private static final long serialVersionUID = 2815346044185945907L;
     private static final Log LOG = LogFactory.getLog(MonetDBParallelLoadOperation.class);
+    private static final String driverClassName = "nl.cwi.monetdb.jdbc.MonetDriver";
 
-    private static final String hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
+    private static final String hiddenFieldName;
+    static {
+        hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
+    }
 
     @Nonnull
     private/* final */String tableName;
@@ -65,7 +69,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     public MonetDBParallelLoadOperation() {}
 
-    public MonetDBParallelLoadOperation(String driverClassName, String connectUrl, @Nonnull String tableName, @Nonnull String createTableDDL, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
+    public MonetDBParallelLoadOperation(String connectUrl, @Nonnull String tableName, @Nonnull String createTableDDL, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
         super(driverClassName, connectUrl);
         this.tableName = tableName;
         this.createTableDDL = createTableDDL;

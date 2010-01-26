@@ -158,4 +158,8 @@ public final class GridTaskInfo implements GridTask {
         throw new UnsupportedOperationException();
     }
 
+    public boolean isReplicatable() {
+        throw new UnsupportedOperationException();
+    }
+
 }

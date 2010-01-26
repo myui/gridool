@@ -53,7 +53,6 @@ public final class MonetDBInvokeParallelLoadJob extends
     public Map<GridTask, GridNode> map(GridTaskRouter router, Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>> args)
             throws GridException {
         final MonetDBParallelLoadOperation ops = args.getFirst();
-        final String driverClassName = ops.getDriverClassName();
         final String connectUrl = ops.getConnectUrl();
         final String userName = ops.getUserName();
         final String password = ops.getPassword();
@@ -67,7 +66,7 @@ public final class MonetDBInvokeParallelLoadJob extends
             GridNode node = e.getKey();
             int numRecords = e.getValue().intValue();
             String copyIntoQuery = (numRecords == 0) ? null : ops.getCopyIntoQuery(numRecords);
-            MonetDBParallelLoadOperation shrinkedOps = new MonetDBParallelLoadOperation(driverClassName, connectUrl, tableName, createTableDDL, copyIntoQuery, alterTableDDL);
+            MonetDBParallelLoadOperation shrinkedOps = new MonetDBParallelLoadOperation(connectUrl, tableName, createTableDDL, copyIntoQuery, alterTableDDL);
             shrinkedOps.setAuth(userName, password);
             GridTask task = new DBTaskAdapter(this, shrinkedOps);
             map.put(task, node);

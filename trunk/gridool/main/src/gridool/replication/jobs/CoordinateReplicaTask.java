@@ -18,7 +18,7 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.replication;
+package gridool.replication.jobs;
 
 import gridool.GridConfiguration;
 import gridool.GridException;
@@ -29,6 +29,9 @@ import gridool.annotation.GridConfigResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.communication.payload.GridNodeInfo;
 import gridool.construct.GridTaskAdapter;
+import gridool.replication.ReplicaCoordinator;
+import gridool.replication.ReplicaSelector;
+import gridool.replication.ReplicationManager;
 import gridool.routing.GridTaskRouter;
 
 import java.util.List;
@@ -49,7 +52,7 @@ public final class CoordinateReplicaTask extends GridTaskAdapter {
     private final CoordinateReplicaJob.JobConf jobConf;
 
     @GridConfigResource
-    private GridConfiguration conf;    
+    private GridConfiguration conf;
     @GridRegistryResource
     private GridResourceRegistry registry;
 
@@ -65,16 +68,17 @@ public final class CoordinateReplicaTask extends GridTaskAdapter {
     }
 
     public Integer execute() throws GridException {
-        ReplicaSelector selector = registry.getReplicaSelector();        
-        GridTaskRouter router = registry.getTaskRouter();        
+        ReplicationManager manager = registry.getReplicationManager();
+
+        ReplicaSelector selector = manager.getReplicaSelector();
+        GridTaskRouter router = registry.getTaskRouter();
         GridNodeInfo localNode = conf.getLocalNode();
-        
         int numReplicas = jobConf.getNumReplicas();
         List<GridNode> replicas = selector.selectReplica(router, localNode, numReplicas);
-        
-        ReplicaCoordinator coord = registry.getReplicaCoordinator();
+
+        ReplicaCoordinator coord = manager.getReplicaCoordinator();
         coord.configureReplica(localNode, replicas);
-        
+
         return replicas.size();
     }
 
