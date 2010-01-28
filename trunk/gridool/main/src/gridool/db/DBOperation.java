@@ -101,7 +101,7 @@ public abstract class DBOperation implements Externalizable {
         return true;
     }
 
-    public void setReplication() {
+    public void setTransferToReplica() {
         this.replicated = true;
     }
 

@@ -58,8 +58,8 @@ public final class DBTaskAdapter extends GridTaskAdapter {
     }
 
     @Override
-    public void setReplication() {
-        
+    public void setTransferToReplica() {
+        opr.setTransferToReplica();
     }
 
     public Serializable execute() throws GridException {
