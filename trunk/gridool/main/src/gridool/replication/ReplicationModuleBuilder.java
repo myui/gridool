@@ -21,6 +21,7 @@
 package gridool.replication;
 
 import gridool.GridConfiguration;
+import gridool.GridKernel;
 import gridool.communication.payload.GridNodeInfo;
 import gridool.replication.listener.ReplicationEventLogger;
 import gridool.replication.strategy.ChainedDeclusteringSelector;
@@ -44,14 +45,21 @@ public final class ReplicationModuleBuilder {
         return replicaSelector;
     }
 
-    public static ReplicaCoordinator createReplicaCoordinator(@Nonnull GridConfiguration config) {
+    public static ReplicaCoordinator createReplicaCoordinator(@Nonnull GridKernel kernel, @Nonnull GridConfiguration config) {
         GridNodeInfo localNode = config.getLocalNode();
         final ReplicaCoordinator coord = new ReplicaCoordinator(localNode);
 
         // TODO
-        coord.addListeners(new ReplicationEventLogger());
+        addListeners(coord, kernel, new ReplicationEventLogger());
 
         return coord;
+    }
+
+    private static void addListeners(ReplicaCoordinator coord, GridKernel kernel, ReplicaCoordinatorListener... listeners) {
+        for(ReplicaCoordinatorListener listener : listeners) {
+            listener.setup(kernel);
+            coord.addListeners(listener);
+        }
     }
 
 }

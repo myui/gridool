@@ -54,7 +54,7 @@ public final class ReplicationManager {
     public ReplicationManager(@Nonnull GridKernel kernel, @Nonnull GridConfiguration config) {
         this.kernel = kernel;
         this.replicaSelector = ReplicationModuleBuilder.createReplicaSelector();
-        this.replicaCoordinator = ReplicationModuleBuilder.createReplicaCoordinator(config);
+        this.replicaCoordinator = ReplicationModuleBuilder.createReplicaCoordinator(kernel, config);
     }
 
     @Nonnull

@@ -20,6 +20,7 @@
  */
 package gridool.replication;
 
+import gridool.GridKernel;
 import gridool.GridNode;
 import gridool.discovery.GridDiscoveryListener;
 
@@ -36,6 +37,8 @@ import javax.annotation.Nonnull;
  */
 public interface ReplicaCoordinatorListener extends GridDiscoveryListener {
 
+    void setup(@Nonnull GridKernel kernel);
+    
     boolean onConfigureReplica(@Nonnull GridNode masterNode, @Nonnull List<GridNode> oldReplicas, @Nonnull List<GridNode> newReplicas);
 
 }

@@ -20,6 +20,7 @@
  */
 package gridool.replication.listener;
 
+import gridool.GridKernel;
 import gridool.GridNode;
 import gridool.discovery.DiscoveryEvent;
 import gridool.replication.ReplicaCoordinatorListener;
@@ -41,6 +42,8 @@ public final class ReplicationEventLogger implements ReplicaCoordinatorListener 
 
     public ReplicationEventLogger() {}
 
+    public void setup(GridKernel kernel) {}
+
     public boolean onConfigureReplica(GridNode masterNode, List<GridNode> oldReplicas, List<GridNode> newReplicas) {
         if(LOG.isInfoEnabled()) {
             LOG.info("Configure new replicas '" + newReplicas + "' for node '" + masterNode
@@ -60,5 +63,4 @@ public final class ReplicationEventLogger implements ReplicaCoordinatorListener 
             LOG.debug("Event '" + event + "' happend on " + node);
         }
     }
-
 }
