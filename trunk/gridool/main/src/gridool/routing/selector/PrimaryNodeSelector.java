@@ -24,7 +24,6 @@ import gridool.GridConfiguration;
 import gridool.GridNode;
 import gridool.routing.GridNodeSelector;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -45,14 +44,6 @@ public final class PrimaryNodeSelector implements GridNodeSelector {
         } else {
             return nodeList.get(0);
         }
-    }
-
-    public GridNode selectNode(GridNode primaryNode, GridConfiguration config) {
-        return primaryNode;
-    }
-
-    public List<GridNode> selectNodesSorted(GridNode primaryNode, int maxNumSelect, GridConfiguration config) {
-        return Arrays.asList(primaryNode);
     }
 
 }

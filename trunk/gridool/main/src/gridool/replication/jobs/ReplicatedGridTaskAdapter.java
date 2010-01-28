@@ -68,7 +68,7 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
         return false;
     }
 
-    public void setReplication() {
+    public void setTransferToReplica() {
         throw new IllegalStateException();
     }
 
@@ -100,7 +100,7 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
         return false;
     }
 
-    public List<GridNode> listFailoverCandidates(GridTask task, GridTaskRouter router) {
+    public List<GridNode> listFailoverCandidates(GridNode localNode, GridTaskRouter router) {
         return Collections.emptyList();
     }
 

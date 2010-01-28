@@ -43,8 +43,6 @@ public interface GridTask extends GridLocatable, GridAnnotatable {
 
     boolean isAsyncTask();
 
-    GridTaskRelocatability getRelocatability();
-
     // ----------------------
     // runtime information
 
@@ -91,17 +89,19 @@ public interface GridTask extends GridLocatable, GridAnnotatable {
     // ----------------------
     // fail-over
 
+    GridTaskRelocatability getRelocatability();
+
     boolean isFailoverActive();
 
     // TODO REVIEWME
     @Nonnull
-    List<GridNode> listFailoverCandidates(@Nonnull GridTask task, @Nonnull GridTaskRouter router);
+    List<GridNode> listFailoverCandidates(@Nonnull GridNode localNode, @Nonnull GridTaskRouter router);
 
     // ----------------------
     // replication
 
     boolean isReplicatable();
 
-    void setReplication();
+    void setTransferToReplica();
 
 }

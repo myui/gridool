@@ -52,9 +52,9 @@ public final class CoordinateReplicaTask extends GridTaskAdapter {
     private final CoordinateReplicaJob.JobConf jobConf;
 
     @GridConfigResource
-    private GridConfiguration conf;
+    private transient GridConfiguration conf;
     @GridRegistryResource
-    private GridResourceRegistry registry;
+    private transient GridResourceRegistry registry;
 
     @SuppressWarnings("unchecked")
     public CoordinateReplicaTask(GridJob job, CoordinateReplicaJob.JobConf jobConf) {

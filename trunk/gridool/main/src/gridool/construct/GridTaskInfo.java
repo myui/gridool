@@ -146,7 +146,7 @@ public final class GridTaskInfo implements GridTask {
         throw new UnsupportedOperationException();
     }
 
-    public List<GridNode> listFailoverCandidates(GridTask task, GridTaskRouter router) {
+    public List<GridNode> listFailoverCandidates(GridNode localNode, GridTaskRouter router) {
         throw new UnsupportedOperationException();
     }
 
@@ -162,7 +162,7 @@ public final class GridTaskInfo implements GridTask {
         throw new UnsupportedOperationException();
     }
 
-    public void setReplication() {
+    public void setTransferToReplica() {
         throw new UnsupportedOperationException();
     }
 

@@ -34,6 +34,7 @@ import gridool.util.GridUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -68,7 +69,6 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
     protected long finishedTime = -1L;
 
     private final boolean isFailoverActive;
-    private boolean replicated = false;
 
     protected volatile boolean canceled = false;
     private transient volatile FutureTask<Serializable> running;
@@ -101,10 +101,6 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
 
     public boolean isAsyncTask() {
         return false;
-    }
-
-    public GridTaskRelocatability getRelocatability() {
-        return GridTaskRelocatability.unable;
     }
 
     public final String getTaskId() {
@@ -189,27 +185,42 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
         return canceled;
     }
 
+    public GridTaskRelocatability getRelocatability() {
+        return GridTaskRelocatability.unable;
+    }
+
     public boolean isFailoverActive() {
         return isFailoverActive;
     }
 
-    public List<GridNode> listFailoverCandidates(GridTask task, GridTaskRouter router) {
+    public List<GridNode> listFailoverCandidates(GridNode localNode, GridTaskRouter router) {
         if(!isFailoverActive) {
             throw new IllegalStateException("Failover is not active");
         }
-        GridNode[] nodes = router.getAllNodes();
-        return Arrays.asList(nodes);
+        final List<GridNode> nodeList;
+        switch(getRelocatability()) {
+            case relocatable:
+                GridNode[] nodes = router.getAllNodes();
+                nodeList = Arrays.asList(nodes);
+                break;
+            case restricedToReplica:
+                nodeList = localNode.getReplicas();
+                break;
+            case unable:
+                nodeList = Collections.emptyList();
+                break;
+            default:
+                throw new IllegalStateException("Unexpected task replicatability: "
+                        + getRelocatability());
+        }
+        return nodeList;
     }
 
     public boolean isReplicatable() {
         return false;
     }
 
-    public void setReplication() {}
-
-    public boolean isReplicated() {
-        return replicated;
-    }
+    public void setTransferToReplica() {}
 
     public int compareTo(GridLocatable other) {
         String otherKey = other.getKey();

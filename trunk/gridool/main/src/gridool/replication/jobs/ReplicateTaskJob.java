@@ -48,7 +48,7 @@ public final class ReplicateTaskJob extends GridJobBase<ReplicateTaskJob.JobConf
     private static final long serialVersionUID = -7198833169724654323L;
     private static final Log LOG = LogFactory.getLog(ReplicateTaskJob.class);
 
-    private boolean succeed = false;
+    private transient boolean succeed = false;
 
     public ReplicateTaskJob() {
         super();
@@ -56,7 +56,7 @@ public final class ReplicateTaskJob extends GridJobBase<ReplicateTaskJob.JobConf
 
     public Map<GridTask, GridNode> map(GridTaskRouter router, JobConf jobConf) throws GridException {
         final GridTask taskToReplicate = jobConf.getTask();
-        taskToReplicate.setReplication();
+        taskToReplicate.setTransferToReplica();
 
         final List<GridNode> destNodes = jobConf.getDestNodes();
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(destNodes.size());

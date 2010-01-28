@@ -47,7 +47,7 @@ import java.util.Map;
 public final class CoordinateReplicaJob extends GridJobBase<CoordinateReplicaJob.JobConf, Integer> {
     private static final long serialVersionUID = 7562696673301106475L;
 
-    private int minReplicas = -1;
+    private transient int minReplicas = -1;
 
     public CoordinateReplicaJob() {
         super();
