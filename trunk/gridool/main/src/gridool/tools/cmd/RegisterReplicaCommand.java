@@ -43,7 +43,6 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -52,7 +51,6 @@ import org.apache.commons.logging.LogFactory;
 
 import xbird.util.cmdline.CommandBase;
 import xbird.util.cmdline.CommandException;
-import xbird.util.cmdline.Option;
 import xbird.util.cmdline.Option.SOption;
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
@@ -70,16 +68,10 @@ public final class RegisterReplicaCommand extends CommandBase {
 
     public RegisterReplicaCommand() {
         super();
-    }
-
-    @Override
-    public Map<String, Option<?>> listOptions() {
-        final Map<String, Option<?>> opts = new HashMap<String, Option<?>>(4);
-        addOption(opts, new SOption("driverClassName", "nl.cwi.monetdb.jdbc.MonetDriver", true));
-        addOption(opts, new SOption("primaryDbUrl", true));
-        addOption(opts, new SOption("user", true));
-        addOption(opts, new SOption("passwd", true));
-        return opts;
+        addOption(new SOption("driverClassName", "nl.cwi.monetdb.jdbc.MonetDriver", true));
+        addOption(new SOption("primaryDbUrl", true));
+        addOption(new SOption("user", true));
+        addOption(new SOption("passwd", true));
     }
 
     public boolean match(String[] args) {
