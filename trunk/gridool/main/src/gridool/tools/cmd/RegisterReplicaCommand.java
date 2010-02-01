@@ -51,7 +51,7 @@ import org.apache.commons.logging.LogFactory;
 
 import xbird.util.cmdline.CommandBase;
 import xbird.util.cmdline.CommandException;
-import xbird.util.cmdline.Option.SOption;
+import xbird.util.cmdline.Option.StringOption;
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.lang.ArrayUtils;
@@ -68,10 +68,10 @@ public final class RegisterReplicaCommand extends CommandBase {
 
     public RegisterReplicaCommand() {
         super();
-        addOption(new SOption("driverClassName", "nl.cwi.monetdb.jdbc.MonetDriver", true));
-        addOption(new SOption("primaryDbUrl", true));
-        addOption(new SOption("user", true));
-        addOption(new SOption("passwd", true));
+        addOption(new StringOption("driverClassName", "nl.cwi.monetdb.jdbc.MonetDriver", true));
+        addOption(new StringOption("primaryDbUrl", true));
+        addOption(new StringOption("user", true));
+        addOption(new StringOption("passwd", true));
     }
 
     public boolean match(String[] args) {
