@@ -31,6 +31,7 @@ import org.apache.commons.logging.LogFactory;
 
 import xbird.util.cmdline.CommandBase;
 import xbird.util.cmdline.CommandException;
+import xbird.util.cmdline.Option.StringOption;
 
 /**
  * coordinate replica NUMBER reorg?
@@ -42,7 +43,13 @@ import xbird.util.cmdline.CommandException;
 public final class CoordinateReplicaCommand extends CommandBase {
     private static final Log LOG = LogFactory.getLog(CoordinateReplicaCommand.class);
 
-    public CoordinateReplicaCommand() {}
+    public CoordinateReplicaCommand() {
+        super();
+        addOption(new StringOption("driverClassName", "nl.cwi.monetdb.jdbc.MonetDriver", true));
+        addOption(new StringOption("primaryDbUrl", true));
+        addOption(new StringOption("user", true));
+        addOption(new StringOption("passwd", true));
+    }
 
     public boolean match(String[] args) {
         final int arglen = args.length;
@@ -73,9 +80,14 @@ public final class CoordinateReplicaCommand extends CommandBase {
     }
 
     public boolean process(String[] args) throws CommandException {
+        String driverClassName = getOption("driverClassName");
+        String primaryDbUrl = getOption("primaryDbUrl");
+        String user = getOption("user");
+        String passwd = getOption("passwd");
+
         boolean reorg = "reorg".equalsIgnoreCase(args[3]);
         int numReplicas = Integer.parseInt(args[2]);
-        final CoordinateReplicaJob.JobConf jobConf = new CoordinateReplicaJob.JobConf(numReplicas, reorg);
+        final CoordinateReplicaJob.JobConf jobConf = new CoordinateReplicaJob.JobConf(driverClassName, primaryDbUrl, user, passwd, numReplicas, reorg);
 
         final Grid grid = new GridClient();
         final int minReplicas;

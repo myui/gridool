@@ -35,6 +35,11 @@ import java.io.ObjectOutput;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import xbird.util.io.IOUtils;
+
 /**
  * 
  * <DIV lang="en">
@@ -82,14 +87,49 @@ public final class CoordinateReplicaJob extends GridJobBase<CoordinateReplicaJob
 
     public static final class JobConf implements Externalizable {
 
+        @Nonnull
+        private String driverClassName;
+        @Nonnull
+        private String primaryDbUrl;
+        @Nullable
+        private String user;
+        @Nullable
+        private String passwd;
+
         private int numReplicas;
         private boolean reorg;
 
         public JobConf() {}// for Externalizable
 
-        public JobConf(int numReplicas, boolean reorg) {
+        public JobConf(String driverClassName, String primaryDbUrl, String user, String passwd, int numReplicas, boolean reorg) {
+            if(driverClassName == null) {
+                throw new IllegalArgumentException();
+            }
+            if(primaryDbUrl == null) {
+                throw new IllegalArgumentException();
+            }
+            this.driverClassName = driverClassName;
+            this.primaryDbUrl = primaryDbUrl;
+            this.user = user;
+            this.passwd = passwd;
             this.numReplicas = numReplicas;
             this.reorg = reorg;
+        }
+
+        String getDriverClassName() {
+            return driverClassName;
+        }
+
+        String getPrimaryDbUrl() {
+            return primaryDbUrl;
+        }
+
+        String getUser() {
+            return user;
+        }
+
+        String getPasswd() {
+            return passwd;
         }
 
         int getNumReplicas() {
@@ -101,11 +141,19 @@ public final class CoordinateReplicaJob extends GridJobBase<CoordinateReplicaJob
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            this.driverClassName = IOUtils.readString(in);
+            this.primaryDbUrl = IOUtils.readString(in);
+            this.user = IOUtils.readString(in);
+            this.passwd = IOUtils.readString(in);
             this.numReplicas = in.readInt();
             this.reorg = in.readBoolean();
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
+            IOUtils.writeString(driverClassName, out);
+            IOUtils.writeString(primaryDbUrl, out);
+            IOUtils.writeString(user, out);
+            IOUtils.writeString(passwd, out);
             out.writeInt(numReplicas);
             out.writeBoolean(reorg);
         }
