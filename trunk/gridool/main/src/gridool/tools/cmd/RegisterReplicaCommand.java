@@ -57,7 +57,7 @@ import xbird.util.jdbc.JDBCUtils;
 import xbird.util.lang.ArrayUtils;
 
 /**
- * 
+ * register replica DBNAME1 DBNAME2 .. DBNAMEn
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
