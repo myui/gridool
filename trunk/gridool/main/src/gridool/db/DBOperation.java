@@ -20,13 +20,16 @@
  */
 package gridool.db;
 
+import gridool.GridNode;
+import gridool.GridResourceRegistry;
+import gridool.replication.ReplicationManager;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 import javax.annotation.CheckForNull;
@@ -34,6 +37,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import xbird.util.io.IOUtils;
+import xbird.util.jdbc.JDBCUtils;
 
 /**
  * 
@@ -54,7 +58,11 @@ public abstract class DBOperation implements Externalizable {
     @Nullable
     protected String password = null;
 
-    private boolean replicated = false;
+    @Nullable
+    private GridNode masterNode = null;
+
+    @Nullable
+    private transient GridResourceRegistry registry;
 
     public DBOperation() {}// Externalizable
 
@@ -94,24 +102,47 @@ public abstract class DBOperation implements Externalizable {
         return true;
     }
 
-    public void setTransferToReplica() {
-        this.replicated = true;
+    public void setTransferToReplica(@Nonnull GridNode masterNode) {
+        this.masterNode = masterNode;
+    }
+
+    public void setResourceRegistry(@Nonnull GridResourceRegistry registry) {
+        this.registry = registry;
     }
 
     public final Connection getConnection() throws ClassNotFoundException, SQLException {
-        Class.forName(driverClassName);
-        final Connection conn;
-        if(userName == null) {
-            conn = DriverManager.getConnection(connectUrl);
-        } else {
-            conn = DriverManager.getConnection(connectUrl, userName, password);
-        }
+        final Connection conn = JDBCUtils.getConnection(connectUrl, driverClassName, userName, password);
         configureConnection(conn);
+
+        if(masterNode != null) {
+            return getReplicaConnection(conn, masterNode);
+        }
+
         return conn;
     }
 
     protected void configureConnection(@Nonnull Connection conn) throws SQLException {
         conn.setAutoCommit(false);
+    }
+
+    private Connection getReplicaConnection(@Nonnull Connection conn, @Nonnull GridNode masterNode)
+            throws SQLException {
+        if(registry == null) {
+            throw new IllegalStateException("GridResourceRegistory is not set");
+        }
+        ReplicationManager replicationMgr = registry.getReplicationManager();
+        String replicaDbName = replicationMgr.getReplicaDatabaseName(conn, masterNode);
+        if(replicaDbName == null) {
+            throw new IllegalStateException("Replica database of node '" + masterNode
+                    + "' does not exist");
+        }
+        // REVIEWME monetdb specific code
+        String localdbUrl = connectUrl.substring(0, connectUrl.lastIndexOf('/') + 1);
+        String dbUrl = localdbUrl + replicaDbName;
+
+        Connection replicaConn = JDBCUtils.getConnection(dbUrl, userName, password);
+        configureConnection(replicaConn);
+        return replicaConn;
     }
 
     public abstract Serializable execute() throws SQLException;
@@ -121,7 +152,7 @@ public abstract class DBOperation implements Externalizable {
         IOUtils.writeString(connectUrl, out);
         IOUtils.writeString(userName, out);
         IOUtils.writeString(password, out);
-        out.writeBoolean(replicated);
+        out.writeObject(masterNode);
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
@@ -129,6 +160,6 @@ public abstract class DBOperation implements Externalizable {
         this.connectUrl = IOUtils.readString(in);
         this.userName = IOUtils.readString(in);
         this.password = IOUtils.readString(in);
-        this.replicated = in.readBoolean();
+        this.masterNode = (GridNode) in.readObject();
     }
 }

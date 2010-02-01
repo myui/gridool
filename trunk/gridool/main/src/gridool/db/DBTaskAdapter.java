@@ -22,6 +22,9 @@ package gridool.db;
 
 import gridool.GridException;
 import gridool.GridJob;
+import gridool.GridNode;
+import gridool.GridResourceRegistry;
+import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridTaskAdapter;
 
 import java.io.Serializable;
@@ -42,7 +45,11 @@ public final class DBTaskAdapter extends GridTaskAdapter {
 
     @Nonnull
     private final DBOperation opr;
-
+    
+    private boolean injectResources = false;
+    @GridRegistryResource
+    private transient GridResourceRegistry registry;
+    
     @SuppressWarnings("unchecked")
     public DBTaskAdapter(@Nonnull GridJob job, @CheckForNull DBOperation opr) {
         super(job, false);
@@ -53,16 +60,26 @@ public final class DBTaskAdapter extends GridTaskAdapter {
     }
 
     @Override
+    public boolean injectResources() {
+        return injectResources;
+    }
+
+    @Override
     public boolean isReplicatable() {
         return opr.isReplicatable();
     }
 
     @Override
-    public void setTransferToReplica() {
-        opr.setTransferToReplica();
+    public void setTransferToReplica(GridNode masterNode) {
+        opr.setTransferToReplica(masterNode);
+        this.injectResources = true;
     }
 
     public Serializable execute() throws GridException {
+        if(injectResources) {
+            assert (registry != null);
+            opr.setResourceRegistry(registry);
+        }        
         try {
             return opr.execute();
         } catch (SQLException e) {

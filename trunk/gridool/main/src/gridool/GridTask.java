@@ -102,6 +102,6 @@ public interface GridTask extends GridLocatable, GridAnnotatable {
 
     boolean isReplicatable();
 
-    void setTransferToReplica();
+    void setTransferToReplica(@Nonnull GridNode masterNode);
 
 }

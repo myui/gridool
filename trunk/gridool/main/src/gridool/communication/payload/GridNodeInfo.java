@@ -69,6 +69,10 @@ public class GridNodeInfo implements GridNode, Externalizable {
 
     public GridNodeInfo() {}//for Externalizable
 
+    public GridNodeInfo(@CheckForNull InetAddress addr, int port) {
+        this(addr, port, false, null);
+    }
+
     public GridNodeInfo(@CheckForNull InetAddress addr, int port, boolean superNode) {
         this(addr, port, superNode, null);
     }

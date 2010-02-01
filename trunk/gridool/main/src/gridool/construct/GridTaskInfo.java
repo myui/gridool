@@ -162,7 +162,7 @@ public final class GridTaskInfo implements GridTask {
         throw new UnsupportedOperationException();
     }
 
-    public void setTransferToReplica() {
+    public void setTransferToReplica(GridNode masterNode) {
         throw new UnsupportedOperationException();
     }
 

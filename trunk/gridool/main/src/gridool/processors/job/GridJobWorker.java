@@ -281,7 +281,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
         GridNode localNode = config.getLocalNode();
         final List<GridNode> candidates = task.listFailoverCandidates(localNode, router);
         if(candidates.isEmpty()) {
-            throw new GridException("Failover failed because there is no relocatbale node: [job="
+            throw new GridException("Failover failed because there is no relocatable node: [job="
                     + job + ", task:" + task + ']');
         }
         GridNodeSelector selector = config.getNodeSelector();
@@ -290,7 +290,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
         if(LOG.isWarnEnabled()) {
             LOG.warn("[Failover] Assigned a job [" + job + "] to node [" + node + "]");
         }
-        task.setTransferToReplica();
+        task.setTransferToReplica(localNode);
         GridTaskAssignor workerTask = new GridTaskAssignor(task, node, taskProc, communicationMgr, resultQueue);
         return execPool.submit(workerTask);
     }

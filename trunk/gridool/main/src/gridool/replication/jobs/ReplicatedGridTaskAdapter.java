@@ -68,7 +68,7 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
         return false;
     }
 
-    public void setTransferToReplica() {
+    public void setTransferToReplica(GridNode masterNode) {
         throw new IllegalStateException();
     }
 

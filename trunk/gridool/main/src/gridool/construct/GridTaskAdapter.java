@@ -220,7 +220,7 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
         return false;
     }
 
-    public void setTransferToReplica() {}
+    public void setTransferToReplica(GridNode masterNode) {}
 
     public int compareTo(GridLocatable other) {
         String otherKey = other.getKey();
