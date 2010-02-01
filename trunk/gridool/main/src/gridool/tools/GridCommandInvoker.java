@@ -20,7 +20,7 @@
  */
 package gridool.tools;
 
-import gridool.tools.cmd.RegisterReplicaCmd;
+import gridool.tools.cmd.RegisterReplicaCommand;
 import xbird.util.cmdline.Command;
 import xbird.util.cmdline.CommandInvokerBase;
 
@@ -38,7 +38,7 @@ public final class GridCommandInvoker extends CommandInvokerBase {
     }
 
     private static Command[] listCommands() {
-        return new Command[] { new RegisterReplicaCmd() };
+        return new Command[] { new RegisterReplicaCommand() };
     }
 
     public static void main(String[] args) {

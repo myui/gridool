@@ -65,10 +65,10 @@ import xbird.util.lang.ArrayUtils;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class RegisterReplicaCmd extends CommandBase {
-    private static final Log LOG = LogFactory.getLog(RegisterReplicaCmd.class);
+public final class RegisterReplicaCommand extends CommandBase {
+    private static final Log LOG = LogFactory.getLog(RegisterReplicaCommand.class);
 
-    public RegisterReplicaCmd() {
+    public RegisterReplicaCommand() {
         super();
     }
 
