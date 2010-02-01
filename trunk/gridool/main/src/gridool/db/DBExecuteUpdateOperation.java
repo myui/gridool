@@ -51,8 +51,8 @@ public final class DBExecuteUpdateOperation extends DBOperation {
 
     public DBExecuteUpdateOperation() {}// for Externalizable
 
-    public DBExecuteUpdateOperation(@Nonnull String driverClassName, @Nonnull String connectUrl, @Nonnull String replicaUrl, @Nonnull String sql) {
-        super(driverClassName, connectUrl, replicaUrl);
+    public DBExecuteUpdateOperation(@Nonnull String driverClassName, @Nonnull String connectUrl, @Nonnull String sql) {
+        super(driverClassName, connectUrl);
         this.sql = sql;
     }
 

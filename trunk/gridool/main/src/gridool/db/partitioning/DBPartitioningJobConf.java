@@ -116,9 +116,6 @@ public abstract class DBPartitioningJobConf implements Serializable {
     @Nonnull
     public abstract String getConnectUrl();
 
-    @Nonnull
-    public abstract String getReplicaConnectUrl();
-
     @Nullable
     public String getUserName() {
         return null;

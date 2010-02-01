@@ -79,8 +79,6 @@ public abstract class DBMapReduceJobConf implements Serializable {
 
     public abstract String getConnectUrl();
 
-    public abstract String getReplicaConnectUrl();
-
     public String getUserName() {
         return null;
     }

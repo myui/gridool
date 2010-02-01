@@ -71,8 +71,8 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     public MonetDBParallelLoadOperation() {}
 
-    public MonetDBParallelLoadOperation(@Nonnull String connectUrl, @Nullable String replicaConnectUrl, @Nonnull String tableName, @Nonnull String csvFileName, @Nonnull String createTableDDL, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
-        super(driverClassName, replicaConnectUrl, connectUrl);
+    public MonetDBParallelLoadOperation(@Nonnull String connectUrl, @Nonnull String tableName, @Nonnull String csvFileName, @Nonnull String createTableDDL, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
+        super(driverClassName, connectUrl);
         this.tableName = tableName;
         this.csvFileName = csvFileName;
         this.createTableDDL = createTableDDL;

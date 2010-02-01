@@ -63,12 +63,12 @@ public final class DBInsertOperation extends DBOperation {
         super();
     } // for Externalizable
 
-    public DBInsertOperation(String driverClassName, String connectUrl, @Nullable String replicaUrl, @CheckForNull String tableName, @CheckForNull String[] fieldNames, @CheckForNull DBRecord[] records) {
-        this(driverClassName, connectUrl, replicaUrl, null, tableName, fieldNames, records);
+    public DBInsertOperation(String driverClassName, String connectUrl, @CheckForNull String tableName, @CheckForNull String[] fieldNames, @CheckForNull DBRecord[] records) {
+        this(driverClassName, connectUrl, null, tableName, fieldNames, records);
     }
 
-    public DBInsertOperation(String driverClassName, String connectUrl, @Nullable String replicaUrl, @Nullable String createTableDDL, @CheckForNull String tableName, @CheckForNull String[] fieldNames, @CheckForNull DBRecord[] records) {
-        super(driverClassName, replicaUrl, connectUrl);
+    public DBInsertOperation(String driverClassName, String connectUrl, @Nullable String createTableDDL, @CheckForNull String tableName, @CheckForNull String[] fieldNames, @CheckForNull DBRecord[] records) {
+        super(driverClassName, connectUrl);
         checkParameters(tableName, fieldNames, records);
         this.createTableDDL = createTableDDL;
         this.tableName = tableName;
@@ -238,7 +238,7 @@ public final class DBInsertOperation extends DBOperation {
     }
 
     public DBInsertOperation makeOperation(@Nonnull final DBRecord[] shrinkedRecords) {
-        final DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, replicaConnectUrl, createTableDDL, tableName, fieldNames, shrinkedRecords);
+        final DBInsertOperation ops = new DBInsertOperation(driverClassName, connectUrl, createTableDDL, tableName, fieldNames, shrinkedRecords);
         ops.userName = userName;
         ops.password = password;
         return ops;

@@ -113,8 +113,6 @@ public final class DBCountPageView {
         String driverClassName = "nl.cwi.monetdb.jdbc.MonetDriver";
         @Option(name = "-connectUrl", usage = "database connect Url")
         String dbConnectUrl = "jdbc:monetdb://localhost/URLAccess";
-        @Option(name = "-replicaUrl", usage = "database connect Url")
-        String replicaUrl = "jdbc:monetdb://localhost/URLAccess2";
         @Option(name = "-user", usage = "database user name")
         String dbUserName = null;
         @Option(name = "-passwd", usage = "database password")
@@ -143,11 +141,6 @@ public final class DBCountPageView {
         @Override
         public String getConnectUrl() {
             return dbConnectUrl;
-        }
-
-        @Override
-        public String getReplicaConnectUrl() {
-            return replicaUrl;
         }
 
         @Override
