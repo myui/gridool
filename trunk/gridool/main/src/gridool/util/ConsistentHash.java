@@ -133,7 +133,9 @@ public final class ConsistentHash {
             }
             for(; tail.hasNext() && accquired < numToGets; accquired++) {
                 GridNode n = tail.next();
-                retNodes.add(n);
+                if(!retNodes.contains(n)) {
+                    retNodes.add(n);
+                }
             }
         }
         if(accquired < numToGets) {
@@ -144,7 +146,9 @@ public final class ConsistentHash {
             }
             for(; head.hasNext() && accquired < numToGets; accquired++) {
                 GridNode n = head.next();
-                retNodes.add(n);
+                if(!retNodes.contains(n)) {
+                    retNodes.add(n);
+                }
             }
         }
         return retNodes;
