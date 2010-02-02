@@ -39,10 +39,23 @@ public class GridNodeInfoTest extends TestCase {
         int port = 3333;
         boolean isSuper = true;
         GridNodeInfo node = new GridNodeInfo(addr, port, isSuper);
+        byte[] b = node.toBytes(false);
+        GridNodeInfo node2 = GridNodeInfo.fromBytes(b);
+        assertEquals(addr, node2.getPhysicalAdress());
+        assertEquals(port, node2.getPort());
+        assertEquals(isSuper, node2.isSuperNode());
+    }
+
+    public void testSerialize2() {
+        InetAddress addr = NetUtils.getLocalHost();
+        int port = 3333;
+        boolean isSuper = true;
+        GridNodeInfo node = new GridNodeInfo(addr, port, isSuper);
         byte[] b = node.toBytes(true);
         GridNodeInfo node2 = GridNodeInfo.fromBytes(b);
         assertEquals(addr, node2.getPhysicalAdress());
         assertEquals(port, node2.getPort());
         assertEquals(isSuper, node2.isSuperNode());
+        assertEquals(node.getKey(), node2.getKey());
     }
 }
