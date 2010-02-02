@@ -69,7 +69,7 @@ public final class ReplicateTaskJob extends GridJobBase<ReplicateTaskJob.JobConf
         if(err == null) {
             this.succeed = true;
         } else {
-            LOG.warn("One of Replication of task '" + task + "'failed", err);
+            LOG.warn("One of Replication of task '" + task + "' failed", err);
         }
         return GridTaskResultPolicy.CONTINUE;
     }
