@@ -157,9 +157,6 @@ public final class ReplicationManager {
 
             String replicaDbName = replicaNameStack.pop();
             if(replicaDbName != null) {
-                if(replicaDbMappingCache.put(masterNode, replicaDbName) != null) {
-                    throw new IllegalStateException();
-                }
                 Object[] params = new Object[3];
                 params[0] = masterNode.getPhysicalAdress().getHostAddress();
                 params[1] = masterNode.getPort();
@@ -168,6 +165,9 @@ public final class ReplicationManager {
                         + "\" SET ipaddr = ?, portnum = ? WHERE dbname = ?", params);
                 if(rows == 1) {
                     conn.commit();
+                    if(replicaDbMappingCache.put(masterNode, replicaDbName) != null) {
+                        throw new IllegalStateException();
+                    }
                     return true;
                 } else {
                     return false;
@@ -189,7 +189,9 @@ public final class ReplicationManager {
             final Object[][] params = new String[dblen][];
             for(int i = 0; i < dblen; i++) {
                 String dbname = dbnames[i];
-                replicaNameStack.push(dbname);
+                if(!replicaNameStack.contains(dbname)) {
+                    replicaNameStack.push(dbname);
+                }
                 params[i] = new String[] { dbname };
             }
             JDBCUtils.batch(conn, "INSERT INTO \"" + replicaTableName + "\"(dbname) values(?)", params);
