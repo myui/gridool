@@ -110,13 +110,13 @@ public final class RegisterReplicaCommand extends CommandBase {
 
         final JobConf jobConf = new JobConf(driverClassName, primaryDbUrl, user, passwd, dbnames, isLocal);
         final Grid grid = new GridClient();
-        final Boolean suceed;
+        final Boolean succeed;
         try {
-            suceed = grid.execute(RegisterReplicaJob.class, jobConf);
+            succeed = grid.execute(RegisterReplicaJob.class, jobConf);
         } catch (RemoteException e) {
             throw new CommandException(e);
         }
-        return (suceed == null) ? false : suceed.booleanValue();
+        return (succeed == null) ? false : succeed.booleanValue();
     }
 
     public String usage() {
@@ -199,6 +199,7 @@ public final class RegisterReplicaCommand extends CommandBase {
             final Connection conn;
             try {
                 conn = JDBCUtils.getConnection(jobConf.primaryDbUrl, jobConf.driverClassName, jobConf.user, jobConf.passwd);
+                conn.setAutoCommit(false);
             } catch (ClassNotFoundException e) {
                 LOG.error(e);
                 return false;
@@ -211,7 +212,7 @@ public final class RegisterReplicaCommand extends CommandBase {
             try {
                 suceed = repManager.registerReplicaDatabase(conn, jobConf.dbnames);
             } catch (SQLException e) {
-                LOG.error(e);
+                LOG.warn(e);
                 return false;
             }
             return suceed;
@@ -226,8 +227,7 @@ public final class RegisterReplicaCommand extends CommandBase {
         private String user;
         private String passwd;
         private String[] dbnames;
-
-        private transient boolean isLocalTask;
+        private boolean isLocalTask;
 
         public JobConf() {}// for Externalizable
 
@@ -263,6 +263,7 @@ public final class RegisterReplicaCommand extends CommandBase {
             for(int i = 0; i < numdbs; i++) {
                 dbnames[i] = IOUtils.readString(in);
             }
+            this.isLocalTask = in.readBoolean();
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
@@ -275,6 +276,7 @@ public final class RegisterReplicaCommand extends CommandBase {
             for(int i = 0; i < numdbs; i++) {
                 IOUtils.writeString(dbnames[i], out);
             }
+            out.writeBoolean(isLocalTask);
         }
 
     }
