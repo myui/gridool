@@ -109,10 +109,10 @@ public final class RegisterReplicaCommand extends CommandBase {
         return constructHelp("Register replica databases", "register replica DBNAME1 DBNAME2 .. DBNAMEn");
     }
 
-    static final class RegisterReplicaJob extends GridJobBase<JobConf, Boolean> {
+    public static final class RegisterReplicaJob extends GridJobBase<JobConf, Boolean> {
         private static final long serialVersionUID = 375880295535375239L;
 
-        RegisterReplicaJob() {
+        public RegisterReplicaJob() {
             super();
         }
 

@@ -127,7 +127,7 @@ public final class CoordinateReplicaTaskHandler implements ReplicaCoordinatorLis
 
     public void onDiscovery(DiscoveryEvent event, GridNode node) {}// NOP
 
-    static final class ConfigureReplicaJob extends GridJobBase<JobConf, GridNode[]> {
+    public static final class ConfigureReplicaJob extends GridJobBase<JobConf, GridNode[]> {
         private static final long serialVersionUID = -8465966895559944935L;
 
         private transient final List<GridNode> succeedNodes;
