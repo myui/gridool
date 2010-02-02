@@ -23,6 +23,7 @@ package gridool.replication;
 import gridool.GridConfiguration;
 import gridool.GridKernel;
 import gridool.communication.payload.GridNodeInfo;
+import gridool.replication.listener.CoordinateReplicaTaskHandler;
 import gridool.replication.listener.ReplicationEventLogger;
 import gridool.replication.strategy.ChainedDeclusteringSelector;
 
@@ -50,7 +51,7 @@ public final class ReplicationModuleBuilder {
         final ReplicaCoordinator coord = new ReplicaCoordinator(localNode);
 
         // TODO
-        addListeners(coord, kernel, new ReplicationEventLogger());
+        addListeners(coord, kernel, new ReplicationEventLogger(), new CoordinateReplicaTaskHandler());
 
         return coord;
     }
