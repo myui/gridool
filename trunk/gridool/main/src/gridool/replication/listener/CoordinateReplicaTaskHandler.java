@@ -100,6 +100,10 @@ public final class CoordinateReplicaTaskHandler implements ReplicaCoordinatorLis
             }
         }
 
+        if(addedReplicas.isEmpty() && removedReplicas.isEmpty()) {
+            return true; // no need to run a ConfigureReplicaJob.
+        }
+
         final GridJobFuture<GridNode[]> future = kernel.execute(ConfigureReplicaJob.class, new JobConf(masterNode, addedReplicas, removedReplicas, jobConf));
         final GridNode[] succeedNodes;
         try {
@@ -224,7 +228,7 @@ public final class CoordinateReplicaTaskHandler implements ReplicaCoordinatorLis
             final ReplicationManager replicationMgr = registry.getReplicationManager();
             final boolean succeed;
             try {
-                succeed = replicationMgr.configureReplicaDatabase(conn, masterNode, addReplicas);                
+                succeed = replicationMgr.configureReplicaDatabase(conn, masterNode, addReplicas);
             } catch (SQLException e) {
                 LOG.error(e);
                 return Boolean.FALSE;
