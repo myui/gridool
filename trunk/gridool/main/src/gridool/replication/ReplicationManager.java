@@ -154,23 +154,24 @@ public final class ReplicationManager {
             if(replicaDbMappingCache.containsKey(masterNode)) {
                 return true;
             }
-
-            String replicaDbName = replicaNameStack.pop();
-            if(replicaDbName != null) {
-                Object[] params = new Object[3];
-                params[0] = masterNode.getPhysicalAdress().getHostAddress();
-                params[1] = masterNode.getPort();
-                params[2] = replicaDbName;
-                final int rows = JDBCUtils.update(conn, "UPDATE \"" + replicaTableName
-                        + "\" SET ipaddr = ?, portnum = ? WHERE dbname = ?", params);
-                if(rows == 1) {
-                    conn.commit();
-                    if(replicaDbMappingCache.put(masterNode, replicaDbName) != null) {
-                        throw new IllegalStateException();
+            if(!replicaNameStack.isEmpty()) {
+                String replicaDbName = replicaNameStack.pop();
+                if(replicaDbName != null) {
+                    Object[] params = new Object[3];
+                    params[0] = masterNode.getPhysicalAdress().getHostAddress();
+                    params[1] = masterNode.getPort();
+                    params[2] = replicaDbName;
+                    final int rows = JDBCUtils.update(conn, "UPDATE \"" + replicaTableName
+                            + "\" SET ipaddr = ?, portnum = ? WHERE dbname = ?", params);
+                    if(rows == 1) {
+                        conn.commit();
+                        if(replicaDbMappingCache.put(masterNode, replicaDbName) != null) {
+                            throw new IllegalStateException();
+                        }
+                        return true;
+                    } else {
+                        return false;
                     }
-                    return true;
-                } else {
-                    return false;
                 }
             }
         }
