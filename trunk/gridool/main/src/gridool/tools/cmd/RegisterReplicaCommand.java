@@ -126,7 +126,7 @@ public final class RegisterReplicaCommand extends CommandBase {
     public static final class RegisterReplicaJob extends GridJobBase<JobConf, Boolean> {
         private static final long serialVersionUID = 375880295535375239L;
 
-        private transient boolean succeed = false;
+        private transient boolean succeed = true;
 
         public RegisterReplicaJob() {
             super();
@@ -162,9 +162,11 @@ public final class RegisterReplicaCommand extends CommandBase {
         public GridTaskResultPolicy result(GridTask task, GridTaskResult result)
                 throws GridException {
             Boolean res = result.getResult();
-            if(res != null && res.booleanValue()) {
-                assert (succeed == false);
-                this.succeed = true;
+            if(res == null || !res.booleanValue()) {
+                if(LOG.isWarnEnabled()) {
+                    LOG.warn("RegisterReplicaTask failed on node: " + result.getExecutedNode());
+                }
+                this.succeed = false;
             }
             return GridTaskResultPolicy.CONTINUE;
         }
