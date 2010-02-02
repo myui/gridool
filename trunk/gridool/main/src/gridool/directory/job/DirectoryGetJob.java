@@ -56,7 +56,7 @@ public final class DirectoryGetJob extends GridJobBase<GetOperation, byte[][]> {
         assert (key != null);
         
         GridTask task = new DirectoryTaskAdapter(this, ops);
-        List<GridNode> nodes = router.listSuccessorNodes(key, 1, true);
+        List<GridNode> nodes = router.listSuccessorNodesInVirtualChain(key, 1, true);
         assert (!nodes.isEmpty());
         GridNode node = nodes.get(0);
         if(node == null) {

@@ -50,7 +50,7 @@ public interface GridTaskRouter extends GridDiscoveryListener {
     List<GridNode> selectNodes(@Nonnull byte[] key);
 
     @Nonnull
-    List<GridNode> listSuccessorNodes(@Nonnull byte[] key, int maxNodesToSelect, boolean inclusive);
+    List<GridNode> listSuccessorNodesInVirtualChain(@Nonnull byte[] key, int maxNodesToSelect, boolean inclusive);
 
     @Nonnull
     List<GridNode> listSuccessorNodesInPhysicalChain(@Nonnull GridNode node, int maxNodesToSelect, boolean inclusive);

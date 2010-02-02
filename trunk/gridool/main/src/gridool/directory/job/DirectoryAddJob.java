@@ -74,7 +74,7 @@ public final class DirectoryAddJob extends GridJobBase<AddOperation, Serializabl
             final byte[] k = keys[i];
             final byte[] v = values[i];
 
-            final List<GridNode> nodes = router.listSuccessorNodes(k, maxNodesToSelect, true);
+            final List<GridNode> nodes = router.listSuccessorNodesInVirtualChain(k, maxNodesToSelect, true);
             if(nodes.isEmpty()) {
                 throw new GridException("Could not find any grid node.");
             }

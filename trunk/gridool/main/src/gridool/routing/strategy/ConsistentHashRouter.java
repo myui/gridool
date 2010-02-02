@@ -126,11 +126,11 @@ public final class ConsistentHashRouter implements GridTaskRouter {
 
     @Deprecated
     public List<GridNode> selectNodes(byte[] key) {
-        return listSuccessorNodes(key, Integer.MAX_VALUE, true);
+        return listSuccessorNodesInVirtualChain(key, Integer.MAX_VALUE, true);
     }
 
     @Nonnull
-    public List<GridNode> listSuccessorNodes(byte[] key, int maxNumSelect, boolean inclusive) {
+    public List<GridNode> listSuccessorNodesInVirtualChain(byte[] key, int maxNumSelect, boolean inclusive) {
         final Lock rlock = rwLock.readLock();
         rlock.lock();
         try {
