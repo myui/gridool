@@ -56,7 +56,7 @@ import xbird.util.jdbc.JDBCUtils;
 import xbird.util.lang.ArrayUtils;
 
 /**
- * register replica DBNAME1 DBNAME2 .. DBNAMEn
+ * register [cluster] replica DBNAME1 DBNAME2 .. DBNAMEn
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
@@ -77,11 +77,20 @@ public final class RegisterReplicaCommand extends CommandBase {
         if(args.length < 3) {
             return false;
         }
-        if(!args[0].equals("register")) {
+        if(!"register".equalsIgnoreCase(args[0])) {
             return false;
         }
-        if(!args[1].equals("replica")) {
-            return false;
+        if("cluster".equalsIgnoreCase(args[1])) {
+            if(args.length < 4) {
+                return false;
+            }
+            if(!"replica".equalsIgnoreCase(args[2])) {
+                return false;
+            }
+        } else {
+            if(!"replica".equalsIgnoreCase(args[1])) {
+                return false;
+            }
         }
         return true;
     }
@@ -91,9 +100,15 @@ public final class RegisterReplicaCommand extends CommandBase {
         String primaryDbUrl = getOption("primaryDbUrl");
         String user = getOption("user");
         String passwd = getOption("passwd");
-        String[] dbnames = ArrayUtils.copyOfRange(args, 2, args.length);
+        final boolean isLocal = !"cluster".equalsIgnoreCase(args[1]);
+        final String[] dbnames;
+        if(isLocal) {
+            dbnames = ArrayUtils.copyOfRange(args, 2, args.length);
+        } else {
+            dbnames = ArrayUtils.copyOfRange(args, 3, args.length);
+        }
 
-        final JobConf jobConf = new JobConf(driverClassName, primaryDbUrl, user, passwd, dbnames);
+        final JobConf jobConf = new JobConf(driverClassName, primaryDbUrl, user, passwd, dbnames, isLocal);
         final Grid grid = new GridClient();
         final Boolean suceed;
         try {
@@ -119,10 +134,28 @@ public final class RegisterReplicaCommand extends CommandBase {
 
         public Map<GridTask, GridNode> map(GridTaskRouter router, JobConf jobConf)
                 throws GridException {
+            if(jobConf.isLocalTask) {
+                return localMap(jobConf);
+            } else {
+                return clusterMap(router, jobConf);
+            }
+        }
+
+        private Map<GridTask, GridNode> localMap(JobConf jobConf) {
             GridNode localNode = getJobNode();
             Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(1);
             GridTask task = new RegisterReplicaTask(this, jobConf);
             map.put(task, localNode);
+            return map;
+        }
+
+        private Map<GridTask, GridNode> clusterMap(GridTaskRouter router, JobConf jobConf) {
+            final GridNode[] nodes = router.getAllNodes();
+            final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(nodes.length);
+            for(GridNode node : nodes) {
+                GridTask task = new RegisterReplicaTask(this, jobConf);
+                map.put(task, node);
+            }
             return map;
         }
 
@@ -194,15 +227,18 @@ public final class RegisterReplicaCommand extends CommandBase {
         private String passwd;
         private String[] dbnames;
 
+        private transient boolean isLocalTask;
+
         public JobConf() {}// for Externalizable
 
-        public JobConf(String driverClassName, String primaryDbUrl, String user, String passwd, String[] dbnames) {
+        public JobConf(String driverClassName, String primaryDbUrl, String user, String passwd, String[] dbnames, boolean isLocal) {
             checkArgs(driverClassName, primaryDbUrl, dbnames);
             this.driverClassName = driverClassName;
             this.primaryDbUrl = primaryDbUrl;
             this.user = user;
             this.passwd = passwd;
             this.dbnames = dbnames;
+            this.isLocalTask = isLocal;
         }
 
         private static void checkArgs(String driverClassName, String primaryDbUrl, String[] dbnames) {
