@@ -180,6 +180,7 @@ public final class ReplicationManager {
             if(dblen < 1) {
                 return false;
             }
+            prepareReplicaTable(conn, replicaTableName);
             final Object[][] params = new String[dblen][];
             for(int i = 0; i < dblen; i++) {
                 String dbname = dbnames[i];
@@ -188,6 +189,21 @@ public final class ReplicationManager {
             }
             JDBCUtils.batch(conn, "INSERT INTO \"" + replicaTableName + "\"(dbname) values(?)", params);
             return true;
+        }
+    }
+
+    private static void prepareReplicaTable(@Nonnull Connection conn, @Nonnull String replicaTableName) {
+        final String ddl = "CREATE TABLE \"" + replicaTableName
+                + "\"(dbname varchar(30) primary key, ipaddr varchar(15), portnum int)";
+        try {
+            JDBCUtils.update(conn, ddl);
+        } catch (SQLException e) {
+            // table already exists
+            try {
+                conn.rollback();
+            } catch (SQLException sqle) {
+                LOG.warn("failed to rollback", sqle);
+            }
         }
     }
 }
