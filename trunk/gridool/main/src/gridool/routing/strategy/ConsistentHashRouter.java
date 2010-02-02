@@ -126,15 +126,26 @@ public final class ConsistentHashRouter implements GridTaskRouter {
 
     @Deprecated
     public List<GridNode> selectNodes(byte[] key) {
-        return listSuccessorNodes(key, true, Integer.MAX_VALUE);
+        return listSuccessorNodes(key, Integer.MAX_VALUE, true);
     }
 
     @Nonnull
-    public List<GridNode> listSuccessorNodes(byte[] key, boolean inclusive, int maxNumSelect) {
+    public List<GridNode> listSuccessorNodes(byte[] key, int maxNumSelect, boolean inclusive) {
         final Lock rlock = rwLock.readLock();
         rlock.lock();
         try {
-            return consistentHash.listSuccessors(key, maxNumSelect, !inclusive);
+            return consistentHash.listSuccessorsInVirtualChain(key, maxNumSelect, !inclusive);
+        } finally {
+            rlock.unlock();
+        }
+    }
+    
+
+    public List<GridNode> listSuccessorNodesInPhysicalChain(GridNode node, int maxNodesToSelect, boolean inclusive) {
+        final Lock rlock = rwLock.readLock();
+        rlock.lock();
+        try {
+            return consistentHash.listSuccessorsInPhysicalChain(node, maxNodesToSelect, !inclusive);
         } finally {
             rlock.unlock();
         }
@@ -150,4 +161,5 @@ public final class ConsistentHashRouter implements GridTaskRouter {
             wlock.unlock();
         }
     }
+
 }

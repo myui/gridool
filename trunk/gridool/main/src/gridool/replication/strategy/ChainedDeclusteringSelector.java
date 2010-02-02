@@ -39,8 +39,7 @@ public final class ChainedDeclusteringSelector implements ReplicaSelector {
     public ChainedDeclusteringSelector() {}
 
     public List<GridNode> selectReplica(GridTaskRouter router, GridNodeInfo masterNode, int numReplicas) {
-        byte[] key = masterNode.toBytes();
-        List<GridNode> nodes = router.listSuccessorNodes(key, false, numReplicas);
+        List<GridNode> nodes = router.listSuccessorNodesInPhysicalChain(masterNode, numReplicas, false);
         return nodes;
     }
 

@@ -24,12 +24,13 @@ import gridool.GridNode;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -53,14 +54,35 @@ public final class ConsistentHash {
     private final int numberOfVirtualNodes;
 
     private final SortedMap<Long, GridNode> circle;
-    private final Set<GridNode> nodes;
+    private final SortedSet<GridNode> nodes;
 
     public ConsistentHash(@Nonnull HashFunction hashFunction, @Nonnegative int numberOfVirtualNodes) {
         assert (numberOfVirtualNodes > 0) : numberOfVirtualNodes;
         this.hashFunction = hashFunction;
         this.numberOfVirtualNodes = numberOfVirtualNodes;
         this.circle = new TreeMap<Long, GridNode>();
-        this.nodes = new HashSet<GridNode>();
+        this.nodes = new TreeSet<GridNode>(new NodeComparator(hashFunction));
+    }
+
+    private static final class NodeComparator implements Comparator<GridNode> {
+
+        private final HashFunction hashFunction;
+
+        public NodeComparator(HashFunction hashFunction) {
+            this.hashFunction = hashFunction;
+        }
+
+        public int compare(GridNode o1, GridNode o2) {
+            final long l1 = hashFunction.hash(o1.getKey());
+            final long l2 = hashFunction.hash(o2.getKey());
+            if(l1 > l2) {
+                return 1;
+            } else if(l1 < l2) {
+                return -1;
+            }
+            return o1.compareTo(o2);
+        }
+
     }
 
     public int getNumberOfVirtualNodes() {
@@ -107,11 +129,11 @@ public final class ConsistentHash {
         return circle.get(hash);
     }
 
-    public List<GridNode> listSuccessors(@Nonnull byte[] fromKey, int numToGets, boolean exclusive) {
+    public List<GridNode> listSuccessorsInVirtualChain(@Nonnull final byte[] fromKey, final int maxNodesToSelect, final boolean exclusive) {
         if(circle.isEmpty()) {
             return Collections.emptyList();
         }
-        numToGets = Math.min(numToGets, circle.size());
+        int numToGets = Math.min(maxNodesToSelect, nodes.size());
         final List<GridNode> retNodes = new ArrayList<GridNode>(numToGets);
         int accquired = 0;
 
@@ -131,10 +153,11 @@ public final class ConsistentHash {
                 assert (tail.hasNext());
                 tail.next(); // skip
             }
-            for(; tail.hasNext() && accquired < numToGets; accquired++) {
+            for(; tail.hasNext() && accquired < numToGets;) {
                 GridNode n = tail.next();
                 if(!retNodes.contains(n)) {
                     retNodes.add(n);
+                    accquired++;
                 }
             }
         }
@@ -144,11 +167,44 @@ public final class ConsistentHash {
                 assert (head.hasNext());
                 head.next(); // skip
             }
-            for(; head.hasNext() && accquired < numToGets; accquired++) {
+            for(; head.hasNext() && accquired < numToGets;) {
                 GridNode n = head.next();
                 if(!retNodes.contains(n)) {
                     retNodes.add(n);
+                    accquired++;
                 }
+            }
+        }
+        return retNodes;
+    }
+
+    public List<GridNode> listSuccessorsInPhysicalChain(@Nonnull final GridNode node, final int maxNodesToSelect, final boolean exclusive) {
+        int numToGets = Math.min(maxNodesToSelect, nodes.size());
+        final List<GridNode> retNodes = new ArrayList<GridNode>(numToGets);
+        int accquired = 0;
+
+        final SortedSet<GridNode> tailSet = nodes.tailSet(node);
+        final boolean noTail = tailSet.isEmpty();
+        if(!noTail) {// has tail
+            final Iterator<GridNode> tail = tailSet.iterator();
+            if(exclusive) {
+                assert (tail.hasNext());
+                tail.next(); // skip
+            }
+            for(; tail.hasNext() && accquired < numToGets; accquired++) {
+                GridNode n = tail.next();
+                retNodes.add(n);
+            }
+        }
+        if(accquired < numToGets) {
+            final Iterator<GridNode> head = nodes.iterator();
+            if(exclusive && noTail) {
+                assert (head.hasNext());
+                head.next(); // skip
+            }
+            for(; head.hasNext() && accquired < numToGets; accquired++) {
+                GridNode n = head.next();
+                retNodes.add(n);
             }
         }
         return retNodes;
@@ -163,4 +219,5 @@ public final class ConsistentHash {
         circle.clear();
         nodes.clear();
     }
+
 }
