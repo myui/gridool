@@ -212,6 +212,7 @@ public final class CoordinateReplicaTaskHandler implements ReplicaCoordinatorLis
             final Connection conn;
             try {
                 conn = JDBCUtils.getConnection(jobConf.getPrimaryDbUrl(), jobConf.getDriverClassName(), jobConf.getUser(), jobConf.getPasswd());
+                conn.setAutoCommit(false);
             } catch (ClassNotFoundException e) {
                 LOG.error(e);
                 return Boolean.FALSE;
@@ -223,10 +224,12 @@ public final class CoordinateReplicaTaskHandler implements ReplicaCoordinatorLis
             final ReplicationManager replicationMgr = registry.getReplicationManager();
             final boolean succeed;
             try {
-                succeed = replicationMgr.configureReplicaDatabase(conn, masterNode, addReplicas);
+                succeed = replicationMgr.configureReplicaDatabase(conn, masterNode, addReplicas);                
             } catch (SQLException e) {
                 LOG.error(e);
                 return Boolean.FALSE;
+            } finally {
+                JDBCUtils.closeQuietly(conn);
             }
             return succeed;
         }

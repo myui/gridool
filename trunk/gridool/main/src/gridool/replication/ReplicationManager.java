@@ -164,9 +164,14 @@ public final class ReplicationManager {
                 params[0] = masterNode.getPhysicalAdress().getHostAddress();
                 params[1] = masterNode.getPort();
                 params[2] = replicaDbName;
-                int rows = JDBCUtils.update(conn, "UPDATE \"" + replicaTableName
+                final int rows = JDBCUtils.update(conn, "UPDATE \"" + replicaTableName
                         + "\" SET ipaddr = ?, portnum = ? WHERE dbname = ?", params);
-                return rows == 1;
+                if(rows == 1) {
+                    conn.commit();
+                    return true;
+                } else {
+                    return false;
+                }
             }
         }
         LOG.error("There is no avialable replica database");
@@ -188,6 +193,7 @@ public final class ReplicationManager {
                 params[i] = new String[] { dbname };
             }
             JDBCUtils.batch(conn, "INSERT INTO \"" + replicaTableName + "\"(dbname) values(?)", params);
+            conn.commit();
             return true;
         }
     }

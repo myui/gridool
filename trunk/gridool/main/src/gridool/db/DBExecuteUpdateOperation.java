@@ -34,6 +34,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import xbird.util.io.IOUtils;
+import xbird.util.jdbc.JDBCUtils;
 
 /**
  * 
@@ -65,7 +66,11 @@ public final class DBExecuteUpdateOperation extends DBOperation {
             LOG.error(e);
             throw new SQLException(e.getMessage());
         }
-        return executeUpdate(conn, sql);
+        try {
+            return executeUpdate(conn, sql);
+        } finally {
+            JDBCUtils.closeQuietly(conn);
+        }
     }
 
     private static int executeUpdate(@Nonnull final Connection conn, @Nonnull final String sql)

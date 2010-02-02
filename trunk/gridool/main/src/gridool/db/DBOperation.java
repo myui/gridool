@@ -111,14 +111,16 @@ public abstract class DBOperation implements Externalizable {
     }
 
     public final Connection getConnection() throws ClassNotFoundException, SQLException {
-        final Connection conn = JDBCUtils.getConnection(connectUrl, driverClassName, userName, password);
-        configureConnection(conn);
-
+        final Connection primaryConn = JDBCUtils.getConnection(connectUrl, driverClassName, userName, password);
+        configureConnection(primaryConn);
         if(masterNode != null) {
-            return getReplicaConnection(conn, masterNode);
+            try {
+                return getReplicaConnection(primaryConn, masterNode);
+            } finally {
+                JDBCUtils.closeQuietly(primaryConn);
+            }
         }
-
-        return conn;
+        return primaryConn;
     }
 
     protected void configureConnection(@Nonnull Connection conn) throws SQLException {

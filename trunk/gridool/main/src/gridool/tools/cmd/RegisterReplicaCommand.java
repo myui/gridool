@@ -196,7 +196,7 @@ public final class RegisterReplicaCommand extends CommandBase {
         }
 
         public Boolean execute() throws GridException {
-            ReplicationManager repManager = registry.getReplicationManager();
+            final ReplicationManager repManager = registry.getReplicationManager();
 
             final Connection conn;
             try {
@@ -216,6 +216,8 @@ public final class RegisterReplicaCommand extends CommandBase {
             } catch (SQLException e) {
                 LOG.warn(e);
                 return false;
+            } finally {
+                JDBCUtils.closeQuietly(conn);
             }
             return suceed;
         }
