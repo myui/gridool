@@ -139,7 +139,6 @@ public final class ConsistentHashRouter implements GridTaskRouter {
             rlock.unlock();
         }
     }
-    
 
     public List<GridNode> listSuccessorNodesInPhysicalChain(GridNode node, int maxNodesToSelect, boolean inclusive) {
         final Lock rlock = rwLock.readLock();
