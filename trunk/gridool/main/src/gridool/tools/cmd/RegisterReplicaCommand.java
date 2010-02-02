@@ -39,7 +39,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -112,6 +111,8 @@ public final class RegisterReplicaCommand extends CommandBase {
     public static final class RegisterReplicaJob extends GridJobBase<JobConf, Boolean> {
         private static final long serialVersionUID = 375880295535375239L;
 
+        private transient boolean succeed = false;
+
         public RegisterReplicaJob() {
             super();
         }
@@ -127,11 +128,16 @@ public final class RegisterReplicaCommand extends CommandBase {
 
         public GridTaskResultPolicy result(GridTask task, GridTaskResult result)
                 throws GridException {
+            Boolean res = result.getResult();
+            if(res != null && res.booleanValue()) {
+                assert (succeed == false);
+                this.succeed = true;
+            }
             return GridTaskResultPolicy.CONTINUE;
         }
 
         public Boolean reduce() throws GridException {
-            return null;
+            return succeed;
         }
     }
 
@@ -154,7 +160,7 @@ public final class RegisterReplicaCommand extends CommandBase {
             return true;
         }
 
-        public Serializable execute() throws GridException {
+        public Boolean execute() throws GridException {
             ReplicationManager repManager = registry.getReplicationManager();
 
             final Connection conn;
