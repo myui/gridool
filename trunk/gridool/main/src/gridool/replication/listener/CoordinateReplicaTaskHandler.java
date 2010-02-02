@@ -168,7 +168,7 @@ public final class CoordinateReplicaTaskHandler implements ReplicaCoordinatorLis
                 GridNode executedNode = result.getExecutedNode();
                 if(executedNode == null) {
                     throw new IllegalStateException("Executed node is not set for a task: "
-                            + task.getTaskId());
+                            + result.getTaskId());
                 }
                 succeedNodes.add(executedNode);
             } else {

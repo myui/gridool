@@ -46,6 +46,7 @@ public class TaskResponseHandler implements TaskResponseListener {
     private static final Log LOG = LogFactory.getLog(TaskResponseHandler.class);
 
     private final GridCommunicationManager communicationMgr;
+    private final GridNode localNode;
 
     public TaskResponseHandler(@CheckForNull GridCommunicationManager communicationMgr, @CheckForNull TaskSenderListener senderListener) {
         if(communicationMgr == null) {
@@ -55,7 +56,7 @@ public class TaskResponseHandler implements TaskResponseListener {
             throw new IllegalArgumentException("TaskSenderListener is not set");
         }
         this.communicationMgr = communicationMgr;
-
+        this.localNode = communicationMgr.getLocalNode();
     }
 
     public void onResponse(GridTask task, Serializable result) {
@@ -67,7 +68,7 @@ public class TaskResponseHandler implements TaskResponseListener {
                     + ']');
         }
 
-        final GridTaskResult taskResult = new GridTaskResultImpl(taskId, result);
+        final GridTaskResult taskResult = new GridTaskResultImpl(taskId, localNode, result);
         try {
             communicationMgr.sendTaskResponse(taskResult, dstNode);
         } catch (GridException e) {
@@ -84,7 +85,7 @@ public class TaskResponseHandler implements TaskResponseListener {
                     + ']');
         }
 
-        final GridTaskResult taskResult = new GridTaskResultImpl(taskId, exception).scheduleFailover();
+        final GridTaskResult taskResult = new GridTaskResultImpl(taskId, localNode, exception).scheduleFailover();
         try {
             communicationMgr.sendTaskResponse(taskResult, dstNode);
         } catch (GridException e) {

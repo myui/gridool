@@ -50,22 +50,17 @@ public final class GridTaskResultImpl implements GridTaskResult {
 
     private boolean failoverScheduled = false;
 
-    public GridTaskResultImpl(@Nonnull String taskId, @Nullable Serializable result) {
+    public GridTaskResultImpl(@Nonnull String taskId,  @Nonnull GridNode executedNode, @Nullable Serializable result) {
         this.taskId = taskId;
+        this.executedNode = executedNode;
         this.result = result;
         this.exception = null;
     }
 
-    public GridTaskResultImpl(@Nonnull String taskId, @CheckForNull GridException exception) {
+    public GridTaskResultImpl(@Nonnull String taskId, @Nonnull GridNode executedNode, @CheckForNull GridException exception) {
         if(exception == null) {
             throw new IllegalArgumentException();
         }
-        this.taskId = taskId;
-        this.result = null;
-        this.exception = exception;
-    }
-
-    public GridTaskResultImpl(@Nonnull String taskId, @Nonnull GridNode executedNode, @Nullable GridException exception) {
         this.taskId = taskId;
         this.executedNode = executedNode;
         this.result = null;
