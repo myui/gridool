@@ -86,7 +86,7 @@ public final class CoordinateReplicaCommand extends CommandBase {
         String user = getOption("user");
         String passwd = getOption("passwd");
 
-        boolean reorg = "reorg".equalsIgnoreCase(args[3]);
+        boolean reorg = (args.length == 4) ? false : "reorg".equalsIgnoreCase(args[3]);
         int numReplicas = Integer.parseInt(args[2]);
         final CoordinateReplicaJobConf jobConf = new CoordinateReplicaJobConf(driverClassName, primaryDbUrl, user, passwd, numReplicas, reorg);
 
