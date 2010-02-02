@@ -39,7 +39,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import xbird.util.io.IOUtils;
+import xbird.util.net.NetUtils;
 import xbird.util.primitive.Primitives;
+import xbird.util.string.StringUtils;
 
 /**
  * 
@@ -69,25 +71,21 @@ public class GridNodeInfo implements GridNode, Externalizable {
 
     public GridNodeInfo() {}//for Externalizable
 
-    public GridNodeInfo(@CheckForNull InetAddress addr, int port) {
-        this(addr, port, false, null);
+    public GridNodeInfo(@CheckForNull InetAddress localAddr, int port, boolean superNode) {
+        this(localAddr, port, superNode, null);
     }
 
-    public GridNodeInfo(@CheckForNull InetAddress addr, int port, boolean superNode) {
-        this(addr, port, superNode, null);
-    }
-
-    public GridNodeInfo(@CheckForNull InetAddress addr, int port, boolean superNode, @Nullable GridNodeMetrics metrics) {
-        if(addr == null) {
+    public GridNodeInfo(@CheckForNull InetAddress localAddr, int port, boolean superNode, @Nullable GridNodeMetrics metrics) {
+        if(localAddr == null) {
             throw new IllegalArgumentException();
         }
-        this.addr = addr;
+        this.addr = localAddr;
         this.port = port;
-        this.idenfider = GridUtils.getNodeIdentifier(addr, port);
+        this.idenfider = GridUtils.getNodeIdentifier(localAddr, port);
         this.superNode = superNode;
     }
 
-    public GridNodeInfo(@CheckForNull GridNode copyNode, @Nullable GridNodeMetrics metrics) {
+    protected GridNodeInfo(@CheckForNull GridNode copyNode, @Nullable GridNodeMetrics metrics) {
         if(copyNode == null) {
             throw new IllegalArgumentException();
         }
@@ -96,6 +94,19 @@ public class GridNodeInfo implements GridNode, Externalizable {
         this.superNode = copyNode.isSuperNode();
         this.idenfider = copyNode.getKey();
         this.metrics = metrics;
+    }
+    
+    private GridNodeInfo(@CheckForNull InetAddress addr, int port, @CheckForNull byte[] macAddr, boolean superNode) {
+        if(addr == null) {
+            throw new IllegalArgumentException();
+        }
+        if(macAddr == null) {
+            throw new IllegalArgumentException();
+        }
+        this.addr = addr;
+        this.port = port;
+        this.idenfider = GridUtils.getNodeIdentifier(macAddr, port);
+        this.superNode = superNode;
     }
 
     public final InetAddress getPhysicalAdress() {
@@ -157,29 +168,68 @@ public class GridNodeInfo implements GridNode, Externalizable {
 
     // -----------------------------------------------------------
 
-    public final byte[] toBytes() {
-        final byte[] b = addr.getAddress();
-        final byte[] ret = new byte[b.length + 9];
-        Primitives.putInt(ret, 0, b.length);
-        ret[4] = (byte) (superNode ? 1 : 0);
-        System.arraycopy(b, 0, ret, 5, b.length);
-        Primitives.putInt(ret, 5 + b.length, port);
+    /**
+     * 4 bytes - ip address length
+     * 1 byte  - has mac address
+     * 1 byte  - is super node
+     * N bytes - ip addr
+     * 4 bytes - port number
+     * 6 bytes - mac addr (optional)
+     */
+    public final byte[] toBytes(boolean includeMacAddr) {
+        final byte[] ip = addr.getAddress();
+        byte[] ret = null;
+        if(includeMacAddr) {
+            final byte[] mac = NetUtils.getMacAddress(addr);
+            if(mac != null && mac.length == 6) {
+                byte[] id = StringUtils.getBytes(idenfider);
+                ret = new byte[ip.length + 16 + id.length];
+                ret[4] = (byte) 1;
+                System.arraycopy(mac, 0, ret, 10 + ip.length, 6);
+            }
+        }
+        if(ret == null) {
+            ret = new byte[ip.length + 10];
+            ret[4] = (byte) 0;
+        }
+        Primitives.putInt(ret, 0, ip.length);
+        ret[5] = (byte) (superNode ? 1 : 0);
+        System.arraycopy(ip, 0, ret, 6, ip.length);
+        Primitives.putInt(ret, 6 + ip.length, port);
         return ret;
     }
 
+    /**
+     * 4 bytes - ip address length
+     * 1 byte  - has mac address
+     * 1 byte  - is super node
+     * N bytes - ip addr
+     * 4 bytes - port number
+     * 6 bytes - mac addr (optional)
+     */
     public static final GridNodeInfo fromBytes(final byte[] in) {
-        final int blen = Primitives.getInt(in, 0);
-        final byte[] b = new byte[blen];
-        boolean isSuperNode = (in[4] == 1) ? true : false;
-        System.arraycopy(in, 5, b, 0, blen);
+        final int iplen = Primitives.getInt(in, 0);
+        final byte[] ip = new byte[iplen];
+        boolean includeMacAddr = (in[4] == 1);
+        byte[] macAddr = null;
+        if(includeMacAddr) {
+            macAddr = new byte[6];
+            System.arraycopy(in, 10 + iplen, macAddr, 0, 6);
+        }
+        boolean isSuperNode = (in[5] == 1);
+        System.arraycopy(in, 6, ip, 0, iplen);
         final InetAddress addr;
         try {
-            addr = InetAddress.getByAddress(b);
+            addr = InetAddress.getByAddress(ip);
         } catch (UnknownHostException e) {
             throw new IllegalStateException(e);
         }
-        int port = Primitives.getInt(in, 5 + blen);
-        return new GridNodeInfo(addr, port, isSuperNode);
+        int port = Primitives.getInt(in, 6 + iplen);
+        if(macAddr == null) {
+            return new GridNodeInfo(addr, port, isSuperNode);
+        } else {
+            return new GridNodeInfo(addr, port, macAddr, isSuperNode);
+        }
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {

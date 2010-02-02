@@ -93,11 +93,15 @@ public final class GridUtils {
     }
 
     public static String getNodeIdentifier(@Nonnull InetAddress addr, int port) {
-        final String macAddr = NetUtils.getMacAddress(addr);
+        final String macAddr = NetUtils.getMacAddressStr(addr);
         if(macAddr == null) {
             return addr.getHostAddress() + ':' + port;
         }
         return macAddr + ':' + port;
+    }
+    
+    public static String getNodeIdentifier(@Nonnull byte[] mac, int port) {
+        return NetUtils.formatMacAddr(mac) + ':' + port;
     }
 
     public static String getNodeIdentifier(@Nonnull GridNode node) {
@@ -105,7 +109,7 @@ public final class GridUtils {
     }
 
     public static String getNodeInfo(@Nonnull InetAddress addr, int port) {
-        final String macAddr = NetUtils.getMacAddress(addr);
+        final String macAddr = NetUtils.getMacAddressStr(addr);
         if(macAddr == null) {
             return addr.getHostAddress() + ':' + port;
         }

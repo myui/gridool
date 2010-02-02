@@ -117,7 +117,7 @@ public final class JGroupsDiscoveryService extends DiscoveryServiceBase {
             channel = new JChannel(JGROUPS_CONFIG_FILE);
             if(joinToMembership) {
                 Map<String, byte[]> m = new HashMap<String, byte[]>(1);
-                m.put("additional_data", localTransportNodeInfo.toBytes());
+                m.put("additional_data", localTransportNodeInfo.toBytes(true));
                 channel.down(new Event(Event.CONFIG, m));
             } else {
                 UDP udp = (UDP) channel.getProtocolStack().findProtocol(UDP.class);
@@ -319,9 +319,8 @@ public final class JGroupsDiscoveryService extends DiscoveryServiceBase {
                         onMetricsReceived(addr, metrics);
                         break;
                     case gmsMessage:
-
                         // TODO
-                        break;
+                        throw new UnsupportedOperationException();
                     default:
                         assert false : discoveryMsg.getGmsMessageType();
                 }
