@@ -23,6 +23,7 @@ package gridool.tools.cmd;
 import gridool.Grid;
 import gridool.GridClient;
 import gridool.replication.jobs.CoordinateReplicaJob;
+import gridool.replication.jobs.CoordinateReplicaJobConf;
 
 import java.rmi.RemoteException;
 
@@ -87,7 +88,7 @@ public final class CoordinateReplicaCommand extends CommandBase {
 
         boolean reorg = "reorg".equalsIgnoreCase(args[3]);
         int numReplicas = Integer.parseInt(args[2]);
-        final CoordinateReplicaJob.JobConf jobConf = new CoordinateReplicaJob.JobConf(driverClassName, primaryDbUrl, user, passwd, numReplicas, reorg);
+        final CoordinateReplicaJobConf jobConf = new CoordinateReplicaJobConf(driverClassName, primaryDbUrl, user, passwd, numReplicas, reorg);
 
         final Grid grid = new GridClient();
         final int minReplicas;

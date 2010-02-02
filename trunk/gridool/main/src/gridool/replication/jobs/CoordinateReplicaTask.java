@@ -49,7 +49,7 @@ public final class CoordinateReplicaTask extends GridTaskAdapter {
     private static final long serialVersionUID = -4073277101747517376L;
 
     @Nonnull
-    private final CoordinateReplicaJob.JobConf jobConf;
+    private final CoordinateReplicaJobConf jobConf;
 
     @GridConfigResource
     private transient GridConfiguration conf;
@@ -57,7 +57,7 @@ public final class CoordinateReplicaTask extends GridTaskAdapter {
     private transient GridResourceRegistry registry;
 
     @SuppressWarnings("unchecked")
-    public CoordinateReplicaTask(GridJob job, CoordinateReplicaJob.JobConf jobConf) {
+    public CoordinateReplicaTask(GridJob job, CoordinateReplicaJobConf jobConf) {
         super(job, false);
         this.jobConf = jobConf;
     }
@@ -77,7 +77,7 @@ public final class CoordinateReplicaTask extends GridTaskAdapter {
         List<GridNode> replicas = selector.selectReplica(router, localNode, numReplicas);
 
         ReplicaCoordinator coord = manager.getReplicaCoordinator();
-        coord.configureReplica(localNode, replicas);
+        coord.configureReplica(localNode, replicas, jobConf);
 
         return replicas.size();
     }

@@ -24,6 +24,7 @@ import gridool.GridKernel;
 import gridool.GridNode;
 import gridool.discovery.DiscoveryEvent;
 import gridool.replication.ReplicaCoordinatorListener;
+import gridool.replication.jobs.CoordinateReplicaJobConf;
 
 import java.util.List;
 
@@ -44,7 +45,7 @@ public final class ReplicationEventLogger implements ReplicaCoordinatorListener 
 
     public void setup(GridKernel kernel) {}
 
-    public boolean onConfigureReplica(GridNode masterNode, List<GridNode> oldReplicas, List<GridNode> newReplicas) {
+    public boolean onConfigureReplica(GridNode masterNode, List<GridNode> oldReplicas, List<GridNode> newReplicas, CoordinateReplicaJobConf jobConf) {
         if(LOG.isInfoEnabled()) {
             LOG.info("Configure new replicas '" + newReplicas + "' for node '" + masterNode
                     + "'.\nOld replicas are '" + oldReplicas + '\'');

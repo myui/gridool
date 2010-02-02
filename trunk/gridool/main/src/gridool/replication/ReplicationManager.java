@@ -145,8 +145,11 @@ public final class ReplicationManager {
         }
     }
 
-    public boolean configureReplicaDatabase(@Nonnull Connection conn, @Nonnull GridNode masterNode)
+    public boolean configureReplicaDatabase(@Nonnull Connection conn, @Nonnull GridNode masterNode, boolean addReplicas)
             throws SQLException {
+        if(!addReplicas) {
+            throw new UnsupportedOperationException();
+        }
         synchronized(lock) {
             if(replicaDbMappingCache.containsKey(masterNode)) {
                 return true;

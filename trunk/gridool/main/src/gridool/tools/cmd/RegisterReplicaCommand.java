@@ -109,10 +109,10 @@ public final class RegisterReplicaCommand extends CommandBase {
         return constructHelp("Register replica databases", "register replica DBNAME1 DBNAME2 .. DBNAMEn");
     }
 
-    public static final class RegisterReplicaJob extends GridJobBase<JobConf, Boolean> {
+    static final class RegisterReplicaJob extends GridJobBase<JobConf, Boolean> {
         private static final long serialVersionUID = 375880295535375239L;
 
-        public RegisterReplicaJob() {
+        RegisterReplicaJob() {
             super();
         }
 
@@ -180,13 +180,15 @@ public final class RegisterReplicaCommand extends CommandBase {
 
     }
 
-    private static final class JobConf implements Externalizable {
+    static final class JobConf implements Externalizable {
 
         private String driverClassName;
         private String primaryDbUrl;
         private String user;
         private String passwd;
         private String[] dbnames;
+
+        public JobConf() {}// for Externalizable
 
         public JobConf(String driverClassName, String primaryDbUrl, String user, String passwd, String[] dbnames) {
             checkArgs(driverClassName, primaryDbUrl, dbnames);

@@ -24,6 +24,7 @@ import gridool.GridNode;
 import gridool.communication.payload.GridNodeInfo;
 import gridool.discovery.DiscoveryEvent;
 import gridool.discovery.GridDiscoveryListener;
+import gridool.replication.jobs.CoordinateReplicaJobConf;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -74,13 +75,13 @@ public final class ReplicaCoordinator implements GridDiscoveryListener {
         }
     }
 
-    public void configureReplica(@Nonnull GridNodeInfo masterNode, @Nonnull List<GridNode> replicas) {
+    public void configureReplica(@Nonnull GridNodeInfo masterNode, @Nonnull List<GridNode> replicas, @Nonnull CoordinateReplicaJobConf jobConf) {
         final List<GridNode> oldReplicas = masterNode.getReplicas();
 
         rlock.lock();
         try {
             for(ReplicaCoordinatorListener listener : listeners) {
-                listener.onConfigureReplica(masterNode, oldReplicas, replicas);
+                listener.onConfigureReplica(masterNode, oldReplicas, replicas, jobConf);
             }
         } finally {
             rlock.unlock();
