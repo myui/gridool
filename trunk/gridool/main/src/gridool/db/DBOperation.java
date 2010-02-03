@@ -60,6 +60,7 @@ public abstract class DBOperation implements Externalizable {
 
     @Nullable
     private GridNode masterNode = null;
+    private boolean transferredForReplica = false;
 
     @Nullable
     private transient GridResourceRegistry registry;
@@ -118,7 +119,7 @@ public abstract class DBOperation implements Externalizable {
     public final Connection getConnection() throws ClassNotFoundException, SQLException {
         final Connection primaryConn = JDBCUtils.getConnection(connectUrl, driverClassName, userName, password);
         configureConnection(primaryConn);
-        if(masterNode != null) {
+        if(transferredForReplica) {
             try {
                 return getReplicaConnection(primaryConn, masterNode);
             } finally {
@@ -160,6 +161,7 @@ public abstract class DBOperation implements Externalizable {
         IOUtils.writeString(userName, out);
         IOUtils.writeString(password, out);
         out.writeObject(masterNode);
+        out.writeBoolean(masterNode != null);   // transferred
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
@@ -168,5 +170,6 @@ public abstract class DBOperation implements Externalizable {
         this.userName = IOUtils.readString(in);
         this.password = IOUtils.readString(in);
         this.masterNode = (GridNode) in.readObject();
+        this.transferredForReplica = in.readBoolean();
     }
 }
