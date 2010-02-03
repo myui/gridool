@@ -115,7 +115,7 @@ public final class FileAppendTask extends GridTaskAdapter {
         }
         try {
             FastBufferedOutputStream bos = new FastBufferedOutputStream(fos, 8192);
-            bos.write(data, 0, data.length);
+            bos.write(data, 0, data.length);    // atomic writes in UNIX
             bos.flush();
             //bos.close();
         } catch (IOException e) {
