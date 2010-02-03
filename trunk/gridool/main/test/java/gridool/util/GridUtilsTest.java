@@ -20,7 +20,9 @@
  */
 package gridool.util;
 
+import gridool.communication.payload.GridNodeInfo;
 import junit.framework.TestCase;
+import xbird.util.net.NetUtils;
 import xbird.util.string.StringUtils;
 
 /**
@@ -48,6 +50,26 @@ public class GridUtilsTest extends TestCase {
         String generatedStr = StringUtils.toString(generated);
         System.out.println(generatedStr);
         assertEquals(idxName + ' ' + key1Str, generatedStr);
+    }
+    
+    public void testAlterFileName() {
+        String res1 = GridUtils.alterFileName("test.csv", new GridNodeInfo(NetUtils.getLocalHost(), 333, false));
+        System.out.println(res1);
+        
+        String res2 = GridUtils.alterFileName("test.1.csv", new GridNodeInfo(NetUtils.getLocalHost(), 333, false));
+        System.out.println(res2);
+        
+        String res3 = GridUtils.alterFileName("test.1.", new GridNodeInfo(NetUtils.getLocalHost(), 333, false));
+        System.out.println(res3);
+        
+        String res4 = GridUtils.alterFileName(".", new GridNodeInfo(NetUtils.getLocalHost(), 333, false));
+        System.out.println(res4);
+        
+        String res5 = GridUtils.alterFileName("..", new GridNodeInfo(NetUtils.getLocalHost(), 333, false));
+        System.out.println(res5);
+        
+        String res6 = GridUtils.alterFileName("test8.8.7.7.csv", new GridNodeInfo(NetUtils.getLocalHost(), 333, false));
+        System.out.println(res6);        
     }
 
 }

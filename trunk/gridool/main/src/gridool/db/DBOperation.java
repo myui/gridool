@@ -106,6 +106,11 @@ public abstract class DBOperation implements Externalizable {
         this.masterNode = masterNode;
     }
 
+    @Nullable
+    protected final GridNode getMasterNode() {
+        return masterNode;
+    }
+
     public void setResourceRegistry(@Nonnull GridResourceRegistry registry) {
         this.registry = registry;
     }

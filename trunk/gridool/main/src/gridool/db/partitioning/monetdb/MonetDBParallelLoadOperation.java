@@ -20,7 +20,9 @@
  */
 package gridool.db.partitioning.monetdb;
 
+import gridool.GridNode;
 import gridool.db.DBOperation;
+import gridool.util.GridUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -225,7 +227,13 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
         IOUtils.writeString(tableName, out);
-        IOUtils.writeString(csvFileName, out);
+        GridNode masterNode = getMasterNode();
+        if(masterNode == null) {
+            IOUtils.writeString(csvFileName, out);
+        } else {
+            String altered = GridUtils.alterFileName(csvFileName, masterNode);
+            IOUtils.writeString(altered, out);
+        }
         IOUtils.writeString(createTableDDL, out);
         IOUtils.writeString(copyIntoQuery, out);
         IOUtils.writeString(alterTableDDL, out);

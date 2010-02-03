@@ -22,7 +22,9 @@ package gridool.db.partitioning;
 
 import gridool.GridException;
 import gridool.GridJob;
+import gridool.GridNode;
 import gridool.construct.GridTaskAdapter;
+import gridool.util.GridUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,6 +34,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -55,8 +58,10 @@ public final class FileAppendTask extends GridTaskAdapter {
     private transient/* final */String fileName;
     @Nonnull
     private transient/* final */byte[] rowsData;
+    private transient/* final */boolean replicate;
 
-    private transient final boolean replicate;
+    @Nullable
+    private transient GridNode masterNode;
 
     public FileAppendTask(GridJob<?, ?> job, @Nonnull String fileName, @Nonnull byte[] rowsData, boolean replicate) {
         super(job, false);
@@ -68,6 +73,11 @@ public final class FileAppendTask extends GridTaskAdapter {
     @Override
     public boolean isReplicatable() {
         return replicate;
+    }
+
+    @Override
+    public void setTransferToReplica(@Nonnull GridNode masterNode) {
+        this.masterNode = masterNode;
     }
 
     public Serializable execute() throws GridException {
@@ -109,13 +119,20 @@ public final class FileAppendTask extends GridTaskAdapter {
 
     private void writeObject(ObjectOutputStream s) throws java.io.IOException {
         s.defaultWriteObject();
-        IOUtils.writeString(fileName, s);
+        if(masterNode != null) {
+            String altered = GridUtils.alterFileName(fileName, masterNode);
+            IOUtils.writeString(altered, s);
+        } else {
+            IOUtils.writeString(fileName, s);
+        }
         IOUtils.writeBytes(rowsData, s);
+        s.writeBoolean(replicate);
     }
 
     private void readObject(ObjectInputStream s) throws java.io.IOException, ClassNotFoundException {
         s.defaultReadObject();
         this.fileName = IOUtils.readString(s);
         this.rowsData = IOUtils.readBytes(s);
+        this.replicate = s.readBoolean();
     }
 }

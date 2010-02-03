@@ -99,7 +99,7 @@ public final class GridUtils {
         }
         return macAddr + ':' + port;
     }
-    
+
     public static String getNodeIdentifier(@Nonnull byte[] mac, int port) {
         return NetUtils.formatMacAddr(mac) + ':' + port;
     }
@@ -321,7 +321,22 @@ public final class GridUtils {
                     + " bytes: "
                     + StopWatch.elapsedTime(elapsedTime));
         }
-
         return b;
+    }
+
+    public static String alterFileName(String fileName, GridNode node) {
+        final String addr = node.getPhysicalAdress().getHostAddress();
+        final int lastIdx = fileName.length() - 1;
+        final int dotpos = fileName.lastIndexOf('.');
+        if(dotpos > 0 && dotpos < lastIdx) {
+            final StringBuilder buf = new StringBuilder(64);
+            buf.append(fileName.subSequence(0, dotpos));
+            buf.append('_');
+            buf.append(addr);
+            buf.append(fileName.substring(dotpos));
+            return buf.toString();
+        } else {
+            return fileName + '_' + addr;
+        }
     }
 }
