@@ -38,6 +38,8 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
+import org.apache.commons.logging.LogFactory;
+
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -141,7 +143,17 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
             GridAnnotationProcessor proc = registry.getAnnotationProcessor();
             proc.injectResources(delegated);
         }
-        return delegated.invokeTask();
+        try {
+            return delegated.invokeTask();
+        } catch (GridException ge) {
+            LogFactory.getLog(ReplicatedGridTaskAdapter.class).warn(ge);
+            // TODO: handle exception - remove this node from sender's replica
+            throw ge;
+        } catch (Throwable e) {
+            LogFactory.getLog(ReplicatedGridTaskAdapter.class).warn(e);
+            // TODO: handle exception - remove this node from sender's replica
+            throw new GridException(e);
+        }
     }
 
     public boolean cancel() throws GridException {

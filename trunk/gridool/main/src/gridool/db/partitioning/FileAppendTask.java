@@ -117,13 +117,8 @@ public final class FileAppendTask extends GridTaskAdapter {
             FastBufferedOutputStream bos = new FastBufferedOutputStream(fos, 8192);
             bos.write(data, 0, data.length);
             bos.flush();
-            bos.close();
+            //bos.close();
         } catch (IOException e) {
-            try {
-                fos.close();
-            } catch (IOException ioe) {
-                LOG.debug(ioe);
-            }
             throw new IllegalStateException("Failed to write data into file: "
                     + file.getAbsolutePath(), e);
         } finally {
@@ -131,10 +126,13 @@ public final class FileAppendTask extends GridTaskAdapter {
                 try {
                     fileExLock.release();
                 } catch (IOException e) {
-                    if(LOG.isDebugEnabled()) {
-                        LOG.debug(e);
-                    }
+                    LOG.debug(e);
                 }
+            }
+            try {
+                fos.close();
+            } catch (IOException ioe) {
+                LOG.debug(ioe);
             }
         }
         return file;
