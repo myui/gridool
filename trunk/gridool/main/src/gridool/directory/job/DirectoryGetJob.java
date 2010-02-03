@@ -67,7 +67,7 @@ public final class DirectoryGetJob extends GridJobBase<GetOperation, byte[][]> {
         return map;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         final byte[][] res = result.getResult();
         if(res == null) {
             return GridTaskResultPolicy.FAILOVER;

@@ -45,11 +45,11 @@ public final class DBTaskAdapter extends GridTaskAdapter {
 
     @Nonnull
     private final DBOperation opr;
-    
+
     private boolean injectResources = false;
     @GridRegistryResource
     private transient GridResourceRegistry registry;
-    
+
     @SuppressWarnings("unchecked")
     public DBTaskAdapter(@Nonnull GridJob job, @CheckForNull DBOperation opr) {
         super(job, false);
@@ -79,7 +79,7 @@ public final class DBTaskAdapter extends GridTaskAdapter {
         if(injectResources) {
             assert (registry != null);
             opr.setResourceRegistry(registry);
-        }        
+        }
         try {
             return opr.execute();
         } catch (SQLException e) {

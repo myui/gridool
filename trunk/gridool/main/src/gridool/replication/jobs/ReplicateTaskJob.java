@@ -64,13 +64,13 @@ public final class ReplicateTaskJob extends GridJobBase<ReplicateTaskJob.JobConf
         return map;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         final Exception err = result.getException();
         if(err == null) {
             this.succeed = true;
             return GridTaskResultPolicy.RETURN; // REVIEWME if one of replication tasks succeed, then immediately return
         } else {
-            LOG.warn("One of Replication of task '" + task + "' failed", err);
+            LOG.warn("One of Replication of task '" + result.getTaskId() + "' failed", err);
         }
         return GridTaskResultPolicy.CONTINUE;
     }

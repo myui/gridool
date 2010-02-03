@@ -159,7 +159,7 @@ public final class RegisterReplicaCommand extends CommandBase {
             return map;
         }
 
-        public GridTaskResultPolicy result(GridTask task, GridTaskResult result)
+        public GridTaskResultPolicy result(GridTaskResult result)
                 throws GridException {
             Boolean res = result.getResult();
             if(res == null || !res.booleanValue()) {

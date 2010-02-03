@@ -62,7 +62,7 @@ public final class CoordinateReplicaJob extends GridJobBase<CoordinateReplicaJob
         return mapping;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         Integer numReplicaCreated = result.getResult();
         if(numReplicaCreated != null) {
             if(minReplicas == -1) {

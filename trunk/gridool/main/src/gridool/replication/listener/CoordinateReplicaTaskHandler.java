@@ -161,7 +161,7 @@ public final class CoordinateReplicaTaskHandler implements ReplicaCoordinatorLis
             return map;
         }
 
-        public GridTaskResultPolicy result(GridTask task, GridTaskResult result)
+        public GridTaskResultPolicy result(GridTaskResult result)
                 throws GridException {
             final Boolean succeed = result.getResult();
             if(succeed != null && succeed.booleanValue()) {

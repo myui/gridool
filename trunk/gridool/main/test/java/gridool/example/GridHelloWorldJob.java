@@ -63,7 +63,7 @@ public final class GridHelloWorldJob extends GridJobSplitAdapter<String, Integer
         return tasks;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         Integer res = result.getResult();
         results.add(res);
         return GridTaskResultPolicy.CONTINUE;

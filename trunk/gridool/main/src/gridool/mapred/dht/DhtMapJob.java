@@ -73,7 +73,7 @@ public class DhtMapJob extends GridJobBase<byte[], String> {
         return map;
     }
 
-    public final GridTaskResultPolicy result(GridTask task, GridTaskResult result)
+    public final GridTaskResultPolicy result(GridTaskResult result)
             throws GridException {
         return GridTaskResultPolicy.CONTINUE;
     }

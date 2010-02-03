@@ -59,7 +59,7 @@ public final class DirectoryCreateJob extends GridJobBase<CreateOperation, Boole
         return map;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         Boolean suceed = result.getResult();
         if(suceed == null || suceed.booleanValue() == false) {
             this.suceedAll = false;

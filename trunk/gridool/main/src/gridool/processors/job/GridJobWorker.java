@@ -232,7 +232,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
                 throw new GridException("GridTask is interrupted", e);
             }
             final String taskId = result.getTaskId();
-            final GridTaskResultPolicy policy = job.result(null, result);
+            final GridTaskResultPolicy policy = job.result(result);
             switch(policy) {
                 case CONTINUE:
                     taskMap.remove(taskId);

@@ -115,7 +115,7 @@ public final class DirectoryDestinatedAddJob extends
         return GridTaskResultPolicy.CONTINUE;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         return null;
     }
 

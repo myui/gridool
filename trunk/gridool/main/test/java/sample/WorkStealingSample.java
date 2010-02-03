@@ -114,7 +114,7 @@ public final class WorkStealingSample {
             return map;
         }
 
-        public GridTaskResultPolicy result(GridTask task, GridTaskResult result)
+        public GridTaskResultPolicy result(GridTaskResult result)
                 throws GridException {
             return GridTaskResultPolicy.CONTINUE;
         }

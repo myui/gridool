@@ -85,7 +85,7 @@ public final class DirectoryRemoveJob extends GridJobBase<RemoveOperation, Boole
         return taskMap;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         final Boolean status = result.getResult();
         if(status == null || !status.booleanValue()) {
             this.succeed = false;

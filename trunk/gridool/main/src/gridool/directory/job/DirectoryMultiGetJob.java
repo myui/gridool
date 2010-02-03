@@ -89,7 +89,7 @@ public final class DirectoryMultiGetJob extends
         return taskMap;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         final Pair<byte[], byte[][]>[] results = result.getResult();
         if(results == null) {
             return GridTaskResultPolicy.FAILOVER;

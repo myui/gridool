@@ -209,7 +209,7 @@ public final class GridTaskMover {
             return map;
         }
 
-        public GridTaskResultPolicy result(GridTask task, GridTaskResult result)
+        public GridTaskResultPolicy result(GridTaskResult result)
                 throws GridException {
             final GridException error = result.getException();
             if(error != null) {
@@ -320,7 +320,7 @@ public final class GridTaskMover {
             return stealedTasks;
         }
 
-        public GridTaskResultPolicy result(GridTask task, GridTaskResult result)
+        public GridTaskResultPolicy result(GridTaskResult result)
                 throws GridException {
             final GridException error = result.getException();
             if(error != null) {

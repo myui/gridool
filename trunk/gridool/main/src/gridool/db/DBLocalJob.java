@@ -59,7 +59,7 @@ public class DBLocalJob extends GridJobBase<DBMapReduceJobConf, Boolean> {
         return map;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         final GridException ex = result.getException();
         if(ex != null) {
             this.error = ex;

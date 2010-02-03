@@ -110,7 +110,7 @@ public final class DirectoryAddJob extends GridJobBase<AddOperation, Serializabl
         return map;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         return GridTaskResultPolicy.CONTINUE;
     }
 

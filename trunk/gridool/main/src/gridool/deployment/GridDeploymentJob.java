@@ -68,11 +68,11 @@ public final class GridDeploymentJob extends GridJobBase<Triple<String, byte[], 
         return task2node;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         final GridException error = result.getException();
         if(error != null) {
             if(LOG.isWarnEnabled()) {
-                LOG.warn("Caused an error in task: " + task, error);
+                LOG.warn("Caused an error in task: " + result.getTaskId(), error);
             }
             this.suceed = false;
         }

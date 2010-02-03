@@ -101,7 +101,7 @@ public class DirectoryAddRecordJob extends
         return map;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         return GridTaskResultPolicy.CONTINUE;
     }
 

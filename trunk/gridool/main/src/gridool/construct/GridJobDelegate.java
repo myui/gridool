@@ -79,7 +79,7 @@ public abstract class GridJobDelegate<A, R> implements GridJob<A, R> {
         return job.reduce();
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
-        return job.result(task, result);
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
+        return job.result(result);
     }
 }

@@ -31,7 +31,6 @@ import org.apache.commons.logging.LogFactory;
 
 import gridool.GridException;
 import gridool.GridJob;
-import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
 
@@ -61,7 +60,7 @@ public abstract class GridListAggregationJob<A, R> extends GridJobDelegate<A, R>
     }
 
     @Override
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         final Serializable res = result.getResult();
         if(res == null) {
             if(result.isFailoverScheduled()) {

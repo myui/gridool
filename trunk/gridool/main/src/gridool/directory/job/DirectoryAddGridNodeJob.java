@@ -107,7 +107,7 @@ public final class DirectoryAddGridNodeJob extends GridJobBase<AddGridNodeOperat
         throw new IllegalStateException("Response to an asynchronous job is illegally accepted.");
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         throw new IllegalStateException("Response to an asynchronous job is illegally accepted.");
     }
 

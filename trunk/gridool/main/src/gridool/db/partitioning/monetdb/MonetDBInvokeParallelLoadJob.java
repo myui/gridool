@@ -75,7 +75,7 @@ public final class MonetDBInvokeParallelLoadJob extends
         return map;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         Integer processed = result.getResult();
         if(processed != null) {
             numProcessed += processed.longValue();

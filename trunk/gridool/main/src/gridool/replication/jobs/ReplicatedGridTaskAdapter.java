@@ -24,8 +24,11 @@ import gridool.GridException;
 import gridool.GridJob;
 import gridool.GridLocatable;
 import gridool.GridNode;
+import gridool.GridResourceRegistry;
 import gridool.GridTask;
 import gridool.GridTaskRelocatability;
+import gridool.annotation.GridAnnotationProcessor;
+import gridool.annotation.GridRegistryResource;
 import gridool.routing.GridTaskRouter;
 import gridool.util.GridUtils;
 
@@ -56,6 +59,9 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
 
     private long startedTime = -1L;
     private long finishedTime = -1L;
+
+    @GridRegistryResource
+    private transient GridResourceRegistry registry;
 
     public ReplicatedGridTaskAdapter(@Nonnull GridJob<?, ?> job, @Nonnull GridTask task) {
         this.jobId = job.getJobId();
@@ -135,6 +141,10 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
     }
 
     public Serializable execute() throws GridException {
+        if(registry != null) {
+            GridAnnotationProcessor proc = registry.getAnnotationProcessor();
+            proc.injectResources(delegated);
+        }
         return delegated.execute();
     }
 
@@ -182,5 +192,4 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
     public void setTaskNumber(int i) {
         throw new UnsupportedOperationException();
     }
-
 }

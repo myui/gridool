@@ -79,7 +79,7 @@ public class DbCountInitializeJob extends GridJobBase<DBMapReduceJobConf, Long> 
         return map;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         Integer pageviews = result.getResult();
         if(pageviews != null) {
             totalPageviews.addAndGet(pageviews.longValue());

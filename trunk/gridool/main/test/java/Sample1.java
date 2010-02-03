@@ -62,7 +62,7 @@ public class Sample1 extends GridJobBase<String, String> {
         return map;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         String phrase = result.getResult();
         aggregate += phrase;
         return GridTaskResultPolicy.CONTINUE;

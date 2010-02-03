@@ -66,7 +66,7 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
         return map;
     }
 
-    public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         final ConcurrentIdentityHashMap<GridNode, MutableInt> processed = result.getResult();
         if(processed == null || processed.isEmpty()) {
             Exception err = result.getException();
