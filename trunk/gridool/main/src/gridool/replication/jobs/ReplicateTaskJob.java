@@ -68,6 +68,7 @@ public final class ReplicateTaskJob extends GridJobBase<ReplicateTaskJob.JobConf
         final Exception err = result.getException();
         if(err == null) {
             this.succeed = true;
+            return GridTaskResultPolicy.RETURN; // REVIEWME if one of replication tasks succeed, then immediately return
         } else {
             LOG.warn("One of Replication of task '" + task + "' failed", err);
         }
