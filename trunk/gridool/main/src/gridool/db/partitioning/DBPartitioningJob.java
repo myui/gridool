@@ -68,7 +68,7 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
 
     public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
         final ConcurrentIdentityHashMap<GridNode, MutableInt> processed = result.getResult();
-        if(processed != null) {
+        if(processed != null && !processed.isEmpty()) {
             if(LOG.isInfoEnabled()) {
                 final long elapsed = System.currentTimeMillis() - started;
                 final int numNodes = processed.size();
