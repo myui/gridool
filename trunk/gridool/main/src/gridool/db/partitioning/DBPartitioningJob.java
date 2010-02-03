@@ -68,26 +68,32 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
 
     public GridTaskResultPolicy result(GridTask task, GridTaskResult result) throws GridException {
         final ConcurrentIdentityHashMap<GridNode, MutableInt> processed = result.getResult();
-        if(processed != null && !processed.isEmpty()) {
-            if(LOG.isInfoEnabled()) {
-                final long elapsed = System.currentTimeMillis() - started;
-                final int numNodes = processed.size();
-                final int[] counts = new int[numNodes];
-                int i = 0;
-                for(MutableInt e : processed.values()) {
-                    int v = e.intValue();
-                    numProcessed += v;
-                    counts[i++] = v;
-                }
-                float mean = numProcessed / numNodes;
-                float sd = MathUtils.stddev(counts);
-                float percent = (sd / mean) * 100.0f;
-                LOG.info("STDDEV of data distribution in " + numNodes + " nodes: " + sd + " ("
-                        + percent + "%), Job executed in " + StopWatch.elapsedTime(elapsed));
+        if(processed == null || processed.isEmpty()) {
+            Exception err = result.getException();
+            if(err == null) {
+                throw new GridException("faileed to execute a task: " + result.getTaskId());
             } else {
-                for(MutableInt e : processed.values()) {
-                    numProcessed += e.intValue();
-                }
+                throw new GridException("faileed to execute a task: " + result.getTaskId(), err);
+            }
+        }
+        if(LOG.isInfoEnabled()) {
+            final long elapsed = System.currentTimeMillis() - started;
+            final int numNodes = processed.size();
+            final int[] counts = new int[numNodes];
+            int i = 0;
+            for(MutableInt e : processed.values()) {
+                int v = e.intValue();
+                numProcessed += v;
+                counts[i++] = v;
+            }
+            float mean = numProcessed / numNodes;
+            float sd = MathUtils.stddev(counts);
+            float percent = (sd / mean) * 100.0f;
+            LOG.info("STDDEV of data distribution in " + numNodes + " nodes: " + sd + " ("
+                    + percent + "%), Job executed in " + StopWatch.elapsedTime(elapsed));
+        } else {
+            for(MutableInt e : processed.values()) {
+                numProcessed += e.intValue();
             }
         }
         return GridTaskResultPolicy.CONTINUE;
