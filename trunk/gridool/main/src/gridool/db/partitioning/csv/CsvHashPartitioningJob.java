@@ -30,17 +30,23 @@ import gridool.db.partitioning.DBPartitioningJobConf;
 import gridool.db.partitioning.FileAppendTask;
 import gridool.routing.GridTaskRouter;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.nio.charset.Charset;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
+
 import xbird.util.collections.FixedArrayList;
 import xbird.util.csv.CsvUtils;
 import xbird.util.io.FastByteArrayOutputStream;
+import xbird.util.io.IOUtils;
 import xbird.util.primitive.MutableInt;
 import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
-import xbird.util.struct.Triple;
 
 /**
  * 
@@ -50,18 +56,19 @@ import xbird.util.struct.Triple;
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
 public final class CsvHashPartitioningJob extends
-        GridJobBase<Triple<String[], String, DBPartitioningJobConf>, Map<GridNode, MutableInt>> {
+        GridJobBase<CsvHashPartitioningJob.JobConf, Map<GridNode, MutableInt>> {
     private static final long serialVersionUID = 149683992715077498L;
 
     private transient Map<GridNode, MutableInt> assignedRecMap;
 
     public CsvHashPartitioningJob() {}
 
-    public Map<GridTask, GridNode> map(final GridTaskRouter router, final Triple<String[], String, DBPartitioningJobConf> ops)
+    public Map<GridTask, GridNode> map(final GridTaskRouter router, final CsvHashPartitioningJob.JobConf ops)
             throws GridException {
-        final String[] lines = ops.getFirst();
-        final String csvFileName = ops.getSecond();
-        final DBPartitioningJobConf jobConf = ops.getThird();
+        final String[] lines = ops.getLines();
+        final String csvFileName = ops.getFileName();
+        final boolean append = !ops.isFirst();
+        final DBPartitioningJobConf jobConf = ops.getJobConf();
 
         Pair<int[], int[]> partitioningKeys = jobConf.partitionigKeyIndices();
         final int[] pkeyIndicies = partitioningKeys.getFirst();
@@ -121,7 +128,7 @@ public final class CsvHashPartitioningJob extends
             FastByteArrayOutputStream rows = pair.second;
             byte[] b = rows.toByteArray();
             pair.clear();
-            GridTask task = new FileAppendTask(this, csvFileName, b, true);
+            GridTask task = new FileAppendTask(this, csvFileName, b, append, true);
             map.put(task, node);
         }
 
@@ -199,4 +206,63 @@ public final class CsvHashPartitioningJob extends
         return assignedRecMap;
     }
 
+    static final class JobConf implements Externalizable {
+
+        private String[] lines;
+        private String fileName;
+        private boolean isFirst;
+        private DBPartitioningJobConf jobConf;
+
+        public JobConf() {//for Externalizable
+            super();
+        }
+
+        public JobConf(@Nonnull String[] lines, @Nonnull String fileName, boolean isFirst, @Nonnull DBPartitioningJobConf jobConf) {
+            this.lines = lines;
+            this.fileName = fileName;
+            this.isFirst = isFirst;
+            this.jobConf = jobConf;
+        }
+
+        String[] getLines() {
+            return lines;
+        }
+
+        String getFileName() {
+            return fileName;
+        }
+
+        boolean isFirst() {
+            return isFirst;
+        }
+
+        DBPartitioningJobConf getJobConf() {
+            return jobConf;
+        }
+
+        public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
+            final int num = in.readInt();
+            final String[] ary = new String[num];
+            for(int i = 0; i < num; i++) {
+                ary[i] = IOUtils.readString(in);
+            }
+            this.lines = ary;
+            this.fileName = IOUtils.readString(in);
+            this.isFirst = in.readBoolean();
+            this.jobConf = (DBPartitioningJobConf) in.readObject();
+        }
+
+        public void writeExternal(final ObjectOutput out) throws IOException {
+            final String[] ary = lines;
+            final int num = ary.length;
+            out.writeInt(num);
+            for(int i = 0; i < num; i++) {
+                IOUtils.writeString(ary[i], out);
+            }
+            IOUtils.writeString(fileName, out);
+            out.writeBoolean(isFirst);
+            out.writeObject(jobConf);
+        }
+
+    }
 }

@@ -55,7 +55,6 @@ import xbird.util.csv.CvsReader;
 import xbird.util.csv.SimpleCvsReader;
 import xbird.util.io.FastBufferedInputStream;
 import xbird.util.primitive.MutableInt;
-import xbird.util.struct.Triple;
 import xbird.util.system.SystemUtils;
 
 /**
@@ -91,6 +90,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     protected transient BoundedArrayQueue<String> shuffleSink;
 
     protected transient String csvFileName;
+    private transient boolean isFirstShuffle = true;
 
     @SuppressWarnings("unchecked")
     public CsvPartitioningTask(GridJob job, DBPartitioningJobConf jobConf) {
@@ -169,12 +169,19 @@ public class CsvPartitioningTask extends GridTaskAdapter {
 
     private final void invokeShuffle(@Nonnull final ExecutorService shuffleExecPool, @Nonnull final ArrayQueue<String> queue) {
         assert (kernel != null);
+        final boolean isFirst;
+        if(isFirstShuffle) {
+            this.isFirstShuffle = false;
+            isFirst = true;
+        } else {
+            isFirst = false;
+        }
         final String fileName = csvFileName;
         shuffleExecPool.execute(new Runnable() {
             public void run() {
                 String[] lines = queue.toArray(String.class);
-                Triple<String[], String, DBPartitioningJobConf> ops = new Triple<String[], String, DBPartitioningJobConf>(lines, fileName, jobConf);
-                final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(CsvHashPartitioningJob.class, ops);
+                CsvHashPartitioningJob.JobConf conf = new CsvHashPartitioningJob.JobConf(lines, fileName, isFirst, jobConf);
+                final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(CsvHashPartitioningJob.class, conf);
                 final Map<GridNode, MutableInt> map;
                 try {
                     map = future.get(); // wait for execution

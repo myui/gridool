@@ -60,15 +60,17 @@ public final class FileAppendTask extends GridTaskAdapter {
     private transient/* final */String fileName;
     @Nonnull
     private transient/* final */byte[] rowsData;
+    private transient/* final */boolean append;
     private transient/* final */boolean replicate;
 
     @Nullable
     private transient GridNode masterNode;
 
-    public FileAppendTask(GridJob<?, ?> job, @Nonnull String fileName, @Nonnull byte[] rowsData, boolean replicate) {
+    public FileAppendTask(GridJob<?, ?> job, @Nonnull String fileName, @Nonnull byte[] rowsData, boolean append, boolean replicate) {
         super(job, false);
         this.fileName = fileName;
         this.rowsData = rowsData;
+        this.append = append;
         this.replicate = replicate;
     }
 
@@ -83,11 +85,11 @@ public final class FileAppendTask extends GridTaskAdapter {
     }
 
     protected Serializable execute() throws GridException {
-        appendToFile(fileName, rowsData);
+        appendToFile(fileName, rowsData, append);
         return null;
     }
 
-    private static File appendToFile(final String fileName, final byte[] data) {
+    private static File appendToFile(final String fileName, final byte[] data, final boolean append) {
         DbCollection rootColl = DbCollection.getRootCollection();
         final File colDir = rootColl.getDirectory();
         if(!colDir.exists()) {
@@ -98,7 +100,7 @@ public final class FileAppendTask extends GridTaskAdapter {
         final FileOutputStream fos;
         try {
             file = new File(colDir, fileName);
-            fos = new FileOutputStream(file, true); // note that FileOutputStream takes exclusive lock
+            fos = new FileOutputStream(file, append); // note that FileOutputStream takes exclusive lock
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create a load file", e);
         }
@@ -115,7 +117,7 @@ public final class FileAppendTask extends GridTaskAdapter {
         }
         try {
             FastBufferedOutputStream bos = new FastBufferedOutputStream(fos, 8192);
-            bos.write(data, 0, data.length);    // atomic writes in UNIX
+            bos.write(data, 0, data.length); // atomic writes in UNIX
             bos.flush();
             //bos.close();
         } catch (IOException e) {
@@ -147,6 +149,7 @@ public final class FileAppendTask extends GridTaskAdapter {
             IOUtils.writeString(fileName, s);
         }
         IOUtils.writeBytes(rowsData, s);
+        s.writeBoolean(append);
         s.writeBoolean(replicate);
     }
 
@@ -154,6 +157,7 @@ public final class FileAppendTask extends GridTaskAdapter {
         s.defaultReadObject();
         this.fileName = IOUtils.readString(s);
         this.rowsData = IOUtils.readBytes(s);
+        this.append = s.readBoolean();
         this.replicate = s.readBoolean();
     }
 }
