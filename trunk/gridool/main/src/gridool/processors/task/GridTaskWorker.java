@@ -20,12 +20,16 @@
  */
 package gridool.processors.task;
 
+import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.GridResourceRegistry;
 import gridool.GridTask;
 import gridool.annotation.GridAnnotationProcessor;
+import gridool.communication.payload.GridNodeInfo;
 import gridool.metrics.runtime.GridTaskMetricsCounter;
 import gridool.monitor.GridExecutionMonitor;
+import gridool.replication.GridReplicationException;
+import gridool.replication.ReplicationManager;
 import gridool.util.GridUtils;
 
 import java.io.Serializable;
@@ -65,7 +69,11 @@ public final class GridTaskWorker implements Runnable {
     private final TaskResponseListener respListener;
     @Nonnull
     private final GridResourceRegistry registry;
-
+    @Nonnull
+    private final ReplicationManager replicationMgr;
+    @Nonnull
+    private final GridNodeInfo localNode;
+    
     private final long createTime;
 
     public GridTaskWorker(@CheckForNull GridTask task, @Nonnull GridTaskMetricsCounter metrics, @Nonnull GridExecutionMonitor monitor, @Nonnull GridAnnotationProcessor annotationProc, @Nonnull TaskResponseListener respListener) {
@@ -79,6 +87,9 @@ public final class GridTaskWorker implements Runnable {
         this.annotationProc = annotationProc;
         this.respListener = respListener;
         this.registry = annotationProc.getResourceRegistory(); // REVIEWME
+        this.replicationMgr = registry.getReplicationManager();
+        GridConfiguration config = annotationProc.getConfiguration();
+        this.localNode = config.getLocalNode();
         this.createTime = System.currentTimeMillis();
     }
 
@@ -93,6 +104,9 @@ public final class GridTaskWorker implements Runnable {
         this.annotationProc = annotationProc;
         this.respListener = respListener;
         this.registry = annotationProc.getResourceRegistory(); // REVIEWME
+        this.replicationMgr = registry.getReplicationManager();
+        GridConfiguration config = annotationProc.getConfiguration();
+        this.localNode = config.getLocalNode();
         this.createTime = System.currentTimeMillis();
     }
 
@@ -107,11 +121,21 @@ public final class GridTaskWorker implements Runnable {
             }
         }
         metrics.taskStarted(waitTime);
-
+        
         final String taskClassName = ClassUtils.getSimpleClassName(task);
         if(LOG.isDebugEnabled()) {
             LOG.debug(taskClassName + " [" + task.getTaskId() + "] is started");
         }
+        
+        // replication
+        if(task.isReplicatable()) {
+            if(!replicationMgr.replicateTask(task, localNode)) {
+                respListener.onCaughtException(task, new GridReplicationException("Replication failed"));
+                return;
+            }
+        }
+
+        // dependency injection
         if(task.injectResources()) {
             try {
                 annotationProc.injectResources(task);

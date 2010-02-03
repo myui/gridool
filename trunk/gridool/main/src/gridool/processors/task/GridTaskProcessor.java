@@ -25,13 +25,10 @@ import gridool.GridException;
 import gridool.GridResourceRegistry;
 import gridool.GridTask;
 import gridool.annotation.GridAnnotationProcessor;
-import gridool.communication.payload.GridNodeInfo;
 import gridool.loadblancing.workstealing.GridTaskStealingTask;
 import gridool.metrics.runtime.GridTaskMetricsCounter;
 import gridool.monitor.GridExecutionMonitor;
 import gridool.processors.GridProcessor;
-import gridool.replication.GridReplicationException;
-import gridool.replication.ReplicationManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,9 +55,6 @@ public final class GridTaskProcessor implements GridProcessor {
     private final ExecutorService execPool;
     private final AtomicReference<GridTaskMetricsCounter> metricsRef;
 
-    private final ReplicationManager replicationMgr;
-    private final GridNodeInfo localNode;
-
     private final NonblockingUnboundedDeque<GridTask> waitingTaskQueue;
 
     public GridTaskProcessor(@Nonnull GridResourceRegistry resourceRegistry, @Nonnull TaskResponseListener respListener, @Nonnull GridExecutionMonitor monitor, @Nonnull GridConfiguration config) {
@@ -71,8 +65,6 @@ public final class GridTaskProcessor implements GridProcessor {
         this.execPool = ExecutorFactory.newFixedThreadPool(poolSize, "GridTaskProcessor");
         this.metricsRef = resourceRegistry.getTaskMetricsCounter();
         this.waitingTaskQueue = new NonblockingUnboundedDeque<GridTask>(8); // 2^8=256
-        this.replicationMgr = resourceRegistry.getReplicationManager();
-        this.localNode = config.getLocalNode();
         resourceRegistry.setTaskProcessor(this);
     }
 
@@ -91,13 +83,6 @@ public final class GridTaskProcessor implements GridProcessor {
         }
         GridTaskMetricsCounter metrics = metricsRef.get();
         metrics.taskCreated();
-
-        if(task.isReplicatable()) {
-            if(!replicationMgr.replicateTask(task, localNode)) {
-                respListener.onCaughtException(task, new GridReplicationException("Replication failed"));
-                return;
-            }
-        }
 
         final GridTaskWorker worker;
         if(task.getRelocatability().isRelocatable()) {

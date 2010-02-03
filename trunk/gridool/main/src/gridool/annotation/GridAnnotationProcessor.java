@@ -53,6 +53,11 @@ public final class GridAnnotationProcessor {
         this.resourceRegistry = registry;
         registry.setAnnotationProcessor(this);
     }
+    
+    @Nonnull
+    public GridConfiguration getConfiguration() {
+        return config;
+    }
 
     @Nonnull
     public GridResourceRegistry getResourceRegistory() {
