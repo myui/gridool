@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -96,9 +98,20 @@ public final class FileAppendTask extends GridTaskAdapter {
         final FileOutputStream fos;
         try {
             file = new File(colDir, fileName);
-            fos = new FileOutputStream(file, true);
+            fos = new FileOutputStream(file, true); // note that FileOutputStream takes exclusive lock
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create a load file", e);
+        }
+        FileLock fileExLock = null;
+        try {
+            fileExLock = fos.getChannel().tryLock();
+        } catch (OverlappingFileLockException oe) {
+            if(LOG.isWarnEnabled()) {
+                LOG.warn(oe.getMessage());
+            }
+        } catch (IOException ioe) {
+            LOG.error("failed to trylock on a file: " + file.getAbsolutePath(), ioe);
+            throw new IllegalStateException(ioe);
         }
         try {
             FastBufferedOutputStream bos = new FastBufferedOutputStream(fos, 8192);
@@ -113,6 +126,16 @@ public final class FileAppendTask extends GridTaskAdapter {
             }
             throw new IllegalStateException("Failed to write data into file: "
                     + file.getAbsolutePath(), e);
+        } finally {
+            if(fileExLock != null) {
+                try {
+                    fileExLock.release();
+                } catch (IOException e) {
+                    if(LOG.isDebugEnabled()) {
+                        LOG.debug(e);
+                    }
+                }
+            }
         }
         return file;
     }

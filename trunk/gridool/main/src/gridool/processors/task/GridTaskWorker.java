@@ -158,7 +158,7 @@ public final class GridTaskWorker implements Runnable {
             if(ex == TaskCancelException.getInstance()) {
                 return; // intended behavior
             }
-            LOG.warn(ex.getMessage());
+            LOG.warn(ex.getMessage(), ex);
             respListener.onCaughtException(task, ex);
             return;
         } finally {
