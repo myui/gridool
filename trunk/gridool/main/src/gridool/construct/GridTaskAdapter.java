@@ -167,6 +167,8 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
         return execute();
     }
 
+    protected abstract Serializable execute() throws GridException;
+
     public boolean cancel() throws GridException {
         final FutureTask<Serializable> r = running;
         if(r == null) {

@@ -83,7 +83,7 @@ public class Sample1 extends GridJobBase<String, String> {
             this.phrase = phrase;
         }
 
-        public Serializable execute() throws GridException {
+        protected Serializable execute() throws GridException {
             return phrase;
         }
     }

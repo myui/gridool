@@ -210,7 +210,7 @@ public final class CoordinateReplicaTaskHandler implements ReplicaCoordinatorLis
             return true;
         }
 
-        public Boolean execute() throws GridException {
+        protected Boolean execute() throws GridException {
             assert (registry != null);
 
             final Connection conn;

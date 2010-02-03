@@ -145,7 +145,7 @@ public final class WorkStealingSample {
             return super.cancel();
         }
 
-        public Serializable execute() throws GridException {
+        protected Serializable execute() throws GridException {
             try {
                 Thread.sleep(sleep);
             } catch (InterruptedException e) {

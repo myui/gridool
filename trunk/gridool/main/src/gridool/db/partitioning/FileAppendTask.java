@@ -80,7 +80,7 @@ public final class FileAppendTask extends GridTaskAdapter {
         this.masterNode = masterNode;
     }
 
-    public Serializable execute() throws GridException {
+    protected Serializable execute() throws GridException {
         appendToFile(fileName, rowsData);
         return null;
     }

@@ -78,8 +78,6 @@ public interface GridTask extends GridLocatable, GridAnnotatable {
 
     Serializable invokeTask() throws GridException;
 
-    Serializable execute() throws GridException;
-
     boolean cancel() throws GridException;
 
     boolean isCanceled();

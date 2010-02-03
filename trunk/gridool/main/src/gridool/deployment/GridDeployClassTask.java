@@ -59,7 +59,7 @@ public final class GridDeployClassTask extends GridTaskAdapter {
         return true;
     }
 
-    public Serializable execute() throws GridException {
+    protected Serializable execute() throws GridException {
         assert (senderNode != null);
         GridPerNodeClassLoader ldr = registry.getNodeClassLoader(senderNode);
         ldr.defineClassIfNeeded(clsName, clsBytes, timestamp);

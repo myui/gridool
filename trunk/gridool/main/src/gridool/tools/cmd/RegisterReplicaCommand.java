@@ -195,7 +195,7 @@ public final class RegisterReplicaCommand extends CommandBase {
             return true;
         }
 
-        public Boolean execute() throws GridException {
+        protected Boolean execute() throws GridException {
             final ReplicationManager repManager = registry.getReplicationManager();
 
             final Connection conn;

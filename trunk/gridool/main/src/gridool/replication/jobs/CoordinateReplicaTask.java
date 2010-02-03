@@ -67,7 +67,7 @@ public final class CoordinateReplicaTask extends GridTaskAdapter {
         return true;
     }
 
-    public Integer execute() throws GridException {
+    protected Integer execute() throws GridException {
         ReplicationManager manager = registry.getReplicationManager();
 
         ReplicaSelector selector = manager.getReplicaSelector();

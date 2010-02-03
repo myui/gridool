@@ -63,7 +63,7 @@ public class DbCountInitializeJob extends GridJobBase<DBMapReduceJobConf, Long> 
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(nodes.length);
         for(GridNode node : nodes) {
             GridTask task = new GridTaskAdapter(this, false) {
-                public Integer execute() throws GridException {
+                protected Integer execute() throws GridException {
                     final int pageview;
                     try {
                         pageview = initialize(jobConf);

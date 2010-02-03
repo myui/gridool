@@ -54,7 +54,7 @@ public final class GridGetClassTask extends GridTaskAdapter {
         return false;
     }
 
-    public ClassData execute() throws GridException {
+    protected ClassData execute() throws GridException {
         final Class<?> clazz;
         try {
             clazz = Class.forName(className, true, Thread.currentThread().getContextClassLoader());

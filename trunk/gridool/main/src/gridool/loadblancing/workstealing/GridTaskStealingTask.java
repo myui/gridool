@@ -47,7 +47,7 @@ public final class GridTaskStealingTask extends GridTaskAdapter {
         return numberOfStealingTasks;
     }
 
-    public GridTask[] execute() throws GridException {
+    protected GridTask[] execute() throws GridException {
         throw new IllegalStateException();
     }
 }

@@ -146,7 +146,7 @@ public abstract class DhtMapShuffleTask extends GridTaskAdapter {
         return new MapHandler(this);
     }
 
-    public Serializable execute() throws GridException {
+    protected Serializable execute() throws GridException {
         this.shuffleSink = new BoundedArrayQueue<byte[]>(shuffleUnits() * 2);
         this.shuffleExecPool = ExecutorFactory.newFixedThreadPool(shuffleThreads(), "Gridool#Shuffle", true);
 

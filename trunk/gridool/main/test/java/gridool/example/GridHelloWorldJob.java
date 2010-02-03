@@ -55,7 +55,7 @@ public final class GridHelloWorldJob extends GridJobSplitAdapter<String, Integer
         this.results = new ArrayList<Integer>(words.length);
         for(final String word : words) {
             tasks.add(new GridTaskAdapter(this, true) {
-                public Serializable execute() throws GridException {                    
+                protected Serializable execute() throws GridException {                    
                     return word.length();
                 }
             });

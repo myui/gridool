@@ -137,15 +137,11 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
     }
 
     public Serializable invokeTask() throws GridException {
-        return delegated.invokeTask();
-    }
-
-    public Serializable execute() throws GridException {
         if(registry != null) {
             GridAnnotationProcessor proc = registry.getAnnotationProcessor();
             proc.injectResources(delegated);
         }
-        return delegated.execute();
+        return delegated.invokeTask();
     }
 
     public boolean cancel() throws GridException {

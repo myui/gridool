@@ -112,7 +112,7 @@ public abstract class DBMapShuffleTaskBase<IN_TYPE extends DBRecord, OUT_TYPE> e
         this.shuffleThreads = shuffleThreads;
     }
 
-    public final Serializable execute() throws GridException {
+    protected final Serializable execute() throws GridException {
         int numShuffleThreads = shuffleThreads();
         this.shuffleExecPool = (numShuffleThreads <= 0) ? new DirectExecutorService()
                 : ExecutorFactory.newFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);

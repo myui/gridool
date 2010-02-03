@@ -75,7 +75,7 @@ public final class DBTaskAdapter extends GridTaskAdapter {
         this.injectResources = true;
     }
 
-    public Serializable execute() throws GridException {
+    protected Serializable execute() throws GridException {
         if(injectResources) {
             assert (registry != null);
             opr.setResourceRegistry(registry);

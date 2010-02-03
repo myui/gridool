@@ -87,7 +87,7 @@ public abstract class Dht2DBReduceTaskBase<IN_TYPE, OUT_TYPE> extends DhtReduceT
     }
 
     @Override
-    public Serializable execute() throws GridException {
+    protected Serializable execute() throws GridException {
         this.shuffleExecPool = ExecutorFactory.newFixedThreadPool(shuffleThreads(), "Gridool#Reduce", true);
         this.shuffleSink = new BoundedArrayQueue<OUT_TYPE>(shuffleUnits());
 

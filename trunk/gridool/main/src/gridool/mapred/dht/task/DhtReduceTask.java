@@ -134,7 +134,7 @@ public abstract class DhtReduceTask extends GridTaskAdapter {
 
     protected void postReduce() {}
 
-    public Serializable execute() throws GridException {
+    protected Serializable execute() throws GridException {
         final FlushableBTreeCallback handler = getHandler();
         try {
             directory.retrieve(inputTableName, getQuery(), handler);

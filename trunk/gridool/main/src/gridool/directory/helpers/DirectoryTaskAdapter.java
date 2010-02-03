@@ -60,7 +60,7 @@ public final class DirectoryTaskAdapter extends GridTaskAdapter {
         return ops.isAsyncOps();
     }
 
-    public Serializable execute() throws GridException {
+    protected Serializable execute() throws GridException {
         if(directory == null) {
             throw new IllegalStateException();
         }
