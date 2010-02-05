@@ -88,6 +88,7 @@ public final class ReplicaCoordinator implements GridDiscoveryListener {
         }
 
         masterNode.setReplicas(replicas);
+        // TODO notify other nodes.
     }
 
     // ----------------------------------------------------

@@ -147,6 +147,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
                 + hiddenFieldName + "\" TINYINT;";
         try {
             JDBCUtils.update(conn, sql);
+            conn.commit();
         } catch (SQLException e) {
             conn.rollback();
             if(LOG.isDebugEnabled()) {

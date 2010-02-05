@@ -62,6 +62,12 @@ public final class MonetDBInvokeParallelLoadJob extends
         final String alterTableDDL = ops.getAlterTableDDL();
 
         final Map<GridNode, MutableInt> assigned = args.getSecond();
+        final GridNode[] allNodes = router.getAllNodes();
+        for(GridNode node : allNodes) {// create empty table
+            if(!assigned.containsKey(node)) {
+                assigned.put(node, new MutableInt(0));
+            }
+        }
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(assigned.size());
         for(final Map.Entry<GridNode, MutableInt> e : assigned.entrySet()) {
             GridNode node = e.getKey();
