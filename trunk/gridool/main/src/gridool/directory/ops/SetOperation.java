@@ -35,7 +35,7 @@ import xbird.storage.DbException;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public class SetOperation extends AddOperation {
 

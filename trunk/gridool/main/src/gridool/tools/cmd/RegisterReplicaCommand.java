@@ -60,7 +60,7 @@ import xbird.util.lang.ArrayUtils;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class RegisterReplicaCommand extends CommandBase {
     private static final Log LOG = LogFactory.getLog(RegisterReplicaCommand.class);

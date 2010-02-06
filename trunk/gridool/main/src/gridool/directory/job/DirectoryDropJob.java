@@ -39,7 +39,7 @@ import java.util.Map;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class DirectoryDropJob extends GridJobBase<DropOperation, Serializable> {
     private static final long serialVersionUID = -7886989119790120177L;

@@ -31,7 +31,7 @@ import xbird.util.collections.BoundedArrayQueue;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public abstract class DhtGatherReduceTask extends DhtScatterReduceTask {
     private static final long serialVersionUID = 7961249443055449973L;

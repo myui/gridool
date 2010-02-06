@@ -36,7 +36,7 @@ import xbird.util.io.FastByteArrayInputStream;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 @SuppressWarnings("unchecked")
 public abstract class ThriftMarshaller extends MarshallerBase<TBase> {

@@ -39,7 +39,7 @@ import xbird.util.lang.ObjectUtils;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public abstract class GetOptDBJobConf extends DBMapReduceJobConf {
     private static final long serialVersionUID = 6329395278348057576L;

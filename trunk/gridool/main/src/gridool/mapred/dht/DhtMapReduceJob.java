@@ -34,7 +34,7 @@ import org.apache.commons.logging.LogFactory;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class DhtMapReduceJob extends DhtMapJob {
     private static final long serialVersionUID = 7199374733551590756L;

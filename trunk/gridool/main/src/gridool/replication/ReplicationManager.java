@@ -53,7 +53,7 @@ import xbird.util.jdbc.handlers.ScalarHandler;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class ReplicationManager {
     private static final Log LOG = LogFactory.getLog(ReplicationManager.class);

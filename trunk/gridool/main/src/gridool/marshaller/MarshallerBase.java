@@ -28,7 +28,7 @@ import xbird.util.io.FastMultiByteArrayOutputStream;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public abstract class MarshallerBase<BASE_TYPE> implements GridMarshaller<BASE_TYPE> {
 

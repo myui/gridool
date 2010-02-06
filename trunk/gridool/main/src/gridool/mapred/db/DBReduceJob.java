@@ -43,7 +43,7 @@ import org.apache.commons.logging.LogFactory;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public class DBReduceJob extends GridJobBase<DBMapReduceJobConf, String> {
     private static final long serialVersionUID = -7029669717699601660L;

@@ -36,7 +36,7 @@ import org.apache.commons.logging.LogFactory;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class GridPerNodeClassLoader extends ClassLoader {
     private static final Log LOG = LogFactory.getLog(GridPerNodeClassLoader.class);

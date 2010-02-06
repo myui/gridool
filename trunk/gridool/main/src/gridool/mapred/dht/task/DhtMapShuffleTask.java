@@ -58,7 +58,7 @@ import xbird.util.string.StringUtils;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public abstract class DhtMapShuffleTask extends GridTaskAdapter {
     private static final long serialVersionUID = -5082221855283908817L;

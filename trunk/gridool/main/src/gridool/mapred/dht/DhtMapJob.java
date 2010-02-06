@@ -39,7 +39,7 @@ import xbird.util.lang.ObjectUtils;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public class DhtMapJob extends GridJobBase<byte[], String> {
     private static final long serialVersionUID = -1854038331598309550L;

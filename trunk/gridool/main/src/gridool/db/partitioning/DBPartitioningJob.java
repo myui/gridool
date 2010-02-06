@@ -45,7 +45,7 @@ import xbird.util.primitive.MutableInt;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, Long> {
     private static final long serialVersionUID = 7267171601356014026L;

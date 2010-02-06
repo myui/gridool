@@ -36,7 +36,7 @@ import xbird.storage.index.Value;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public abstract class DhtReducedMapShuffleTask extends DhtMapShuffleTask {
     private static final long serialVersionUID = -3603582178622867565L;

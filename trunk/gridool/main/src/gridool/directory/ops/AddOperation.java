@@ -46,7 +46,7 @@ import xbird.util.io.IOUtils;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 @NotThreadSafe
 public class AddOperation implements DirectoryOperation {

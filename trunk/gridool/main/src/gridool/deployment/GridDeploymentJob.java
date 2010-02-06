@@ -41,7 +41,7 @@ import xbird.util.struct.Triple;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class GridDeploymentJob extends GridJobBase<Triple<String, byte[], Long>, Boolean> {
     private static final long serialVersionUID = -1441170539457137918L;

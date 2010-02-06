@@ -40,7 +40,7 @@ import java.util.Map;
  * </DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class CoordinateReplicaJob extends GridJobBase<CoordinateReplicaJobConf, Integer> {
     private static final long serialVersionUID = 7562696673301106475L;

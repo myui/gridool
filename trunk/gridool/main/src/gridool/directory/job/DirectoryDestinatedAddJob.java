@@ -41,7 +41,7 @@ import java.util.Map;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class DirectoryDestinatedAddJob extends
         GridJobBase<DestinatedAddOperation, Serializable> {

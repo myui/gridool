@@ -53,7 +53,7 @@ import xbird.util.collections.RingBuffer;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class GridNodeMetricsProvider {
     private static final Log LOG = LogFactory.getLog(GridNodeMetricsProvider.class);

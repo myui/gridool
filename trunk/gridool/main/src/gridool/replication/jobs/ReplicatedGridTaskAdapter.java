@@ -45,7 +45,7 @@ import org.apache.commons.logging.LogFactory;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
     private static final long serialVersionUID = 8784784021314404959L;

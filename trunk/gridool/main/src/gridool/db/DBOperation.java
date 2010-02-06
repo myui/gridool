@@ -44,7 +44,7 @@ import xbird.util.jdbc.JDBCUtils;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public abstract class DBOperation implements Externalizable {
     private static final long serialVersionUID = -4228703722773423150L;

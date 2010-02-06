@@ -20,6 +20,7 @@
  */
 package gridool.db.partitioning;
 
+import gridool.db.catalog.DistributionCatalog;
 import gridool.db.partitioning.csv.CsvPartitioningTask;
 
 import java.io.Serializable;
@@ -38,7 +39,7 @@ import xbird.util.struct.Pair;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public abstract class DBPartitioningJobConf implements Serializable {
     private static final long serialVersionUID = 636573640789390674L;
@@ -69,13 +70,9 @@ public abstract class DBPartitioningJobConf implements Serializable {
             try {
                 final Connection conn = getConnection(false);
                 try {
-                    partitionigKeyIndices = JDBCUtils.getPartitioningKeys(conn, tblName);
+                    partitionigKeyIndices = DistributionCatalog.getPartitioningKeys(conn, tblName);
                 } finally {
-                    try {
-                        conn.close();
-                    } catch (SQLException e) {
-                        ;
-                    }
+                    JDBCUtils.closeQuietly(conn);
                 }
             } catch (ClassNotFoundException cnfe) {
                 throw new IllegalStateException(cnfe);

@@ -44,7 +44,7 @@ import xbird.util.io.IOUtils;
  * 
  * <DIV lang="en"></DIV> <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class DBInsertOperation extends DBOperation {
     private static final long serialVersionUID = -6835320411487501293L;

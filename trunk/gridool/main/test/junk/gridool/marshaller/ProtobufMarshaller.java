@@ -36,7 +36,7 @@ import com.google.protobuf.Message.Builder;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public abstract class ProtobufMarshaller extends MarshallerBase<Message> {
 

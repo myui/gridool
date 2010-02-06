@@ -62,7 +62,7 @@ import xbird.util.system.SystemUtils;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public class CsvPartitioningTask extends GridTaskAdapter {
     private static final long serialVersionUID = -4477383489963213348L;

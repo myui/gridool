@@ -38,7 +38,7 @@ import java.util.Map;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class DirectoryCreateJob extends GridJobBase<CreateOperation, Boolean> {
     private static final long serialVersionUID = -2999620281598151649L;

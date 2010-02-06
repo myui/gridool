@@ -31,7 +31,7 @@ import javax.annotation.Nonnull;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class GridLocalNodeMetrics implements GridNodeMetricsMBean {
     private static final long serialVersionUID = -3355182377583817276L;

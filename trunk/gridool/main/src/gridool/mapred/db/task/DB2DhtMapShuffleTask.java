@@ -41,7 +41,7 @@ import xbird.util.collections.ArrayQueue;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public class DB2DhtMapShuffleTask extends DBMapShuffleTaskBase<DBRecord, DBRecord> {
     private static final long serialVersionUID = -697335089991627099L;

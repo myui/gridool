@@ -33,7 +33,7 @@ import org.kohsuke.args4j.Option;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     private static final long serialVersionUID = -2839327000541349951L;

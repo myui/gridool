@@ -50,7 +50,7 @@ import xbird.storage.indexer.IndexQuery;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public abstract class DhtReduceTask extends GridTaskAdapter {
     private static final long serialVersionUID = 467335434557842030L;

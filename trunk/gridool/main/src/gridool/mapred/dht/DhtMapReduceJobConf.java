@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
+ * @author Makoto YUI (yuin405@gmail.com)
  */
 public abstract class DhtMapReduceJobConf implements Serializable {
     private static final long serialVersionUID = -6387687169104905041L;
