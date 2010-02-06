@@ -43,6 +43,10 @@ public final class DistributionCatalog {
 
     public DistributionCatalog() {}
 
+    public int getPartitioningKey(@Nonnull final String tableName, @Nonnull final String fieldName) {
+        return -1;
+    }
+
     @Nonnull
     public static Pair<int[], int[]> getPartitioningKeys(@Nonnull final Connection conn, @Nonnull final String tableName)
             throws SQLException {

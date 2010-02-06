@@ -10,8 +10,9 @@ select
 	avg(l_discount) as avg_disc,
 	count(*) as count_order
 from
-	lineitem partitioned by primary key 
+	lineitem
 where
+	lineitem partitioned by (primarykey) and
 	l_shipdate <= date '1998-12-01' - interval '90' day (3)
 group by
 	l_returnflag,

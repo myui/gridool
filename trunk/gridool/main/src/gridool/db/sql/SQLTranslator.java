@@ -22,6 +22,7 @@ package gridool.db.sql;
 
 import static java.io.StreamTokenizer.TT_EOF;
 import static java.io.StreamTokenizer.TT_WORD;
+import gridool.db.catalog.DistributionCatalog;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,12 +31,15 @@ import java.io.IOException;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
+import xbird.config.Settings;
 import xbird.util.io.IOUtils;
 
 /**
- * 
+ * partitioned_by(primarykey);
+ * partitioned_by(field1, field2);
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
@@ -43,40 +47,54 @@ import xbird.util.io.IOUtils;
  */
 public final class SQLTranslator {
 
+    private static final String hiddenFieldName;
+    static {
+        hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
+    }
+
     private static final int TT_COMMA = ',';
     private static final int TT_LPAR = '(';
     private static final int TT_RPAR = ')';
     private static final int TT_QUOTE = '\'';
     private static final int TT_DQUOTE = '\"';
 
-    public SQLTranslator() {}
+    @Nonnull
+    private final DistributionCatalog catalog;
+
+    public SQLTranslator(@CheckForNull DistributionCatalog catalog) {
+        if(catalog == null) {
+            throw new IllegalArgumentException();
+        }
+        this.catalog = catalog;
+    }
 
     @Nonnull
     public String translateSelect(@Nonnull final String query) {
-        if(!query.contains("select") && !query.contains("SELECT")) {
-            return null;
+        if(!query.contains("partitioned by") && !query.contains("PARTITIONED BY")) {
+            return query;
         }
-        final StreamTokenizer lexer = new StreamTokenizer(new StringReader(query));
-        lexer.resetSyntax();
-        lexer.wordChars('a', 'z');
-        lexer.wordChars('A', 'Z');
-        lexer.wordChars(128 + 32, 255);
-        lexer.wordChars('0', '9');
-        lexer.wordChars('.', '.'); // digit
-        //lexer.wordChars('-', '-'); // digit
-        lexer.wordChars('_', '_');
-        lexer.whitespaceChars(0, ' ');
-        lexer.whitespaceChars(' ', ' ');
-        lexer.whitespaceChars('\t', '\t');
-        lexer.whitespaceChars('\n', '\n');
-        lexer.whitespaceChars('\r', '\r');
-        lexer.quoteChar(TT_QUOTE);
-        lexer.quoteChar(TT_DQUOTE);
-        lexer.eolIsSignificant(false);
+
+        final StreamTokenizer tokenizer = new StreamTokenizer(new StringReader(query));
+        tokenizer.resetSyntax();
+        tokenizer.wordChars('a', 'z');
+        tokenizer.wordChars('A', 'Z');
+        tokenizer.wordChars(128 + 32, 255);
+        tokenizer.wordChars('0', '9');
+        tokenizer.wordChars('.', '.'); // digit
+        //tokenizer.wordChars('-', '-'); // digit
+        tokenizer.wordChars('_', '_');
+        tokenizer.whitespaceChars(0, ' ');
+        //tokenizer.whitespaceChars(' ', ' ');
+        tokenizer.whitespaceChars('\t', '\t');
+        tokenizer.whitespaceChars('\n', '\n');
+        tokenizer.whitespaceChars('\r', '\r');
+        tokenizer.quoteChar(TT_QUOTE);
+        tokenizer.quoteChar(TT_DQUOTE);
+        tokenizer.eolIsSignificant(true);
 
         final StringBuilder queryBuf = new StringBuilder(query.length());
         try {
-            parseQuery(lexer, queryBuf);
+            parseQuery(tokenizer, queryBuf);
         } catch (IOException e) {
             e.printStackTrace();
             return query;
@@ -84,44 +102,16 @@ public final class SQLTranslator {
         return queryBuf.toString();
     }
 
-    private static void parseQuery(StreamTokenizer lexer, StringBuilder queryBuf)
-            throws IOException {
-        int tt;
-        while((tt = lexer.nextToken()) != TT_EOF) {
-            if(tt != TT_WORD) {
-                queryBuf.append((char) tt);
-                continue;
-            }
-            final String token = lexer.sval;
-            final char c = token.charAt(0);
-            switch(c) {
-                case 's':
-                case 'S':
-                    if("select".equalsIgnoreCase(token)) {
-                        queryBuf.append("SELECT ");
-                        parseSelect(lexer, queryBuf);
-                        break;
-                    }
-                    // fall through
-                default:
-                    queryBuf.append(token);
-                    queryBuf.append(' ');
-                    break;
-            }
-        }
-    }
-
-    private static void parseSelect(StreamTokenizer lexer, StringBuilder queryBuf)
-            throws IOException {
+    private void parseQuery(StreamTokenizer tokenizer, StringBuilder queryBuf) throws IOException {
         int tt;
         String prevToken = null;
         boolean insertSpace = false;
-        while((tt = lexer.nextToken()) != TT_EOF) {
+        while((tt = tokenizer.nextToken()) != TT_EOF) {
             if(tt != TT_WORD) {
                 if(tt == TT_QUOTE || tt == TT_DQUOTE) {
                     queryBuf.append(' ');
                     queryBuf.append((char) tt);
-                    queryBuf.append(lexer.sval);
+                    queryBuf.append(tokenizer.sval);
                     queryBuf.append((char) tt);
                     insertSpace = true;
                 } else {
@@ -130,13 +120,28 @@ public final class SQLTranslator {
                 }
                 continue;
             }
-            final String token = lexer.sval;
+            final String token = tokenizer.sval;
             final char c = token.charAt(0);
             switch(c) {
                 case 'p':
                 case 'P':
                     if("partitioned".equalsIgnoreCase(token)) {
-                        tryParsePartitionBy(lexer, queryBuf, prevToken);
+                        int nextTT = tokenizer.nextToken();
+                        String nextToken = tokenizer.sval;
+                        if(nextTT == TT_WORD && "by".equalsIgnoreCase(nextToken)) {
+                            if(insertSpace) {
+                                queryBuf.append(' ');
+                            }
+                            parsePartitionedBy(tokenizer, queryBuf, prevToken);
+                        } else {
+                            if(insertSpace) {
+                                queryBuf.append(' ');
+                            }
+                            queryBuf.append("partitioned ");
+                            queryBuf.append(nextToken);
+
+                        }
+                        insertSpace = true;
                         break;
                     }
                     // fall through
@@ -152,62 +157,58 @@ public final class SQLTranslator {
         }
     }
 
-    private static void tryParsePartitionBy(StreamTokenizer lexer, StringBuilder queryBuf, String tableName)
+    private void parsePartitionedBy(StreamTokenizer tokenizer, StringBuilder queryBuf, String tableName)
             throws IOException {
-        int tt = lexer.nextToken();
-        if(tt != TT_WORD) {
-            queryBuf.append("partition ");
-            queryBuf.append((char) tt);
-            return;
+        if(tableName == null) {
+            throw new IllegalStateException("Syntax error: " + tokenizer.toString());
         }
-        String token = lexer.sval;
-        if(!"by".equalsIgnoreCase(token)) {
-            queryBuf.append(token);
-            queryBuf.append(' ');
-            return;
+        queryBuf.setLength(queryBuf.lastIndexOf(tableName));
+
+        if(tokenizer.nextToken() != TT_LPAR) {
+            throw new IllegalStateException("Syntax error: " + tokenizer.toString());
         }
-        // partitioned by
-        if((tt = lexer.nextToken()) == TT_EOF) {
-            return;
+
+        if(tokenizer.nextToken() != TT_WORD) {
+            throw new IllegalStateException("Syntax error: " + tokenizer.toString());
         }
-        if(tt != TT_WORD) {
-            queryBuf.append((char) tt);
-            return;
-        }
+        String fieldName = tokenizer.sval;
         int bitset = 0;
-        String field = lexer.sval;
-        if("primary".equalsIgnoreCase(field)) {
-            tt = lexer.nextToken();
-            if(tt != TT_WORD && "key".equalsIgnoreCase(lexer.sval)) {
-                throw new IllegalStateException("Syntax error: " + lexer.toString());
-            }
-            // partitioned by primary key
+        if("primarykey".equalsIgnoreCase(fieldName)) {
             bitset = 1;
+            if(tokenizer.nextToken() != TT_RPAR) {
+                throw new IllegalStateException("Syntax error: " + tokenizer.toString());
+            }
         } else {
-            // partitioned by FIELD
-            while((tt = lexer.nextToken()) != TT_EOF) {
-                if(tt != TT_WORD) {
-                    queryBuf.append((char) tt);
-                    break;
+            int partitionKey = catalog.getPartitioningKey(tableName, fieldName);
+            bitset |= partitionKey;
+            int lastTT;
+            while((lastTT = tokenizer.nextToken()) == TT_COMMA) {
+                if(tokenizer.nextToken() != TT_WORD) {
+                    throw new IllegalStateException("Syntax error: " + tokenizer.toString());
                 }
-                if(!"and".equalsIgnoreCase(lexer.sval)) {
-                    lexer.pushBack();
-                    break;
-                }
-                tt = lexer.nextToken();
-                if(tt != TT_WORD) {
-                    throw new IllegalStateException("Syntax error: " + lexer.toString());
-                }
-                // partitioned by FIELD (and FIELD)* 
+                fieldName = tokenizer.sval;
+                partitionKey = catalog.getPartitioningKey(tableName, fieldName);
+                bitset |= partitionKey;
+            }
+            if(lastTT != TT_RPAR) {
+                throw new IllegalStateException("Syntax error: " + tokenizer.toString());
             }
         }
 
+        queryBuf.append('(');
+        queryBuf.append(tableName);
+        queryBuf.append('.');
+        queryBuf.append(hiddenFieldName);
+        queryBuf.append(" & ");
+        queryBuf.append(bitset);
+        queryBuf.append(") = ");
+        queryBuf.append(bitset);
     }
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
-        File file = new File("/home/myui/workspace/gridool/main/test/java/sqlparse/tpch/01.sql");
+        File file = new File("/home/myui/workspace/gridool/main/test/java/sqlparse/tpch/02.sql");
         String query = IOUtils.toString(new FileInputStream(file));
-        SQLTranslator translator = new SQLTranslator();
-        translator.translateSelect(query);
+        SQLTranslator translator = new SQLTranslator(new DistributionCatalog());
+        System.out.println(translator.translateSelect(query));
     }
 }

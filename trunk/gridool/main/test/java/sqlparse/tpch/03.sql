@@ -4,11 +4,14 @@ select
 	o_orderdate,
 	o_shippriority
 from
-	customer partitioned by c_custkey,
-	orders partitioned by o_custkey and o_orderkey,
-	lineitem partitioned by l_orderkey
+	customer,
+	orders,
+	lineitem 
 where
-	c_mktsegment = 'BUILDING'
+	customer partitioned by (c_custkey)
+	and orders partitioned by (o_custkey, o_orderkey)
+	and lineitem partitioned by (l_orderkey)
+	and c_mktsegment = 'BUILDING'
 	and c_custkey = o_custkey
 	and l_orderkey = o_orderkey
 	and o_orderdate < date '1995-03-15'
