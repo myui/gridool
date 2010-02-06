@@ -13,7 +13,7 @@ where
 		from
 			lineitem
 		where
-			lineitem partitioned (l_orderkey)
+			lineitem partitioned by (l_orderkey)
 			and l_orderkey = o_orderkey
 			and l_commitdate < l_receiptdate
 	)

@@ -8,12 +8,16 @@ select
 	c_phone,
 	c_comment
 from
-	customer partitioned by (c_custkey, c_nationkey),
-	orders partitioned by (o_custkey, o_orderkey),
-	lineitem partitioned by l_orderkey,
-	nation partitioned by n_nationkey
+	customer,
+	orders,
+	lineitem,
+	nation
 where
-	c_custkey = o_custkey
+	customer partitioned by (c_custkey, c_nationkey)
+	and orders partitioned by (o_custkey, o_orderkey)
+	and lineitem partitioned by (l_orderkey)
+	and nation partitioned by (n_nationkey)
+	and c_custkey = o_custkey
 	and l_orderkey = o_orderkey
 	and o_orderdate >= date '1993-10-01'
 	and o_orderdate < date '1993-10-01' + interval '3' month

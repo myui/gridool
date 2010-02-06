@@ -6,15 +6,20 @@ select
 	o_totalprice,
 	sum(l_quantity)
 from
-	customer partitioned by c_custkey,
-	orders partitioned by (o_orderkey, o_custkey),
-	lineitem partitioned by l_orderkey
+	customer,
+	orders,
+	lineitem 
 where
-	o_orderkey in (
+	customer partitioned by (c_custkey)
+	and orders partitioned by (o_orderkey, o_custkey)
+	and lineitem partitioned by (l_orderkey)
+	and o_orderkey in (
 		select
 			l_orderkey
 		from
-			lineitem partitioned by l_orderkey
+			lineitem
+		where
+			lineitem partitioned by (l_orderkey)
 		group by
 			l_orderkey 
 		having

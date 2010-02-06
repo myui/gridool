@@ -195,6 +195,15 @@ public final class SQLTranslator {
             }
         }
 
+        if(tokenizer.nextToken() == TT_WORD && "alias".equalsIgnoreCase(tokenizer.sval)) {
+            if(tokenizer.nextToken() != TT_WORD) {
+                throw new IllegalStateException("Syntax error: " + tokenizer.toString());
+            }
+            tableName = tokenizer.sval;
+        } else {
+            tokenizer.pushBack();
+        }
+
         queryBuf.append('(');
         queryBuf.append(tableName);
         queryBuf.append('.');
@@ -206,7 +215,7 @@ public final class SQLTranslator {
     }
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
-        File file = new File("/home/myui/workspace/gridool/main/test/java/sqlparse/tpch/02.sql");
+        File file = new File(args[0]);
         String query = IOUtils.toString(new FileInputStream(file));
         SQLTranslator translator = new SQLTranslator(new DistributionCatalog());
         System.out.println(translator.translateSelect(query));

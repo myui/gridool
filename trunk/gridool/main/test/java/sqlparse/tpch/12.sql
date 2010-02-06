@@ -13,10 +13,12 @@ select
 		else 0
 	end) as low_line_count
 from
-	orders partitioned by o_orderkey,
-	lineitem partitioned by l_orderkey
+	orders,
+	lineitem
 where
-	o_orderkey = l_orderkey
+	orders partitioned by (o_orderkey)
+	and lineitem partitioned by (l_orderkey)
+	and o_orderkey = l_orderkey
 	and l_shipmode in ('MAIL', 'SHIP')
 	and l_commitdate < l_receiptdate
 	and l_shipdate < l_commitdate

@@ -11,14 +11,20 @@ from
 			extract(year from l_shipdate) as l_year,
 			l_extendedprice * (1 - l_discount) as volume
 		from
-			supplier partitioned by s_suppkey and s_nationkey,
-			lineitem partitioned by l_suppkey and l_orderkey,
-			orders partitioned by o_orderkey and o_custkey,
-			customer partitioned by c_custkey and c_nationkey,
-			nation n1 partitioned by n_nationkey,
-			nation n2 partitioned by n_nationkey
+			supplier,
+			lineitem,
+			orders,
+			customer,
+			nation n1,
+			nation n2
 		where
-			s_suppkey = l_suppkey
+			supplier partitioned by (s_suppkey,s_nationkey)
+			and lineitem partitioned by (l_suppkey, l_orderkey)
+			and orders partitioned by (o_orderkey, o_custkey)
+			and customer partitioned by (c_custkey, c_nationkey)
+			and nation partitioned by (n_nationkey) alias n1
+			and nation partitioned by (n_nationkey) alias n2
+			and s_suppkey = l_suppkey
 			and o_orderkey = l_orderkey
 			and c_custkey = o_custkey
 			and s_nationkey = n1.n_nationkey

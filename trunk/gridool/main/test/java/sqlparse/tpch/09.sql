@@ -9,14 +9,20 @@ from
 			extract(year from o_orderdate) as o_year,
 			l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity as amount
 		from
-			part partitioned by p_partkey,
-			supplier partitioned by s_suppkey and s_nationkey,
-			lineitem partitioned by l_suppkey and l_partkey and l_orderkey,
-			partsupp partitioned by ps_suppkey,
-			orders partitioned by o_orderkey,
-			nation partitioned by n_nationkey
+			part,
+			supplier,
+			lineitem,
+			partsupp,
+			orders,
+			nation
 		where
-			s_suppkey = l_suppkey
+			part partitioned by (p_partkey)
+			and supplier partitioned by (s_suppkey, s_nationkey)
+			and lineitem partitioned by (l_suppkey, l_partkey, l_orderkey)
+			and partsupp partitioned by (ps_suppkey)
+			and orders partitioned by (o_orderkey)
+			and nation partitioned by (n_nationkey)
+			and s_suppkey = l_suppkey
 			and ps_suppkey = l_suppkey
 			and ps_partkey = l_partkey
 			and p_partkey = l_partkey

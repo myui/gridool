@@ -11,16 +11,24 @@ from
 			l_extendedprice * (1 - l_discount) as volume,
 			n2.n_name as nation
 		from
-			part partitioned by p_partkey,
-			supplier partitioned by s_suppkey and s_nationkey,
-			lineitem partitioned by l_partkey and l_suppkey and l_orderkey,
-			orders partitioned by o_orderkey and o_custkey,
-			customer partitioned by c_custkey and c_nationkey,
-			nation n1 partitioned by n_nationkey and n_regionkey,
-			nation n2 partitioned by n_nationkey,
-			region partitioned by r_regionkey
+			part,
+			supplier,
+			lineitem,
+			orders,
+			customer,
+			nation n1,
+			nation n2,
+			region
 		where
-			p_partkey = l_partkey
+			part partitioned by (p_partkey)
+			and supplier partitioned by (s_suppkey, s_nationkey)
+			and lineitem partitioned by (l_partkey, l_suppkey, l_orderkey)
+			and orders partitioned by (o_orderkey, o_custkey)
+			and customer partitioned by (c_custkey, c_nationkey)
+			and nation partitioned by (n_nationkey, n_regionkey) alias n1
+			and nation partitioned by (n_nationkey) alias n2
+			and region partitioned by (r_regionkey)
+			and p_partkey = l_partkey
 			and s_suppkey = l_suppkey
 			and l_orderkey = o_orderkey
 			and o_custkey = c_custkey

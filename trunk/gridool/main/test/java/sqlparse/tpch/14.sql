@@ -5,9 +5,11 @@ select
 		else 0
 	end) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue
 from
-	lineitem partitioned by l_partkey,
-	part partitioned by p_partkey
+	lineitem,
+	part
 where
-	l_partkey = p_partkey
+	lineitem partitioned by (l_partkey)
+	and part partitioned by (p_partkey)
+	and l_partkey = p_partkey
 	and l_shipdate >= date '1995-09-01'
 	and l_shipdate < date '1995-09-01' + interval '1' month;

@@ -2,30 +2,35 @@ select
 	s_name,
 	s_address
 from
-	supplier partitioned by s_suppkey, s_suppkey
-	nation partitioned by n_nationkey
+	supplier,
+	nation
 where
-	s_suppkey in (
+	supplier partitioned by (s_suppkey, s_suppkey)
+	and nation partitioned by (n_nationkey)
+	and s_suppkey in (
 		select
 			ps_suppkey
 		from
-			partsupp partitioned by ps_partkey, ps_suppkey
+			partsupp
 		where
-			ps_partkey in (
+			partsupp partitioned by (ps_partkey, ps_suppkey)
+			and ps_partkey in (
 				select
 					p_partkey
 				from
-					part partitioned by p_partkey
+					part
 				where
-					p_name like 'forest%'
+					part partitioned by (p_partkey)
+					and p_name like 'forest%'
 			)
 			and ps_availqty > (
 				select
 					0.5 * sum(l_quantity)
 				from
-					lineitem partitioned by l_partkey, l_suppkey
+					lineitem 
 				where
-					l_partkey = ps_partkey
+					lineitem partitioned by (l_partkey, l_suppkey)
+					and l_partkey = ps_partkey
 					and l_suppkey = ps_suppkey
 					and l_shipdate >= date '1994-01-01'
 					and l_shipdate < date '1994-01-01' + interval '1' year

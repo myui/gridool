@@ -1,9 +1,12 @@
 select
 	sum(l_extendedprice* (1 - l_discount)) as revenue
 from
-	lineitem partitioned by l_partkey,
-	part partitioned by p_partkey
+	lineitem,
+	part
 where
+	lineitem partitioned by (l_partkey)
+	and part partitioned by (p_partkey)
+	and 
 	(
 		p_partkey = l_partkey
 		and p_brand = 'Brand#12'
