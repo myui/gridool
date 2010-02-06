@@ -166,4 +166,12 @@ public final class GridTaskInfo implements GridTask {
         throw new UnsupportedOperationException();
     }
 
+    public List<GridNode> getReplicatedNodes() {
+        throw new UnsupportedOperationException();
+    }
+
+    public void setReplicatedNodes(List<GridNode> replicatedNodes) {
+        throw new UnsupportedOperationException();
+    }
+
 }

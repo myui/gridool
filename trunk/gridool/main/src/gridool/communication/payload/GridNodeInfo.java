@@ -95,7 +95,7 @@ public class GridNodeInfo implements GridNode, Externalizable {
         this.idenfider = copyNode.getKey();
         this.metrics = metrics;
     }
-    
+
     private GridNodeInfo(@CheckForNull InetAddress addr, int port, @CheckForNull byte[] macAddr, boolean superNode) {
         if(addr == null) {
             throw new IllegalArgumentException();
@@ -216,7 +216,7 @@ public class GridNodeInfo implements GridNode, Externalizable {
             macAddr = new byte[6];
             System.arraycopy(in, 10 + iplen, macAddr, 0, 6);
         }
-        boolean isSuperNode = (in[5] == 1);
+        final boolean isSuperNode = (in[5] == 1);
         System.arraycopy(in, 6, ip, 0, iplen);
         final InetAddress addr;
         try {
@@ -224,7 +224,7 @@ public class GridNodeInfo implements GridNode, Externalizable {
         } catch (UnknownHostException e) {
             throw new IllegalStateException(e);
         }
-        int port = Primitives.getInt(in, 6 + iplen);
+        final int port = Primitives.getInt(in, 6 + iplen);
         if(macAddr == null) {
             return new GridNodeInfo(addr, port, isSuperNode);
         } else {

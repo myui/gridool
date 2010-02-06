@@ -22,6 +22,7 @@ package gridool.db.partitioning.monetdb;
 
 import gridool.GridNode;
 import gridool.db.DBOperation;
+import gridool.db.catalog.DistributionCatalog;
 import gridool.util.GridUtils;
 
 import java.io.File;
@@ -37,7 +38,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import xbird.config.Settings;
 import xbird.storage.DbCollection;
 import xbird.util.datetime.StopWatch;
 import xbird.util.io.IOUtils;
@@ -54,11 +54,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     private static final long serialVersionUID = 2815346044185945907L;
     private static final Log LOG = LogFactory.getLog(MonetDBParallelLoadOperation.class);
     private static final String driverClassName = "nl.cwi.monetdb.jdbc.MonetDriver";
-
-    private static final String hiddenFieldName;
-    static {
-        hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
-    }
 
     @Nonnull
     private/* final */String tableName;
@@ -144,7 +139,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     private static void prepareTable(Connection conn, String createTableDDL, String tableName)
             throws SQLException {
         final String sql = createTableDDL + "; ALTER TABLE \"" + tableName + "\" ADD \""
-                + hiddenFieldName + "\" TINYINT;";
+                + DistributionCatalog.hiddenFieldName + "\" TINYINT;";
         try {
             JDBCUtils.update(conn, sql);
             conn.commit();

@@ -24,11 +24,20 @@ import gridool.GridException;
 import gridool.GridNode;
 import gridool.GridTaskResult;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import xbird.util.io.IOUtils;
 
 /**
  * 
@@ -37,32 +46,55 @@ import javax.annotation.Nullable;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public final class GridTaskResultImpl implements GridTaskResult {
+public final class GridTaskResultImpl implements GridTaskResult, Externalizable {
     private static final long serialVersionUID = -4203147223987810971L;
 
-    private final String taskId;
-    private GridNode executedNode;
+    @Nonnull
+    private/* final */String taskId;
+    @Nonnull
+    private/* final */GridNode executedNode;
+    @Nonnull
+    private/* final */List<GridNode> replicatedNodes;
 
     @Nullable
-    private final Serializable result;
+    private/* final */Serializable result;
     @Nullable
-    private final GridException exception;
+    private/* final */GridException exception;
 
     private boolean failoverScheduled = false;
 
-    public GridTaskResultImpl(@Nonnull String taskId,  @Nonnull GridNode executedNode, @Nullable Serializable result) {
+    public GridTaskResultImpl() {}//for Externalizable
+
+    public GridTaskResultImpl(@CheckForNull String taskId, @CheckForNull GridNode executedNode, @CheckForNull List<GridNode> replicatedNodes, @Nullable Serializable result) {
+        if(taskId == null) {
+            throw new IllegalArgumentException();
+        }
+        if(executedNode == null) {
+            throw new IllegalArgumentException();
+        }
+        if(replicatedNodes == null) {
+            throw new IllegalArgumentException();
+        }
         this.taskId = taskId;
         this.executedNode = executedNode;
+        this.replicatedNodes = replicatedNodes;
         this.result = result;
         this.exception = null;
     }
 
-    public GridTaskResultImpl(@Nonnull String taskId, @Nonnull GridNode executedNode, @CheckForNull GridException exception) {
+    public GridTaskResultImpl(@CheckForNull String taskId, @CheckForNull GridNode executedNode, @CheckForNull GridException exception) {
+        if(taskId == null) {
+            throw new IllegalArgumentException();
+        }
+        if(executedNode == null) {
+            throw new IllegalArgumentException();
+        }
         if(exception == null) {
             throw new IllegalArgumentException();
         }
         this.taskId = taskId;
         this.executedNode = executedNode;
+        this.replicatedNodes = Collections.emptyList();
         this.result = null;
         this.exception = exception;
     }
@@ -73,6 +105,10 @@ public final class GridTaskResultImpl implements GridTaskResult {
 
     public GridNode getExecutedNode() {
         return executedNode;
+    }
+
+    public List<GridNode> getReplicatedNodes() {
+        return replicatedNodes;
     }
 
     @SuppressWarnings("unchecked")
@@ -91,6 +127,39 @@ public final class GridTaskResultImpl implements GridTaskResult {
 
     public boolean isFailoverScheduled() {
         return failoverScheduled;
+    }
+
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        this.taskId = IOUtils.readString(in);
+        this.executedNode = (GridNode) in.readObject();
+        final int numNodes = in.readInt();
+        if(numNodes > 0) {
+            final List<GridNode> nodes = new ArrayList<GridNode>(numNodes);
+            for(int i = 0; i < numNodes; i++) {
+                GridNode node = (GridNode) in.readObject();
+                nodes.add(node);
+            }
+            this.replicatedNodes = nodes;
+        } else {
+            this.replicatedNodes = Collections.emptyList();
+        }
+        this.result = (Serializable) in.readObject();
+        this.exception = (GridException) in.readObject();
+        this.failoverScheduled = in.readBoolean();
+    }
+
+    public void writeExternal(ObjectOutput out) throws IOException {
+        IOUtils.writeString(taskId, out);
+        out.writeObject(executedNode);
+        final int numNodes = replicatedNodes.size();
+        out.writeInt(numNodes);
+        for(int i = 0; i < numNodes; i++) {
+            GridNode node = replicatedNodes.get(i);
+            out.writeObject(node);
+        }
+        out.writeObject(result);
+        out.writeObject(exception);
+        out.writeBoolean(failoverScheduled);
     }
 
 }

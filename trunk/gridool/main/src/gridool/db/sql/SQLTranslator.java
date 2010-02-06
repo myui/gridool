@@ -24,9 +24,6 @@ import static java.io.StreamTokenizer.TT_EOF;
 import static java.io.StreamTokenizer.TT_WORD;
 import gridool.db.catalog.DistributionCatalog;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
@@ -34,23 +31,17 @@ import java.io.StringReader;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
-import xbird.config.Settings;
-import xbird.util.io.IOUtils;
-
 /**
- * partitioned_by(primarykey);
- * partitioned_by(field1, field2);
- * <DIV lang="en"></DIV>
+ * 
+ * <DIV lang="en">
+ * partitioned_by (primarykey)
+ * partitioned_by (field1, field2)
+ * </DIV>
  * <DIV lang="ja"></DIV>
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class SQLTranslator {
-
-    private static final String hiddenFieldName;
-    static {
-        hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
-    }
 
     private static final int TT_COMMA = ',';
     private static final int TT_LPAR = '(';
@@ -207,17 +198,11 @@ public final class SQLTranslator {
         queryBuf.append('(');
         queryBuf.append(tableName);
         queryBuf.append('.');
-        queryBuf.append(hiddenFieldName);
+        queryBuf.append(DistributionCatalog.hiddenFieldName);
         queryBuf.append(" & ");
         queryBuf.append(bitset);
         queryBuf.append(") = ");
         queryBuf.append(bitset);
     }
 
-    public static void main(String[] args) throws FileNotFoundException, IOException {
-        File file = new File(args[0]);
-        String query = IOUtils.toString(new FileInputStream(file));
-        SQLTranslator translator = new SQLTranslator(new DistributionCatalog());
-        System.out.println(translator.translateSelect(query));
-    }
 }

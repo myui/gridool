@@ -75,6 +75,8 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
 
     @GridExecutionMonitorResource
     protected transient GridExecutionMonitor monitor;
+    @Nonnull
+    private transient List<GridNode> replicatedNodes = Collections.emptyList();
 
     @SuppressWarnings("unchecked")
     protected GridTaskAdapter(@CheckForNull GridJob job, boolean failover) {
@@ -223,6 +225,15 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
     }
 
     public void setTransferToReplica(GridNode masterNode) {}
+    
+    @Nonnull
+    public List<GridNode> getReplicatedNodes() {
+        return replicatedNodes;
+    }
+
+    public void setReplicatedNodes(@Nonnull List<GridNode> replicatedNodes) {
+        this.replicatedNodes = replicatedNodes;
+    }
 
     public int compareTo(GridLocatable other) {
         String otherKey = other.getKey();

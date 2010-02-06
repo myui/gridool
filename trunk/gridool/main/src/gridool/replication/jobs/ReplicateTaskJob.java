@@ -28,6 +28,7 @@ import gridool.GridTaskResultPolicy;
 import gridool.construct.GridJobBase;
 import gridool.routing.GridTaskRouter;
 
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,9 +50,14 @@ public final class ReplicateTaskJob extends GridJobBase<ReplicateTaskJob.JobConf
     private static final Log LOG = LogFactory.getLog(ReplicateTaskJob.class);
 
     private transient boolean succeed = false;
+    private transient GridTask replicatedTask;
+    private transient List<GridNode> replicaList;
+    @Nonnull
+    private transient final List<GridNode> replicated;
 
     public ReplicateTaskJob() {
         super();
+        this.replicated = new ArrayList<GridNode>(4);
     }
 
     public Map<GridTask, GridNode> map(GridTaskRouter router, JobConf jobConf) throws GridException {
@@ -59,18 +65,26 @@ public final class ReplicateTaskJob extends GridJobBase<ReplicateTaskJob.JobConf
         final List<GridNode> destNodes = jobConf.getDestNodes();
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(destNodes.size());
         for(GridNode node : destNodes) {
-            map.put(new ReplicatedGridTaskAdapter(this, taskToReplicate), node);
+            GridTask task = new ReplicatedGridTaskAdapter(this, taskToReplicate);
+            map.put(task, node);
         }
+        this.replicatedTask = taskToReplicate;
+        this.replicaList = destNodes;
         return map;
     }
 
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
+        assert (replicatedTask != null);
+        final GridNode executedNode = result.getExecutedNode();
+        assert (executedNode != null);
         final Exception err = result.getException();
         if(err == null) {
             this.succeed = true;
-            return GridTaskResultPolicy.RETURN; // REVIEWME if one of replication tasks succeed, then immediately return
+            replicated.add(executedNode);
+            //return GridTaskResultPolicy.RETURN; // REVIEWME if one of replication tasks succeed, then immediately return
         } else {
             LOG.warn("One of Replication of task '" + result.getTaskId() + "' failed", err);
+            replicaList.remove(executedNode); // REVIEWME
         }
         return GridTaskResultPolicy.CONTINUE;
     }
@@ -79,6 +93,7 @@ public final class ReplicateTaskJob extends GridJobBase<ReplicateTaskJob.JobConf
      * Is at least one replication succeeded?
      */
     public Boolean reduce() throws GridException {
+        replicatedTask.setReplicatedNodes(replicated);
         return succeed;
     }
 

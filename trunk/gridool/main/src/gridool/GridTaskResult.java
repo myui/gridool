@@ -21,6 +21,7 @@
 package gridool;
 
 import java.io.Serializable;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -39,6 +40,9 @@ public interface GridTaskResult extends Serializable {
 
     @Nonnull
     GridNode getExecutedNode();
+
+    @Nonnull
+    List<GridNode> getReplicatedNodes();
 
     @Nullable
     <T extends Serializable> T getResult();

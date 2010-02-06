@@ -80,6 +80,14 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
         throw new IllegalStateException();
     }
 
+    public List<GridNode> getReplicatedNodes() {
+        return Collections.emptyList();
+    }
+
+    public void setReplicatedNodes(List<GridNode> replicatedNodes) {
+        throw new UnsupportedOperationException();
+    }
+
     public String getKey() {
         return taskId;
     }
@@ -200,4 +208,5 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
     public void setTaskNumber(int i) {
         throw new UnsupportedOperationException();
     }
+
 }

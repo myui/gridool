@@ -30,6 +30,7 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
+import xbird.config.Settings;
 import xbird.util.struct.Pair;
 
 /**
@@ -40,6 +41,11 @@ import xbird.util.struct.Pair;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class DistributionCatalog {
+    
+    public static final String hiddenFieldName;
+    static {
+        hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
+    }
 
     public DistributionCatalog() {}
 
