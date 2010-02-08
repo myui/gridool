@@ -21,16 +21,24 @@
 package gridool.db.partitioning.monetdb;
 
 import gridool.GridException;
+import gridool.GridJobFuture;
+import gridool.GridKernel;
 import gridool.GridNode;
 import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
+import gridool.annotation.GridKernelResource;
 import gridool.construct.GridJobBase;
 import gridool.db.DBTaskAdapter;
+import gridool.db.catalog.DistributionCatalog;
+import gridool.db.catalog.UpdateCatalogJob;
 import gridool.routing.GridTaskRouter;
 
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import xbird.util.primitive.MutableInt;
 import xbird.util.struct.Pair;
@@ -47,8 +55,18 @@ public final class MonetDBInvokeParallelLoadJob extends
     private static final long serialVersionUID = 3356783271521697124L;
 
     private transient long numProcessed = 0L;
+    //private transient String tableName;
+    private transient List<Pair<GridNode, List<GridNode>>> masterSlaves;
+
+    @GridKernelResource
+    private transient GridKernel kernel;
 
     public MonetDBInvokeParallelLoadJob() {}
+
+    @Override
+    public boolean injectResources() {
+        return true;
+    }
 
     public Map<GridTask, GridNode> map(GridTaskRouter router, Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>> args)
             throws GridException {
@@ -68,7 +86,8 @@ public final class MonetDBInvokeParallelLoadJob extends
                 assigned.put(node, new MutableInt(0));
             }
         }
-        final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(assigned.size());
+        final int mapsize = assigned.size();
+        final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(mapsize);
         for(final Map.Entry<GridNode, MutableInt> e : assigned.entrySet()) {
             GridNode node = e.getKey();
             int numRecords = e.getValue().intValue();
@@ -78,6 +97,9 @@ public final class MonetDBInvokeParallelLoadJob extends
             GridTask task = new DBTaskAdapter(this, shrinkedOps);
             map.put(task, node);
         }
+
+        //this.tableName = tableName;
+        this.masterSlaves = new ArrayList<Pair<GridNode, List<GridNode>>>(mapsize);
         return map;
     }
 
@@ -85,11 +107,24 @@ public final class MonetDBInvokeParallelLoadJob extends
         Integer processed = result.getResult();
         if(processed != null) {
             numProcessed += processed.longValue();
+            GridNode masterNode = result.getExecutedNode();
+            List<GridNode> replicatedNodes = result.getReplicatedNodes();
+            masterSlaves.add(new Pair<GridNode, List<GridNode>>(masterNode, replicatedNodes));
         }
         return GridTaskResultPolicy.CONTINUE;
     }
 
     public Long reduce() throws GridException {
+        // register mapping
+        UpdateCatalogJob.JobConf jobConf = new UpdateCatalogJob.JobConf(DistributionCatalog.defaultDistributionKey, masterSlaves); // FIXME to use tableName
+        final GridJobFuture<Boolean> future = kernel.execute(UpdateCatalogJob.class, jobConf);
+        try {
+            future.get();
+        } catch (InterruptedException ie) {
+            throw new GridException(ie);
+        } catch (ExecutionException ee) {
+            throw new GridException(ee);
+        }
         return numProcessed;
     }
 

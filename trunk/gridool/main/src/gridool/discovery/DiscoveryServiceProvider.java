@@ -23,6 +23,8 @@ package gridool.discovery;
 import gridool.GridConfiguration;
 import gridool.GridResourceRegistry;
 import gridool.discovery.jgroups.JGroupsDiscoveryService;
+import gridool.replication.ReplicaCoordinator;
+import gridool.replication.ReplicationManager;
 import gridool.routing.GridTaskRouter;
 
 import javax.annotation.Nonnull;
@@ -47,6 +49,10 @@ public final class DiscoveryServiceProvider {
     public static GridDiscoveryService createService(@Nonnull GridTaskRouter taskRouter, @Nonnull GridResourceRegistry resourceRegistry, @Nonnull GridConfiguration config) {
         GridDiscoveryService srv = new JGroupsDiscoveryService(resourceRegistry, config);
         srv.addListener(taskRouter);
+
+        ReplicationManager replMgr = resourceRegistry.getReplicationManager();
+        ReplicaCoordinator replCoord = replMgr.getReplicaCoordinator();
+        srv.addListener(replCoord); // TODO REVIEWME
 
         final String additional = Settings.get("gridool.discovery.listener");
         if(additional != null) {

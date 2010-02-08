@@ -132,11 +132,9 @@ public final class ReplicationManager {
                 return replicaIdCached;
             }
 
-            String query = "SELECT dbname FROM \"" + replicaTableName
-                    + "\" WHERE ipaddr = ? AND portnum = ?";
-            Object[] params = new Object[2];
-            params[0] = masterNode.getPhysicalAdress().getHostAddress();
-            params[1] = masterNode.getPort();
+            String query = "SELECT dbname FROM \"" + replicaTableName + "\" WHERE nodeinfo = ?";
+            Object[] params = new Object[1];
+            params[0] = masterNode.getKey();
             ResultSetHandler handler = new ScalarHandler("dbname");
             String replicaId = (String) JDBCUtils.query(query, params, handler);
 
@@ -157,19 +155,18 @@ public final class ReplicationManager {
             if(!replicaNameStack.isEmpty()) {
                 String replicaDbName = replicaNameStack.pop();
                 if(replicaDbName != null) {
-                    Object[] params = new Object[3];
-                    params[0] = masterNode.getPhysicalAdress().getHostAddress();
-                    params[1] = masterNode.getPort();
-                    params[2] = replicaDbName;
+                    Object[] params = new Object[2];
+                    params[0] = masterNode.getKey();
+                    params[1] = replicaDbName;
                     final int rows = JDBCUtils.update(conn, "UPDATE \"" + replicaTableName
-                            + "\" SET ipaddr = ?, portnum = ? WHERE dbname = ?", params);
+                            + "\" SET nodeinfo = ? WHERE dbname = ?", params);
                     if(rows == 1) {
                         conn.commit();
                         if(replicaDbMappingCache.put(masterNode, replicaDbName) != null) {
                             throw new IllegalStateException();
                         }
                         return true;
-                    } else {
+                    } else {                        
                         return false;
                     }
                 }
@@ -203,7 +200,7 @@ public final class ReplicationManager {
 
     private static void prepareReplicaTable(@Nonnull Connection conn, @Nonnull String replicaTableName) {
         final String ddl = "CREATE TABLE \"" + replicaTableName
-                + "\"(dbname varchar(30) primary key, ipaddr varchar(15), portnum int)";
+                + "\"(dbname varchar(30) primary key, nodeinfo varchar(30))";
         try {
             JDBCUtils.update(conn, ddl);
         } catch (SQLException e) {

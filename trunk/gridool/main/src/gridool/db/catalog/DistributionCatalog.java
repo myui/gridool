@@ -20,17 +20,24 @@
  */
 package gridool.db.catalog;
 
+import gridool.GridNode;
+
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import xbird.config.Settings;
+import xbird.util.lang.ArrayUtils;
 import xbird.util.struct.Pair;
 
 /**
@@ -41,13 +48,66 @@ import xbird.util.struct.Pair;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class DistributionCatalog {
-    
+
+    public static final String defaultDistributionKey = "";
     public static final String hiddenFieldName;
     static {
         hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
     }
 
-    public DistributionCatalog() {}
+    private final Object lock = new Object();
+    @GuardedBy("lock")
+    private final Map<String, Map<GridNode, List<GridNode>>> distributionCache;
+
+    public DistributionCatalog() {
+        this.distributionCache = new HashMap<String, Map<GridNode, List<GridNode>>>(12);
+    }
+
+    public void registerPartition(@Nonnull final GridNode master, @Nonnull final List<GridNode> slaves, @Nonnull final String distKey) {
+        synchronized(lock) {
+            Map<GridNode, List<GridNode>> mapping = distributionCache.get(distKey);
+            if(mapping == null) {
+                mapping = new HashMap<GridNode, List<GridNode>>(32);
+                distributionCache.put(distKey, mapping);
+                mapping.put(master, slaves);
+            } else {
+                List<GridNode> oldSlaves = mapping.get(mapping);
+                if(oldSlaves == null) {
+                    mapping.put(master, slaves);
+                } else {
+                    oldSlaves.addAll(slaves);
+                }
+            }
+        }
+    }
+
+    public GridNode[] getMasters(@Nullable final String distKey) {
+        final GridNode[] masters;
+        synchronized(lock) {
+            final Map<GridNode, List<GridNode>> mapping = distributionCache.get(distKey);
+            if(mapping == null) {
+                return new GridNode[0];
+            }
+            masters = ArrayUtils.toArray(mapping.keySet(), GridNode[].class);
+        }
+        return masters;
+    }
+
+    public GridNode[] getSlaves(@Nonnull final GridNode master, @Nullable final String distKey) {
+        final GridNode[] slaves;
+        synchronized(lock) {
+            final Map<GridNode, List<GridNode>> mapping = distributionCache.get(distKey);
+            if(mapping == null) {
+                return new GridNode[0];
+            }
+            final List<GridNode> slaveList = mapping.get(master);
+            if(slaveList == null) {
+                return new GridNode[0];
+            }
+            slaves = ArrayUtils.toArray(slaveList, GridNode[].class);
+        }
+        return slaves;
+    }
 
     public int getPartitioningKey(@Nonnull final String tableName, @Nonnull final String fieldName) {
         return -1;
