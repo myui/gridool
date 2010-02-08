@@ -23,6 +23,8 @@ package gridool;
 import gridool.annotation.GridAnnotationProcessor;
 import gridool.communication.GridCommunicationManager;
 import gridool.db.catalog.DistributionCatalog;
+import gridool.db.helpers.DBAccessor;
+import gridool.db.helpers.DBAccessorFactory;
 import gridool.deployment.GridPerNodeClassLoader;
 import gridool.directory.ILocalDirectory;
 import gridool.discovery.GridDiscoveryService;
@@ -73,6 +75,7 @@ public final class GridResourceRegistry {
     private GridExecutionMonitor executionMonitor;
     private final ReplicationManager replicationManager;
     private final DistributionCatalog distributionCatalog;
+    private final DBAccessor dbAccessor;
 
     public GridResourceRegistry(@Nonnull GridKernel kernel, @Nonnull GridConfiguration config) {
         this.kernel = kernel;
@@ -83,6 +86,7 @@ public final class GridResourceRegistry {
         this.taskMetricsCounter = new AtomicReference<GridTaskMetricsCounter>(counter);
         this.replicationManager = new ReplicationManager(kernel, config);
         this.distributionCatalog = new DistributionCatalog();
+        this.dbAccessor = DBAccessorFactory.createDBAccessor();
     }
 
     public GridKernel getGridKernel() {
@@ -231,6 +235,11 @@ public final class GridResourceRegistry {
     @Nonnull
     public DistributionCatalog getDistributionCatalog() {
         return distributionCatalog;
+    }
+
+    @Nonnull
+    public DBAccessor getDbAccessor() {
+        return dbAccessor;
     }
 
     private static final class GridResourceNotFoundException extends GridRuntimeException {

@@ -18,24 +18,25 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool;
+package gridool.db.helpers;
+
+import javax.annotation.Nonnull;
 
 /**
  * 
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405@gmail.com)
+ * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public enum GridTaskResultPolicy {
+public final class DBAccessorFactory {
 
-    /* Wait for all tasks are received. */
-    CONTINUE,
-    /* Proceeds the task without waiting other responses. */
-    RETURN,
-    /* Proceeds the task without waiting other responses. Then, the remaining tasks are canceled. */
-    CANCEL_RETURN,
-    /* Fail-over the task and execute it on another node. */
-    FAILOVER;
+    private DBAccessorFactory() {}
+
+    @Nonnull
+    public static DBAccessor createDBAccessor() {
+        // TODO more variants
+        return new DBAccessor();
+    }
 
 }

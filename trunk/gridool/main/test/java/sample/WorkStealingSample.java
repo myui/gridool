@@ -137,7 +137,7 @@ public final class WorkStealingSample {
 
         @Override
         public GridTaskRelocatability getRelocatability() {
-            return GridTaskRelocatability.relocatable;
+            return GridTaskRelocatability.relocatableToAnywhere;
         }
 
         @Override

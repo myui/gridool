@@ -28,12 +28,12 @@ package gridool;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public enum GridTaskRelocatability {
-    relocatable, restricedToReplica, unable;
+    relocatableToAnywhere, restricedToReplica, unable;
 
     GridTaskRelocatability() {}
 
     public boolean isRelocatable() {
-        return (this == relocatable) || (this == restricedToReplica);
+        return (this == relocatableToAnywhere) || (this == restricedToReplica);
     }
 
 }

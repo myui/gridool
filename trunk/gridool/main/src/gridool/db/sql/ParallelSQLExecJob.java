@@ -29,6 +29,7 @@ import gridool.GridTaskResultPolicy;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridJobBase;
 import gridool.db.catalog.DistributionCatalog;
+import gridool.db.helpers.DBAccessor;
 import gridool.routing.GridTaskRouter;
 import gridool.util.GridUtils;
 
@@ -36,12 +37,19 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import xbird.util.io.IOUtils;
+import xbird.util.jdbc.JDBCUtils;
 
 /**
  * 
@@ -52,9 +60,12 @@ import xbird.util.io.IOUtils;
  */
 public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.JobConf, String> {
     private static final long serialVersionUID = -3258710936720234846L;
+    private static final Log LOG = LogFactory.getLog(ParallelSQLExecJob.class);
 
     @GridRegistryResource
     private transient GridResourceRegistry registry;
+
+    private transient String retTableName;
 
     public ParallelSQLExecJob() {
         super();
@@ -70,23 +81,48 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         DistributionCatalog catalog = registry.getDistributionCatalog();
         SQLTranslator translator = new SQLTranslator(catalog);
         String mapQuery = translator.translateQuery(jobConf.mapQuery);
-        GridNode[] masters = catalog.getMasters(DistributionCatalog.defaultDistributionKey);
-        runPreparation(mapQuery, masters, jobConf.retTableName);
+        final GridNode[] masters = catalog.getMasters(DistributionCatalog.defaultDistributionKey);
+        DBAccessor dba = registry.getDbAccessor();
+        String retTableName = jobConf.retTableName;
+        runPreparation(dba, mapQuery, masters, retTableName);
 
+        final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(masters.length);
+        for(GridNode node: masters) {
+            GridTask task;
+            map.put(task, node);
+        }        
+        this.retTableName = retTableName;
         return null;
     }
 
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
-        return null;
+        
+        return GridTaskResultPolicy.CONTINUE;
     }
 
     public String reduce() throws GridException {
-        return null;
+        return retTableName;
     }
 
-    private static void runPreparation(final String mapQuery, final GridNode[] masters, final String retTableName) {
+    private static void runPreparation(final DBAccessor dba, final String mapQuery, final GridNode[] masters, final String retTableName)
+            throws GridException {
         String prepareQuery = constructQuery(mapQuery, masters, retTableName);
-        
+        final Connection conn;
+        try {
+            conn = dba.getPrimaryDbConnection();
+            conn.setAutoCommit(false);
+        } catch (SQLException e) {
+            LOG.error("An error caused in the preparation phase", e);
+            throw new GridException(e);
+        }
+        try {
+            JDBCUtils.update(conn, prepareQuery);
+        } catch (SQLException e) {
+            LOG.error("An error caused in the preparation phase", e);
+            throw new GridException(e);
+        } finally {
+            JDBCUtils.closeQuietly(conn);
+        }
     }
 
     private static String constructQuery(final String mapQuery, final GridNode[] masters, final String retTableName) {
@@ -141,9 +177,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         public JobConf() {}//Externalizable
 
         public JobConf(@Nonnull String mapQuery, @Nonnull String reduceQuery) {
-            this.retTableName = GridUtils.generateQueryName();
-            this.mapQuery = mapQuery;
-            this.reduceQuery = reduceQuery;
+            this(null, mapQuery, reduceQuery);
         }
 
         public JobConf(@Nullable String retTableName, @Nonnull String mapQuery, @Nonnull String reduceQuery) {

@@ -203,7 +203,7 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
         }
         final List<GridNode> nodeList;
         switch(getRelocatability()) {
-            case relocatable:
+            case relocatableToAnywhere:
                 GridNode[] nodes = router.getAllNodes();
                 nodeList = Arrays.asList(nodes);
                 break;

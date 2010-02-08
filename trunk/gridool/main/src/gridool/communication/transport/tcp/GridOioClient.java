@@ -64,7 +64,7 @@ public final class GridOioClient implements GridTransportClient {
             throw new GridException(e);
         }
 
-        final byte[] b = GridUtils.toBytes(msg);
+        final byte[] b = GridUtils.toBytes(msg);    // TODO sendfile support
         if(LOG.isDebugEnabled()) {
             LOG.debug("Sending a message [" + msg.getMessageId() + " (" + b.length
                     + " bytes)] to a node [" + sockAddr + "] using a socket [" + socket + ']');

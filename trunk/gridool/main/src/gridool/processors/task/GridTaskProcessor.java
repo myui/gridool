@@ -24,6 +24,7 @@ import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.GridResourceRegistry;
 import gridool.GridTask;
+import gridool.GridTaskRelocatability;
 import gridool.annotation.GridAnnotationProcessor;
 import gridool.loadblancing.workstealing.GridTaskStealingTask;
 import gridool.metrics.runtime.GridTaskMetricsCounter;
@@ -85,7 +86,7 @@ public final class GridTaskProcessor implements GridProcessor {
         metrics.taskCreated();
 
         final GridTaskWorker worker;
-        if(task.getRelocatability().isRelocatable()) {
+        if(task.getRelocatability() == GridTaskRelocatability.relocatableToAnywhere) {
             waitingTaskQueue.pushBottom(task);
             worker = new GridTaskWorker(waitingTaskQueue, metrics, monitor, annotationProc, respListener);
         } else {

@@ -18,24 +18,33 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool;
+package gridool.db.sql;
+
+import gridool.GridException;
+import gridool.GridJob;
+import gridool.construct.GridTaskAdapter;
+
+import java.io.Serializable;
 
 /**
  * 
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405@gmail.com)
+ * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public enum GridTaskResultPolicy {
+public final class ParallelSQLMapTask extends GridTaskAdapter {
+    private static final long serialVersionUID = 2478800827882047565L;
 
-    /* Wait for all tasks are received. */
-    CONTINUE,
-    /* Proceeds the task without waiting other responses. */
-    RETURN,
-    /* Proceeds the task without waiting other responses. Then, the remaining tasks are canceled. */
-    CANCEL_RETURN,
-    /* Fail-over the task and execute it on another node. */
-    FAILOVER;
+    @SuppressWarnings("unchecked")
+    public ParallelSQLMapTask(GridJob job) {
+        super(job, true);
+    }
+
+    @Override
+    protected Serializable execute() throws GridException {
+        
+        return null;
+    }
 
 }

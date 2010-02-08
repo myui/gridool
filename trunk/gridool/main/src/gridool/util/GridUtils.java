@@ -339,9 +339,16 @@ public final class GridUtils {
             return fileName + '_' + addr;
         }
     }
-    
+
     public static String generateQueryName() {
         return "Q" + System.nanoTime();
     }
 
+    public static String extractDbName(@Nonnull String dburl) {
+        try {
+            return dburl.substring(dburl.lastIndexOf('/') + 1);
+        } catch (StringIndexOutOfBoundsException e) {
+            throw new IllegalArgumentException("Invalid DB url: " + dburl);
+        }
+    }
 }
