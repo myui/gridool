@@ -60,7 +60,7 @@ public final class SQLTranslator {
     }
 
     @Nonnull
-    public String translateSelect(@Nonnull final String query) {
+    public String translateQuery(@Nonnull final String query) {
         if(!query.contains("partitioned by") && !query.contains("PARTITIONED BY")) {
             return query;
         }

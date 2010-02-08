@@ -339,5 +339,9 @@ public final class GridUtils {
             return fileName + '_' + addr;
         }
     }
+    
+    public static String generateQueryName() {
+        return "Q" + System.nanoTime();
+    }
 
 }
