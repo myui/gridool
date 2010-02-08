@@ -88,11 +88,11 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(masters.length);
         for(GridNode node: masters) {
-            GridTask task;
+            GridTask task = new ParallelSQLMapTask(this);
             map.put(task, node);
         }        
         this.retTableName = retTableName;
-        return null;
+        return map;
     }
 
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
