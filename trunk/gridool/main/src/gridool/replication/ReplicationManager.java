@@ -63,6 +63,7 @@ public final class ReplicationManager {
     }
 
     private final GridKernel kernel;
+    private final GridNode localMasterNode;
     private final ReplicaSelector replicaSelector;
     private final ReplicaCoordinator replicaCoordinator;
 
@@ -74,10 +75,16 @@ public final class ReplicationManager {
 
     public ReplicationManager(@Nonnull GridKernel kernel, @Nonnull GridConfiguration config) {
         this.kernel = kernel;
+        this.localMasterNode = config.getLocalNode();
         this.replicaSelector = ReplicationModuleBuilder.createReplicaSelector();
         this.replicaCoordinator = ReplicationModuleBuilder.createReplicaCoordinator(kernel, config);
         this.replicaNameStack = new Stack<String>();
         this.replicaDbMappingCache = new HashMap<GridNode, String>(32);
+    }
+
+    @Nonnull
+    public GridNode getLocalMasterNode() {
+        return localMasterNode;
     }
 
     @Nonnull

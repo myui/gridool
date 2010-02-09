@@ -69,16 +69,8 @@ public class DBAccessor {
         this.primaryDbName = extractDbName(primaryDbUrl);
     }
 
-    protected String extractDbPrefix(@Nonnull String dburl) {
-        try {
-            return dburl.substring(0, dburl.lastIndexOf('/') + 1);
-        } catch (StringIndexOutOfBoundsException e) {
-            throw new IllegalArgumentException("Invalid DB url: " + dburl);
-        }
-    }
-
-    protected String extractDbName(@Nonnull String dburl) {
-        return GridUtils.extractDbName(dburl);
+    public String getPrimaryDbName() {
+        return primaryDbName;
     }
 
     public Connection getConnection(@Nonnull String dbName) throws SQLException {
@@ -106,6 +98,18 @@ public class DBAccessor {
         } catch (ClassNotFoundException e) {
             throw new SQLException(e);
         }
+    }
+
+    protected String extractDbPrefix(@Nonnull String dburl) {
+        try {
+            return dburl.substring(0, dburl.lastIndexOf('/') + 1);
+        } catch (StringIndexOutOfBoundsException e) {
+            throw new IllegalArgumentException("Invalid DB url: " + dburl);
+        }
+    }
+
+    protected String extractDbName(@Nonnull String dburl) {
+        return GridUtils.extractDbName(dburl);
     }
 
 }
