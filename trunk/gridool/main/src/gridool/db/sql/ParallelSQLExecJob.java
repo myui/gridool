@@ -29,6 +29,7 @@ import gridool.GridTaskResultPolicy;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridJobBase;
 import gridool.db.catalog.DistributionCatalog;
+import gridool.db.catalog.NodeState;
 import gridool.db.helpers.DBAccessor;
 import gridool.routing.GridTaskRouter;
 import gridool.util.GridUtils;
@@ -48,6 +49,8 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.sun.org.apache.xml.internal.resolver.Catalog;
+
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
 
@@ -66,6 +69,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     private transient GridResourceRegistry registry;
 
     private transient String retTableName;
+    private transient int oneThirdOfTasks;
 
     public ParallelSQLExecJob() {
         super();
@@ -86,17 +90,32 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         String retTableName = jobConf.retTableName;
         runPreparation(dba, mapQuery, masters, retTableName);
 
-        final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(masters.length);
-        for(GridNode node: masters) {
-            GridTask task = new ParallelSQLMapTask(this);
+        final int numNodes = masters.length;
+        final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
+        for(int i = 0; i < numNodes; i++) {
+            GridNode node = masters[i];
+            ParallelSQLMapTask task = new ParallelSQLMapTask(this, node, catalog);
             map.put(task, node);
-        }        
+        }
         this.retTableName = retTableName;
+        this.oneThirdOfTasks = Math.max(numNodes / 3, 2);
         return map;
     }
 
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
-        
+        GridNode taskMaster = result.getResult();
+        if(taskMaster == null) {
+            // on task failure
+            if(LOG.isWarnEnabled()) {
+                GridException err = result.getException();
+                LOG.warn("task failed: " + result.getTaskId(), err);
+            }
+            DistributionCatalog catalog = registry.getDistributionCatalog();
+            GridNode failedNode = result.getExecutedNode();
+            assert (failedNode != null);
+            catalog.setNodeState(failedNode, NodeState.suspected);
+            return GridTaskResultPolicy.FAILOVER;
+        }
         return GridTaskResultPolicy.CONTINUE;
     }
 
@@ -174,29 +193,34 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         @Nonnull
         private String reduceQuery;
 
+        private long waitForStartSpeculativeTask; // TODO
+
         public JobConf() {}//Externalizable
 
         public JobConf(@Nonnull String mapQuery, @Nonnull String reduceQuery) {
-            this(null, mapQuery, reduceQuery);
+            this(null, mapQuery, reduceQuery, -1L);
         }
 
-        public JobConf(@Nullable String retTableName, @Nonnull String mapQuery, @Nonnull String reduceQuery) {
+        public JobConf(@Nullable String retTableName, @Nonnull String mapQuery, @Nonnull String reduceQuery, long waitForStartSpeculativeTask) {
             this.retTableName = (retTableName == null) ? GridUtils.generateQueryName()
                     : retTableName;
             this.mapQuery = mapQuery;
             this.reduceQuery = reduceQuery;
+            this.waitForStartSpeculativeTask = waitForStartSpeculativeTask;
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             this.retTableName = IOUtils.readString(in);
             this.mapQuery = IOUtils.readString(in);
             this.reduceQuery = IOUtils.readString(in);
+            this.waitForStartSpeculativeTask = in.readLong();
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
             IOUtils.writeString(retTableName, out);
             IOUtils.writeString(mapQuery, out);
             IOUtils.writeString(reduceQuery, out);
+            out.writeLong(waitForStartSpeculativeTask);
         }
 
     }

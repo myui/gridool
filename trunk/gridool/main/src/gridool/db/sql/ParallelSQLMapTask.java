@@ -22,9 +22,15 @@ package gridool.db.sql;
 
 import gridool.GridException;
 import gridool.GridJob;
+import gridool.GridNode;
 import gridool.construct.GridTaskAdapter;
+import gridool.db.catalog.DistributionCatalog;
+import gridool.routing.GridTaskRouter;
 
-import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.annotation.Nonnull;
 
 /**
  * 
@@ -36,15 +42,28 @@ import java.io.Serializable;
 public final class ParallelSQLMapTask extends GridTaskAdapter {
     private static final long serialVersionUID = 2478800827882047565L;
 
+    @Nonnull
+    private final GridNode masterNode;
+
+    private transient DistributionCatalog catalog;
+
     @SuppressWarnings("unchecked")
-    public ParallelSQLMapTask(GridJob job) {
+    public ParallelSQLMapTask(GridJob job, GridNode masterNode, DistributionCatalog catalog) {
         super(job, true);
+        this.masterNode = masterNode;
+        this.catalog = catalog;
     }
 
     @Override
-    protected Serializable execute() throws GridException {
-        
-        return null;
+    public List<GridNode> listFailoverCandidates(GridNode localNode, GridTaskRouter router) {
+        GridNode[] slaves = catalog.getSlaves(masterNode, DistributionCatalog.defaultDistributionKey);
+        return Arrays.asList(slaves);
+    }
+
+    @Override
+    protected GridNode execute() throws GridException {
+        // TODO
+        return masterNode;
     }
 
 }

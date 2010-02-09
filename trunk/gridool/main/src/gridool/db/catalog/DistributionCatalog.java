@@ -28,6 +28,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,25 +59,30 @@ public final class DistributionCatalog {
 
     private final Object lock = new Object();
     @GuardedBy("lock")
-    private final Map<String, Map<GridNode, List<GridNode>>> distributionCache;
+    private final Map<String, Map<NodeWithState, List<NodeWithState>>> distributionCache;
+    @GuardedBy("lock")
+    private final Map<GridNode, NodeWithState> nodeStateMap;
 
     public DistributionCatalog() {
-        this.distributionCache = new HashMap<String, Map<GridNode, List<GridNode>>>(12);
+        this.distributionCache = new HashMap<String, Map<NodeWithState, List<NodeWithState>>>(12);
+        this.nodeStateMap = new HashMap<GridNode, NodeWithState>(64);
     }
 
-    public void registerPartition(@Nonnull final GridNode master, @Nonnull final List<GridNode> slaves, @Nonnull final String distKey) {
+    public void registerPartition(@Nonnull GridNode master, @Nonnull final List<GridNode> slaves, @Nonnull final String distKey) {
         synchronized(lock) {
-            Map<GridNode, List<GridNode>> mapping = distributionCache.get(distKey);
+            Map<NodeWithState, List<NodeWithState>> mapping = distributionCache.get(distKey);
             if(mapping == null) {
-                mapping = new HashMap<GridNode, List<GridNode>>(32);
+                mapping = new HashMap<NodeWithState, List<NodeWithState>>(32);
                 distributionCache.put(distKey, mapping);
-                mapping.put(master, slaves);
+                mapping.put(wrapNode(master, true), wrapNodes(slaves, true));
             } else {
-                List<GridNode> oldSlaves = mapping.get(mapping);
+                List<NodeWithState> oldSlaves = mapping.get(mapping);
                 if(oldSlaves == null) {
-                    mapping.put(master, slaves);
+                    mapping.put(wrapNode(master, true), wrapNodes(slaves, true));
                 } else {
-                    oldSlaves.addAll(slaves);
+                    for(GridNode slave : slaves) {
+                        oldSlaves.add(wrapNode(slave, true));
+                    }
                 }
             }
         }
@@ -84,11 +91,12 @@ public final class DistributionCatalog {
     public GridNode[] getMasters(@Nullable final String distKey) {
         final GridNode[] masters;
         synchronized(lock) {
-            final Map<GridNode, List<GridNode>> mapping = distributionCache.get(distKey);
+            final Map<NodeWithState, List<NodeWithState>> mapping = distributionCache.get(distKey);
             if(mapping == null) {
                 return new GridNode[0];
             }
-            masters = ArrayUtils.toArray(mapping.keySet(), GridNode[].class);
+            List<GridNode> list = unwrapNodes(mapping.keySet(), true);
+            masters = ArrayUtils.toArray(list, GridNode[].class);
         }
         return masters;
     }
@@ -96,17 +104,44 @@ public final class DistributionCatalog {
     public GridNode[] getSlaves(@Nonnull final GridNode master, @Nullable final String distKey) {
         final GridNode[] slaves;
         synchronized(lock) {
-            final Map<GridNode, List<GridNode>> mapping = distributionCache.get(distKey);
+            final Map<NodeWithState, List<NodeWithState>> mapping = distributionCache.get(distKey);
             if(mapping == null) {
                 return new GridNode[0];
             }
-            final List<GridNode> slaveList = mapping.get(master);
+            final List<NodeWithState> slaveList = mapping.get(master);
             if(slaveList == null) {
                 return new GridNode[0];
             }
-            slaves = ArrayUtils.toArray(slaveList, GridNode[].class);
+            List<GridNode> list = unwrapNodes(slaveList, true);
+            slaves = ArrayUtils.toArray(list, GridNode[].class);
         }
         return slaves;
+    }
+
+    @Nullable
+    public NodeState getNodeState(@Nonnull final GridNode node) {
+        synchronized(lock) {
+            final NodeWithState nodeinfo = nodeStateMap.get(node);
+            if(nodeinfo == null) {
+                return null;
+            }
+            return nodeinfo.state;
+        }
+    }
+
+    public NodeState setNodeState(@Nonnull final GridNode node, @Nonnull final NodeState newState) {
+        synchronized(lock) {
+            NodeWithState nodeinfo = nodeStateMap.get(node);
+            if(nodeinfo == null) {
+                nodeinfo = new NodeWithState(node, newState);
+                nodeStateMap.put(node, nodeinfo);
+                return null;
+            } else {
+                NodeState prevState = nodeinfo.state;
+                nodeinfo.state = newState;
+                return prevState;
+            }
+        }
     }
 
     public int getPartitioningKey(@Nonnull final String tableName, @Nonnull final String fieldName) {
@@ -188,5 +223,68 @@ public final class DistributionCatalog {
         }
 
         return new Pair<int[], int[]>(pkeyIdxs, fkeyIdxs);
+    }
+
+    private static final class NodeWithState {
+
+        @Nonnull
+        final GridNode node;
+        @Nonnull
+        NodeState state;
+
+        NodeWithState(GridNode node) {
+            this(node, NodeState.normal);
+        }
+
+        NodeWithState(GridNode node, NodeState state) {
+            this.node = node;
+            this.state = state;
+        }
+
+        boolean isValid() {
+            return state.isValid();
+        }
+    }
+
+    private NodeWithState wrapNode(final GridNode node, final boolean replace) {
+        NodeWithState nodeWS = nodeStateMap.get(node);
+        if(nodeWS == null || (replace && nodeWS.isValid() == false)) {
+            nodeWS = new NodeWithState(node);
+            nodeStateMap.put(node, nodeWS);
+        }
+        return nodeWS;
+    }
+
+    private List<NodeWithState> wrapNodes(final List<GridNode> nodes, final boolean replace) {
+        if(nodes.isEmpty()) {
+            return Collections.emptyList();
+        }
+        final List<NodeWithState> list = new ArrayList<NodeWithState>(nodes.size());
+        for(GridNode node : nodes) {
+            NodeWithState nodeWS = wrapNode(node, replace);
+            if(replace || nodeWS.isValid()) {
+                list.add(nodeWS);
+            }
+        }
+        return list;
+    }
+
+    private List<GridNode> unwrapNodes(final Collection<NodeWithState> nodes, final boolean validate) {
+        if(nodes.isEmpty()) {
+            return Collections.emptyList();
+        }
+        final List<GridNode> list = new ArrayList<GridNode>(nodes.size());
+        if(validate) {
+            for(NodeWithState ns : nodes) {
+                if(ns.isValid()) {
+                    list.add(ns.node);
+                }
+            }
+        } else {
+            for(NodeWithState ns : nodes) {
+                list.add(ns.node);
+            }
+        }
+        return list;
     }
 }
