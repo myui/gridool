@@ -20,6 +20,7 @@
  */
 package gridool.util;
 
+import gridool.GridException;
 import gridool.GridJob;
 import gridool.GridNode;
 import gridool.GridResourceRegistry;
@@ -27,12 +28,15 @@ import gridool.GridTask;
 import gridool.annotation.GridJobName;
 import gridool.communication.GridCommunicationMessage;
 import gridool.communication.payload.GridNodeInfo;
+import gridool.db.helpers.DBAccessor;
 import gridool.deployment.GridPerNodeClassLoader;
 import gridool.deployment.PeerClassLoader;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -351,4 +355,16 @@ public final class GridUtils {
             throw new IllegalArgumentException("Invalid DB url: " + dburl);
         }
     }
+    
+    @Nonnull
+    public static Connection getPrimaryDbConnection(final DBAccessor dba) throws GridException {
+        try {
+            return dba.getPrimaryDbConnection();
+        } catch (SQLException e) {
+            LOG.error(e);
+            throw new GridException("failed connecting to the primary database: "
+                    + dba.getPrimaryDbName());
+        }
+    }
+
 }

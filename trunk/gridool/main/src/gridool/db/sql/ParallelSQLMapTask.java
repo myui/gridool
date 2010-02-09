@@ -30,6 +30,7 @@ import gridool.db.catalog.DistributionCatalog;
 import gridool.db.helpers.DBAccessor;
 import gridool.replication.ReplicationManager;
 import gridool.routing.GridTaskRouter;
+import gridool.util.GridUtils;
 
 import java.io.Externalizable;
 import java.io.File;
@@ -111,9 +112,10 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         }
 
         // #1 invoke COPY INTO file
+        final int rows;
         final Connection dbConn = getDbConnection(taskMasterNode, registry);
         try {
-            executeCopyIntoQuery(dbConn, query, tmpFile);
+            rows = executeCopyIntoQuery(dbConn, query, tmpFile);
         } catch (SQLException e) {
             LOG.error(e);
             if(!tmpFile.delete()) {
@@ -124,8 +126,8 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             JDBCUtils.closeQuietly(dbConn);
         }
 
-        final String sentFileName = tmpFile.getName();
         // #2 send file
+        final String sentFileName = tmpFile.getName();
         try {
             TransferUtils.sendfile(tmpFile, dstAddr, dstPort);
         } catch (IOException e) {
@@ -136,7 +138,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             }
         }
 
-        return new ParallelSQLMapTaskResult(taskMasterNode, sentFileName, taskNumber);
+        return new ParallelSQLMapTaskResult(taskMasterNode, sentFileName, taskNumber, rows);
     }
 
     @Nonnull
@@ -148,9 +150,9 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         final Connection dbConn;
         GridNode localMaster = replMgr.getLocalMasterNode();
         if(taskMasterNode.equals(localMaster)) {
-            dbConn = getPrimaryDbConnection(dba);
+            dbConn = GridUtils.getPrimaryDbConnection(dba);
         } else {
-            final Connection primaryConn = getPrimaryDbConnection(dba);
+            final Connection primaryConn = GridUtils.getPrimaryDbConnection(dba);
             try {
                 String replicaDbName = replMgr.getReplicaDatabaseName(primaryConn, taskMasterNode);
                 dbConn = dba.getConnection(replicaDbName);
@@ -164,18 +166,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         return dbConn;
     }
 
-    @Nonnull
-    private static Connection getPrimaryDbConnection(final DBAccessor dba) throws GridException {
-        try {
-            return dba.getPrimaryDbConnection();
-        } catch (SQLException e) {
-            LOG.error(e);
-            throw new GridException("failed connecting to the primary database: "
-                    + dba.getPrimaryDbName());
-        }
-    }
-
-    private static void executeCopyIntoQuery(final Connection conn, final String mapQuery, final File outFile)
+    private static int executeCopyIntoQuery(final Connection conn, final String mapQuery, final File outFile)
             throws SQLException {
         if(!outFile.canWrite()) {// sanity check
             throw new IllegalStateException("File is not writable: " + outFile.getAbsolutePath());
@@ -191,7 +182,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         if(LOG.isDebugEnabled()) {
             LOG.debug("Executing a SQL: " + copyIntoQuery);
         }
-        JDBCUtils.update(conn, copyIntoQuery);
+        return JDBCUtils.update(conn, copyIntoQuery);
     }
 
     static final class ParallelSQLMapTaskResult implements Externalizable {
@@ -199,13 +190,15 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         private/* final */GridNode masterNode;
         private/* final */String fileName;
         private/* final */int taskNumber;
+        private/* final */int numRows;
 
         public ParallelSQLMapTaskResult() {}//Externalizable
 
-        ParallelSQLMapTaskResult(GridNode masterNode, String fileName, int taskNumber) {
+        ParallelSQLMapTaskResult(GridNode masterNode, String fileName, int taskNumber, int numRows) {
             this.masterNode = masterNode;
             this.fileName = fileName;
             this.taskNumber = taskNumber;
+            this.numRows = numRows;
         }
 
         @Nonnull
@@ -223,16 +216,22 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             return taskNumber;
         }
 
+        public int getNumRows() {
+            return numRows;
+        }
+
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             this.masterNode = (GridNode) in.readObject();
             this.fileName = IOUtils.readString(in);
             this.taskNumber = in.readInt();
+            this.numRows = in.readInt();
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(masterNode);
             IOUtils.writeString(fileName, out);
             out.writeInt(taskNumber);
+            out.writeInt(numRows);
         }
 
     }
