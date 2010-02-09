@@ -23,6 +23,8 @@ package gridool.db.catalog;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import javax.annotation.Nonnull;
+
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -51,6 +53,7 @@ public enum NodeState {
         return this == normal || this == underMaintenance;
     }
 
+    @Nonnull
     public ReadWriteLock getLock() {
         return lock;
     }
