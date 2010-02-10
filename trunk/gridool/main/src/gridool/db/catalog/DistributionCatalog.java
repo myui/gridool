@@ -21,6 +21,7 @@
 package gridool.db.catalog;
 
 import gridool.GridNode;
+import gridool.db.helpers.DBAccessor;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -34,11 +35,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import xbird.config.Settings;
+import xbird.util.collections.ints.IntArrayList;
+import xbird.util.jdbc.JDBCUtils;
 import xbird.util.lang.ArrayUtils;
 import xbird.util.struct.Pair;
 
@@ -52,10 +56,14 @@ import xbird.util.struct.Pair;
 public final class DistributionCatalog {
 
     public static final String defaultDistributionKey = "";
+    public static final String DummyFieldNameForPrimaryKey = "";
     public static final String hiddenFieldName;
     static {
         hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
     }
+
+    @Nonnull
+    private final DBAccessor dbAccessor;
 
     private final Object lock = new Object();
     @GuardedBy("lock")
@@ -63,9 +71,17 @@ public final class DistributionCatalog {
     @GuardedBy("lock")
     private final Map<GridNode, NodeWithState> nodeStateMap;
 
-    public DistributionCatalog() {
+    @GuardedBy("partitionKeyMappping")
+    private final Map<String, Map<String, PartitionKey>> partitionKeyMappping;
+
+    public DistributionCatalog(@CheckForNull DBAccessor dbAccessor) {
+        if(dbAccessor == null) {
+            throw new IllegalArgumentException();
+        }
+        this.dbAccessor = dbAccessor;
         this.distributionCache = new HashMap<String, Map<NodeWithState, List<NodeWithState>>>(12);
         this.nodeStateMap = new HashMap<GridNode, NodeWithState>(64);
+        this.partitionKeyMappping = new HashMap<String, Map<String, PartitionKey>>(32);
     }
 
     public void registerPartition(@Nonnull GridNode master, @Nonnull final List<GridNode> slaves, @Nonnull final String distKey) {
@@ -144,12 +160,87 @@ public final class DistributionCatalog {
         }
     }
 
-    public int getPartitioningKey(@Nonnull final String tableName, @Nonnull final String fieldName) {
-        return -1;
+    public int getPartitioningKey(@Nonnull final String tableName, @Nonnull final String fieldName)
+            throws SQLException {
+        synchronized(partitionKeyMappping) {
+            Map<String, PartitionKey> fieldPartitionMap = partitionKeyMappping.get(tableName);
+            if(fieldPartitionMap == null) {
+                fieldPartitionMap = new HashMap<String, PartitionKey>(12);
+                partitionKeyMappping.put(tableName, fieldPartitionMap);
+                final Connection conn = dbAccessor.getPrimaryDbConnection();
+                try {
+                    getPartitioningKeyPositions(tableName, conn, fieldPartitionMap, true);
+                } finally {
+                    JDBCUtils.closeQuietly(conn);
+                }
+            }
+            PartitionKey key = fieldPartitionMap.get(fieldName);
+            return key.partitionNo;
+        }
     }
 
     @Nonnull
-    public static Pair<int[], int[]> getPartitioningKeys(@Nonnull final Connection conn, @Nonnull final String tableName)
+    public Pair<int[], int[]> getPartitioningKeyPositions(@Nonnull final String tableName)
+            throws SQLException {
+        final Pair<int[], int[]> keys;
+        synchronized(partitionKeyMappping) {
+            Map<String, PartitionKey> fieldPartitionMap = partitionKeyMappping.get(tableName);
+            if(fieldPartitionMap != null) {
+                int[] pkey = null;
+                final IntArrayList fkeyList = new IntArrayList(12);
+                for(final PartitionKey key : fieldPartitionMap.values()) {
+                    if(key.isPrimary) {
+                        pkey = key.columnsPos;
+                    } else {
+                        int pos = key.getColumnPos(0);
+                        fkeyList.add(pos);
+                    }
+                }
+                int[] fkeys = fkeyList.isEmpty() ? null : fkeyList.toArray();
+                keys = new Pair<int[], int[]>(pkey, fkeys);
+            } else {
+                fieldPartitionMap = new HashMap<String, PartitionKey>(12);
+                partitionKeyMappping.put(tableName, fieldPartitionMap);
+                final Connection conn = dbAccessor.getPrimaryDbConnection();
+                try {
+                    keys = getPartitioningKeyPositions(tableName, conn, fieldPartitionMap, false);
+                } finally {
+                    JDBCUtils.closeQuietly(conn);
+                }
+            }
+        }
+        return keys;
+    }
+
+    private static final class PartitionKey {
+
+        private final boolean isPrimary;
+        private final int[] columnsPos;
+        private final int partitionNo;
+
+        PartitionKey(int[] columnsPos, boolean isPrimary, int partitionNo) {
+            if(columnsPos == null) {
+                throw new IllegalArgumentException();
+            }
+            if(columnsPos.length == 0) {
+                throw new IllegalArgumentException();
+            }
+            this.columnsPos = columnsPos;
+            this.isPrimary = isPrimary;
+            this.partitionNo = partitionNo;
+        }
+
+        int getColumnPos(int index) {
+            if(index != 0 && index >= columnsPos.length) {
+                throw new IndexOutOfBoundsException("Index: " + index + ", Size: "
+                        + columnsPos.length);
+            }
+            return columnsPos[index];
+        }
+
+    }
+
+    private static Pair<int[], int[]> getPartitioningKeyPositions(@Nonnull final String tableName, @Nonnull final Connection conn, @Nonnull final Map<String, PartitionKey> fieldPartitionMap, final boolean returnNull)
             throws SQLException {
         final List<String> keys = new ArrayList<String>();
         final DatabaseMetaData meta = conn.getMetaData();
@@ -190,6 +281,7 @@ public final class DistributionCatalog {
         keys.clear();
 
         // foreign key 
+        final Map<Integer, String> columnPosNameMapping = new HashMap<Integer, String>(8);
         final ResultSet rs2 = meta.getImportedKeys(catalog, null, tableName);
         try {
             while(rs2.next()) {
@@ -216,13 +308,28 @@ public final class DistributionCatalog {
                 }
                 int pos = rs.getInt("ORDINAL_POSITION");
                 idxs[i] = pos;
+                columnPosNameMapping.put(pos, columnName);
                 rs.close();
             }
             Arrays.sort(idxs);
             fkeyIdxs = idxs;
         }
 
-        return new Pair<int[], int[]>(pkeyIdxs, fkeyIdxs);
+        int shift = 0;
+        if(pkeyIdxs != null) {
+            PartitionKey pkeyForPrimary = new PartitionKey(pkeyIdxs, true, 1 << shift);
+            shift++;
+            fieldPartitionMap.put(DummyFieldNameForPrimaryKey, pkeyForPrimary);
+        }
+        for(int i = 0; i < fkeyIdxs.length; i++) {
+            int fkey = fkeyIdxs[i];
+            String columnName = columnPosNameMapping.get(fkey);
+            PartitionKey pkey = new PartitionKey(pkeyIdxs, false, 1 << shift);
+            shift++;
+            fieldPartitionMap.put(columnName, pkey);
+        }
+
+        return returnNull ? null : new Pair<int[], int[]>(pkeyIdxs, fkeyIdxs);
     }
 
     private static final class NodeWithState {

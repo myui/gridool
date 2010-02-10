@@ -20,7 +20,6 @@
  */
 package gridool.db.partitioning;
 
-import gridool.db.catalog.DistributionCatalog;
 import gridool.db.partitioning.csv.CsvPartitioningTask;
 
 import java.io.Serializable;
@@ -30,9 +29,6 @@ import java.sql.SQLException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import xbird.util.jdbc.JDBCUtils;
-import xbird.util.struct.Pair;
 
 /**
  * 
@@ -44,8 +40,6 @@ import xbird.util.struct.Pair;
 public abstract class DBPartitioningJobConf implements Serializable {
     private static final long serialVersionUID = 636573640789390674L;
 
-    private transient Pair<int[], int[]> partitionigKeyIndices = null;
-
     public DBPartitioningJobConf() {}
 
     // -------------------------------------------------------------
@@ -56,32 +50,6 @@ public abstract class DBPartitioningJobConf implements Serializable {
 
     @Nonnull
     public abstract String getTableName();
-
-    /**
-     * Returns pair of primary key column indices and foreign key column indices.
-     * Recommended to override if possible.
-     * 
-     * @see #getBaseTableName()
-     */
-    @Nonnull
-    public synchronized Pair<int[], int[]> partitionigKeyIndices() {
-        if(partitionigKeyIndices == null) {
-            final String tblName = getBaseTableName();
-            try {
-                final Connection conn = getConnection(false);
-                try {
-                    partitionigKeyIndices = DistributionCatalog.getPartitioningKeys(conn, tblName);
-                } finally {
-                    JDBCUtils.closeQuietly(conn);
-                }
-            } catch (ClassNotFoundException cnfe) {
-                throw new IllegalStateException(cnfe);
-            } catch (SQLException sqle) {
-                throw new IllegalStateException(sqle);
-            }
-        }
-        return partitionigKeyIndices;
-    }
 
     @Nonnull
     protected String getBaseTableName() {

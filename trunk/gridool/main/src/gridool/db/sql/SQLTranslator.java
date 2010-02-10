@@ -22,11 +22,13 @@ package gridool.db.sql;
 
 import static java.io.StreamTokenizer.TT_EOF;
 import static java.io.StreamTokenizer.TT_WORD;
+import gridool.GridException;
 import gridool.db.catalog.DistributionCatalog;
 
 import java.io.IOException;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
+import java.sql.SQLException;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -60,7 +62,7 @@ public final class SQLTranslator {
     }
 
     @Nonnull
-    public String translateQuery(@Nonnull final String query) {
+    public String translateQuery(@Nonnull final String query) throws GridException {
         if(!query.contains("partitioned by") && !query.contains("PARTITIONED BY")) {
             return query;
         }
@@ -87,13 +89,15 @@ public final class SQLTranslator {
         try {
             parseQuery(tokenizer, queryBuf);
         } catch (IOException e) {
-            e.printStackTrace();
-            return query;
+            throw new GridException(e);
+        } catch (SQLException e) {
+            throw new GridException(e);
         }
         return queryBuf.toString();
     }
 
-    private void parseQuery(StreamTokenizer tokenizer, StringBuilder queryBuf) throws IOException {
+    private void parseQuery(StreamTokenizer tokenizer, StringBuilder queryBuf) throws IOException,
+            SQLException {
         int tt;
         String prevToken = null;
         boolean insertSpace = false;
@@ -149,7 +153,7 @@ public final class SQLTranslator {
     }
 
     private void parsePartitionedBy(StreamTokenizer tokenizer, StringBuilder queryBuf, String tableName)
-            throws IOException {
+            throws IOException, SQLException {
         if(tableName == null) {
             throw new IllegalStateException("Syntax error: " + tokenizer.toString());
         }

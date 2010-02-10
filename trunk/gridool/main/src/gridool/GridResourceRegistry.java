@@ -87,7 +87,7 @@ public final class GridResourceRegistry {
         this.taskMetricsCounter = new AtomicReference<GridTaskMetricsCounter>(counter);
         this.dbAccessor = DBAccessorFactory.createDBAccessor();
         this.replicationManager = new ReplicationManager(kernel, config);
-        this.distributionCatalog = new DistributionCatalog();      
+        this.distributionCatalog = new DistributionCatalog(dbAccessor);      
     }
 
     public GridKernel getGridKernel() {

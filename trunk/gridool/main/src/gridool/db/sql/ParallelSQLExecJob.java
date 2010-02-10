@@ -85,7 +85,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     // local only resources    
 
     private transient String outputTableName;
-    private transient boolean isOutputAsView;
+    private transient String reduceQuery;
+    private transient boolean outputAsView;
     @Deprecated
     private transient int oneThirdOfTasks;
     private transient ExecutorService recvExecs;
@@ -105,13 +106,12 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     public Map<GridTask, GridNode> map(GridTaskRouter router, JobConf jobConf) throws GridException {
         // phase #1 preparation
         DistributionCatalog catalog = registry.getDistributionCatalog();
-        SQLTranslator translator = new SQLTranslator(catalog);
+        final SQLTranslator translator = new SQLTranslator(catalog);
         final String mapQuery = translator.translateQuery(jobConf.mapQuery);
         final GridNode[] masters = catalog.getMasters(DistributionCatalog.defaultDistributionKey);
         DBAccessor dba = registry.getDbAccessor();
-        String retTableName = jobConf.outputTableName;
-        final boolean asView = jobConf.isOutputAsView();
-        runPreparation(dba, mapQuery, masters, retTableName, asView);
+        final String outputTableName = jobConf.outputTableName;
+        runPreparation(dba, mapQuery, masters, outputTableName);
 
         final InetSocketAddress sockAddr;
         final TransferServer xferServer = createTransferServer(jobConf.getRecvFileConcurrency());
@@ -129,17 +129,19 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             ParallelSQLMapTask task = new ParallelSQLMapTask(this, node, tasknum, mapQuery, sockAddr, catalog);
             map.put(task, node);
         }
-        this.outputTableName = retTableName;
-        this.isOutputAsView = asView;
+
+        this.outputTableName = outputTableName;
+        this.reduceQuery = getReduceQuery(jobConf.reduceQuery, outputTableName, translator);
+        this.outputAsView = jobConf.isOutputAsView();
         this.oneThirdOfTasks = Math.max(numNodes / 3, 2);
         this.recvExecs = startFileReciever(xferServer);
-        this.copyintoExecs = ExecutorFactory.newFixedThreadPool(jobConf.getCopyIntoTableConcurrency(), "CopyIntoTableThread", false);
+        this.copyintoExecs = ExecutorFactory.newFixedThreadPool(jobConf.getCopyIntoTableConcurrency(), "CopyIntoTableThread", true);
         return map;
     }
 
-    private static void runPreparation(final DBAccessor dba, final String mapQuery, final GridNode[] masters, final String outputTableName, final boolean isOutputAsView)
+    private static void runPreparation(final DBAccessor dba, final String mapQuery, final GridNode[] masters, final String outputTableName)
             throws GridException {
-        final String prepareQuery = constructInitQuery(mapQuery, masters, outputTableName, isOutputAsView);
+        final String prepareQuery = constructInitQuery(mapQuery, masters, outputTableName);
         final Connection conn;
         try {
             conn = dba.getPrimaryDbConnection();
@@ -158,52 +160,49 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         }
     }
 
-    private static String constructInitQuery(final String mapQuery, final GridNode[] masters, final String outputTableName, final boolean isOutputAsView) {
+    private static String constructInitQuery(final String mapQuery, final GridNode[] masters, final String outputTableName) {
         if(masters.length == 0) {
             throw new IllegalArgumentException();
         }
+        final String unionViewName = getUnionViewName(outputTableName);
         final StringBuilder buf = new StringBuilder(512);
         buf.append("CREATE VIEW ");
-        final String tmpViewName = "tmp" + outputTableName;
-        buf.append(tmpViewName);
+        final String mockViewName = "_mock" + outputTableName;
+        buf.append(mockViewName);
         buf.append(" AS (\n");
         buf.append(mapQuery);
         buf.append(");\n");
         final int numTasks = masters.length;
         for(int i = 0; i < numTasks; i++) {
             buf.append("CREATE TABLE ");
-            buf.append(tmpViewName);
+            buf.append(unionViewName);
             buf.append("task");
             buf.append(i);
             buf.append(" (LIKE ");
-            buf.append(tmpViewName);
+            buf.append(mockViewName);
             buf.append(");\n");
         }
         buf.append("CREATE VIEW ");
-        if(isOutputAsView) {
-            buf.append(getViewTableName(outputTableName));
-        } else {
-            buf.append(outputTableName);
-        }
+        buf.append(unionViewName);
         buf.append(" AS (\n");
         final int lastTask = numTasks - 1;
         for(int i = 0; i < lastTask; i++) {
             buf.append("SELECT * FROM ");
-            buf.append(tmpViewName);
+            buf.append(unionViewName);
             buf.append("task");
             buf.append(i);
             buf.append(" UNION ALL \n");
         }
         buf.append("SELECT * FROM ");
-        buf.append(tmpViewName);
+        buf.append(unionViewName);
         buf.append("task");
         buf.append(lastTask);
         buf.append("\n);");
         return buf.toString();
     }
 
-    private static String getViewTableName(String tableName) {
-        return "v_" + tableName;
+    private static String getUnionViewName(String outputTableName) {
+        return "_tmp" + outputTableName;
     }
 
     private static TransferServer createTransferServer(@Nonnegative int concurrency) {
@@ -214,9 +213,15 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     }
 
     private static ExecutorService startFileReciever(TransferServer server) {
-        ExecutorService execServ = ExecutorFactory.newSingleThreadExecutor("FileReceiver", false);
+        ExecutorService execServ = ExecutorFactory.newSingleThreadExecutor("FileReceiver", true);
         execServ.submit(server);
         return execServ;
+    }
+
+    private static String getReduceQuery(@Nonnull String queryTemplate, @Nonnull String outputTableName, @Nonnull SQLTranslator translator)
+            throws GridException {
+        String translated = translator.translateQuery(queryTemplate);
+        return translated.replace("<src>", outputTableName);
     }
 
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
@@ -296,26 +301,29 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         recvExecs.shutdownNow();
 
         // invoke final aggregation query
-        if(!isOutputAsView) {
-            final DBAccessor dba = registry.getDbAccessor();
-            invokeReduceQuery(outputTableName, dba);
-            // TODO clear up tmp resources in other thread
-        }
-        
+        final DBAccessor dba = registry.getDbAccessor();
+        invokeReduceQuery(reduceQuery, outputTableName, dba, outputAsView);
+        // TODO clear up tmp resources in other thread
+
         return outputTableName;
     }
 
-    private static void invokeReduceQuery(@Nonnull final String outputTableName, @Nonnull final DBAccessor dba)
+    private static void invokeReduceQuery(@Nonnull final String reduceQuery, @Nonnull final String outputTableName, @Nonnull final DBAccessor dba, final boolean outputAsView)
             throws GridException {
-        String inputViewName = getViewTableName(outputTableName);
-        final String reduceQuery = "CREATE TABLE " + outputTableName + " AS (SELECT * FROM "
-                + inputViewName + ") WITH DATA";
+        final String inputViewName = getUnionViewName(outputTableName);
+        final String query;
+        if(outputAsView) {
+            query = "CREATE VIEW " + outputTableName + " AS (SELECT * FROM " + inputViewName + ")";
+        } else {
+            query = "CREATE TABLE " + outputTableName + " AS (SELECT * FROM " + inputViewName
+                    + ") WITH DATA";
+        }
 
         final Connection conn = GridUtils.getPrimaryDbConnection(dba);
         try {
-            JDBCUtils.update(conn, reduceQuery);
+            JDBCUtils.update(conn, query);
         } catch (SQLException e) {
-            String errmsg = "failed running a reduce query: " + reduceQuery;
+            String errmsg = "failed running a reduce query: " + query;
             LOG.error(errmsg, e);
             throw new GridException(errmsg, e);
         } finally {

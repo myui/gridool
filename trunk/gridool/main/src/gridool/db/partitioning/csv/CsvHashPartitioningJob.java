@@ -22,10 +22,13 @@ package gridool.db.partitioning.csv;
 
 import gridool.GridException;
 import gridool.GridNode;
+import gridool.GridResourceRegistry;
 import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
+import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridJobBase;
+import gridool.db.catalog.DistributionCatalog;
 import gridool.db.partitioning.DBPartitioningJobConf;
 import gridool.db.partitioning.FileAppendTask;
 import gridool.routing.GridTaskRouter;
@@ -35,6 +38,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.charset.Charset;
+import java.sql.SQLException;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -61,16 +65,33 @@ public final class CsvHashPartitioningJob extends
 
     private transient Map<GridNode, MutableInt> assignedRecMap;
 
+    @GridRegistryResource
+    private transient GridResourceRegistry registry;
+
     public CsvHashPartitioningJob() {}
+
+    @Override
+    public boolean injectResources() {
+        return true;
+    }
 
     public Map<GridTask, GridNode> map(final GridTaskRouter router, final CsvHashPartitioningJob.JobConf ops)
             throws GridException {
+        assert (registry != null);
+        final DistributionCatalog catalog = registry.getDistributionCatalog();
+
         final String[] lines = ops.getLines();
         final String csvFileName = ops.getFileName();
         final boolean append = !ops.isFirst();
         final DBPartitioningJobConf jobConf = ops.getJobConf();
+        final String tableName = jobConf.getTableName();
+        final Pair<int[], int[]> partitioningKeys;
+        try {
+            partitioningKeys = catalog.getPartitioningKeyPositions(tableName);
+        } catch (SQLException e) {
+            throw new GridException("failed to get partitioning keys for table: " + tableName, e);
+        }
 
-        Pair<int[], int[]> partitioningKeys = jobConf.partitionigKeyIndices();
         final int[] pkeyIndicies = partitioningKeys.getFirst();
         final int[] fkeyIndicies = partitioningKeys.getSecond();
         final boolean insertHiddenField = jobConf.insertHiddenField();
@@ -87,7 +108,7 @@ public final class CsvHashPartitioningJob extends
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new IdentityHashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
         final Map<GridNode, MutableInt> mappedNodes = new IdentityHashMap<GridNode, MutableInt>(numNodes);
         for(int i = 0; i < totalRecords; i++) {
-            int counter = 0;
+            int bitShift = 0;
             String line = lines[i];
             lines[i] = null;
             final byte[] lineBytes = line.getBytes(charset);
@@ -101,13 +122,13 @@ public final class CsvHashPartitioningJob extends
                     }
                     pkeys.append(k);
                 }
-                decideRecordMapping(router, mappedNodes, counter, pkeys.toString());
-                counter++;
+                decideRecordMapping(router, mappedNodes, bitShift, pkeys.toString());
+                bitShift++;
             }
             if(fkeyIndicies != null) {
                 CsvUtils.retrieveFields(line, fkeyIndicies, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
-                decideRecordMapping(router, mappedNodes, counter, fields);
+                decideRecordMapping(router, mappedNodes, bitShift, fields);
             }
 
             if(mappedNodes.isEmpty()) {
