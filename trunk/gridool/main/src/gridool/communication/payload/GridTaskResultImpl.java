@@ -64,15 +64,15 @@ public final class GridTaskResultImpl implements GridTaskResult, Externalizable 
     private/* final */GridException exception;
 
     private boolean failoverScheduled = false;
-    
+
     // -----------------------------------------------
     // local only resources    
-    
+
     @Nonnull
     private transient Collection<GridTask> speculativeTasks = Collections.emptyList();
 
     // -----------------------------------------------
-    
+
     public GridTaskResultImpl() {}//for Externalizable
 
     public GridTaskResultImpl(@CheckForNull String taskId, @CheckForNull GridNode executedNode, @CheckForNull List<GridNode> replicatedNodes, @Nullable Serializable result) {
@@ -82,12 +82,10 @@ public final class GridTaskResultImpl implements GridTaskResult, Externalizable 
         if(executedNode == null) {
             throw new IllegalArgumentException();
         }
-        if(replicatedNodes == null) {
-            throw new IllegalArgumentException();
-        }
         this.taskId = taskId;
         this.executedNode = executedNode;
-        this.replicatedNodes = replicatedNodes;
+        this.replicatedNodes = (replicatedNodes == null) ? Collections.<GridNode> emptyList()
+                : replicatedNodes;
         this.result = result;
         this.exception = null;
     }
@@ -138,7 +136,7 @@ public final class GridTaskResultImpl implements GridTaskResult, Externalizable 
     public boolean isFailoverScheduled() {
         return failoverScheduled;
     }
-    
+
     @Nonnull
     public Collection<GridTask> getSpeculativeTasks() {
         return speculativeTasks;

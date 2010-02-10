@@ -62,13 +62,13 @@ public class TaskResponseHandler implements TaskResponseListener {
 
     public void onResponse(GridTask task, Serializable result) {
         final GridNode dstNode = task.getSenderNode();
-        final String taskId = task.getTaskId();        
+        final String taskId = task.getTaskId();
 
         if(LOG.isDebugEnabled()) {
             LOG.debug("Sending a normal response for a task [" + taskId + "] to a node [" + dstNode
                     + ']');
         }
-        final List<GridNode> replicatedNodes  =task.getReplicatedNodes();
+        final List<GridNode> replicatedNodes = task.getReplicatedNodes();
         final GridTaskResult taskResult = new GridTaskResultImpl(taskId, localNode, replicatedNodes, result);
         try {
             communicationMgr.sendTaskResponse(taskResult, dstNode);
@@ -85,7 +85,7 @@ public class TaskResponseHandler implements TaskResponseListener {
             LOG.warn("Sending an error response for a task [" + taskId + "] to a node [" + dstNode
                     + ']');
         }
-  
+
         final GridTaskResult taskResult = new GridTaskResultImpl(taskId, localNode, exception).scheduleFailover();
         try {
             communicationMgr.sendTaskResponse(taskResult, dstNode);

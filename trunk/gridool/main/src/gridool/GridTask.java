@@ -28,6 +28,7 @@ import java.util.List;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * 
@@ -102,8 +103,9 @@ public interface GridTask extends GridLocatable, GridAnnotatable {
 
     void setTransferToReplica(@Nonnull GridNode masterNode);
 
+    @Nullable
     List<GridNode> getReplicatedNodes();
 
     void setReplicatedNodes(@Nonnull List<GridNode> replicatedNodes);
-    
+
 }

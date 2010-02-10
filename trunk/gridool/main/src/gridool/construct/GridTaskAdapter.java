@@ -42,6 +42,7 @@ import java.util.concurrent.FutureTask;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -75,7 +76,7 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
 
     @GridExecutionMonitorResource
     protected transient GridExecutionMonitor monitor;
-    @Nonnull
+    @Nullable
     private transient List<GridNode> replicatedNodes = Collections.emptyList();
 
     @SuppressWarnings("unchecked")
@@ -225,8 +226,8 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
     }
 
     public void setTransferToReplica(GridNode masterNode) {}
-    
-    @Nonnull
+
+    @Nullable
     public List<GridNode> getReplicatedNodes() {
         return replicatedNodes;
     }
