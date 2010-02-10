@@ -22,6 +22,7 @@ package gridool.communication.payload;
 
 import gridool.GridException;
 import gridool.GridNode;
+import gridool.GridTask;
 import gridool.GridTaskResult;
 
 import java.io.Externalizable;
@@ -30,6 +31,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -62,7 +64,15 @@ public final class GridTaskResultImpl implements GridTaskResult, Externalizable 
     private/* final */GridException exception;
 
     private boolean failoverScheduled = false;
+    
+    // -----------------------------------------------
+    // local only resources    
+    
+    @Nonnull
+    private transient Collection<GridTask> speculativeTasks = Collections.emptyList();
 
+    // -----------------------------------------------
+    
     public GridTaskResultImpl() {}//for Externalizable
 
     public GridTaskResultImpl(@CheckForNull String taskId, @CheckForNull GridNode executedNode, @CheckForNull List<GridNode> replicatedNodes, @Nullable Serializable result) {
@@ -127,6 +137,18 @@ public final class GridTaskResultImpl implements GridTaskResult, Externalizable 
 
     public boolean isFailoverScheduled() {
         return failoverScheduled;
+    }
+    
+    @Nonnull
+    public Collection<GridTask> getSpeculativeTasks() {
+        return speculativeTasks;
+    }
+
+    public void setSpeculativeTasks(@CheckForNull Collection<GridTask> speculativeTasks) {
+        if(speculativeTasks == null) {
+            throw new IllegalArgumentException();
+        }
+        this.speculativeTasks = speculativeTasks;
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {

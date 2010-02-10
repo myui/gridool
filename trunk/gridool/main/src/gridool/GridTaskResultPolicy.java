@@ -31,11 +31,17 @@ public enum GridTaskResultPolicy {
 
     /* Wait for all tasks are received. */
     CONTINUE,
+    /* continue with running speculative tasks */
+    CONTINUE_WITH_SPECULATIVE_TASKS,
     /* Proceeds the task without waiting other responses. */
     RETURN,
     /* Proceeds the task without waiting other responses. Then, the remaining tasks are canceled. */
     CANCEL_RETURN,
     /* Fail-over the task and execute it on another node. */
-    FAILOVER;
+    FAILOVER,
+    /* Task already processed. Then, skip it. */
+    SKIP;
+
+    private GridTaskResultPolicy() {}
 
 }

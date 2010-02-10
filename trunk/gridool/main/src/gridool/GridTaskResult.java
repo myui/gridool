@@ -21,8 +21,10 @@
 package gridool;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -54,5 +56,10 @@ public interface GridTaskResult extends Serializable {
     GridTaskResult scheduleFailover();
 
     boolean isFailoverScheduled();
+
+    @Nonnull
+    Collection<GridTask> getSpeculativeTasks(); // TODO REVIEWME not actually the speculative tasks for this object
+
+    void setSpeculativeTasks(@CheckForNull Collection<GridTask> speculativeTasks);
 
 }

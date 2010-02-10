@@ -46,6 +46,7 @@ import java.util.List;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -90,14 +91,25 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
     }
 
     @Override
-    public List<GridNode> listFailoverCandidates(GridNode localNode, GridTaskRouter router) {
+    public List<GridNode> listFailoverCandidates(@Nullable GridNode localNode, @Nullable GridTaskRouter router) {
         GridNode[] slaves = catalog.getSlaves(taskMasterNode, DistributionCatalog.defaultDistributionKey);
         return Arrays.asList(slaves);
+    }
+
+    @Nonnull
+    public GridNode[] listFailoverCandidates() {
+        GridNode[] slaves = catalog.getSlaves(taskMasterNode, DistributionCatalog.defaultDistributionKey);
+        return slaves;
     }
 
     @Override
     public boolean injectResources() {
         return true;
+    }
+
+    @Nonnull
+    public GridNode getTaskMasterNode() {
+        return taskMasterNode;
     }
 
     @Override

@@ -39,6 +39,7 @@ import gridool.routing.GridNodeSelector;
 import gridool.routing.GridTaskRouter;
 import gridool.taskqueue.sender.SenderResponseTaskQueue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -176,7 +177,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
 
         final BlockingQueue<GridTaskResult> resultQueue = new ArrayBlockingQueue<GridTaskResult>(numTasks);
         taskResponseQueue.addResponseQueue(job.getJobId(), resultQueue);
-        final Map<String, Pair<GridTask, Future<?>>> taskMap = new ConcurrentHashMap<String, Pair<GridTask, Future<?>>>(numTasks); // taskMap contends rarely
+        final Map<String, Pair<GridTask, List<Future<?>>>> taskMap = new ConcurrentHashMap<String, Pair<GridTask, List<Future<?>>>>(numTasks); // taskMap contends rarely
 
         GridDiscoveryListener nodeFailoverHandler = new GridNodeFailureHandler(mappedTasks, taskMap, resultQueue);
         discoveryService.addListener(nodeFailoverHandler);
@@ -192,10 +193,15 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
         discoveryService.removeListener(nodeFailoverHandler);
         R result = job.reduce();
 
+        if(!taskMap.isEmpty()) {//TODO REVIEWME
+            assert (!job.isAsyncOps());
+            cancelRemainingTasks(taskMap);
+        }
+
         return result;
     }
 
-    private void assignMappedTasks(final Map<GridTask, GridNode> mappedTasks, final Map<String, Pair<GridTask, Future<?>>> taskMap, final BlockingQueue<GridTaskResult> resultQueue)
+    private void assignMappedTasks(final Map<GridTask, GridNode> mappedTasks, final Map<String, Pair<GridTask, List<Future<?>>>> taskMap, final BlockingQueue<GridTaskResult> resultQueue)
             throws GridException {
         for(Map.Entry<GridTask, GridNode> mappedTask : mappedTasks.entrySet()) {
             GridTask task = mappedTask.getKey();
@@ -215,15 +221,17 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
             }
 
             GridTaskAssignor workerTask = new GridTaskAssignor(task, node, taskProc, communicationMgr, resultQueue);
+            List<Future<?>> futureList = new ArrayList<Future<?>>(3);
             Future<?> future = execPool.submit(workerTask);
-            taskMap.put(task.getTaskId(), new Pair<GridTask, Future<?>>(task, future));
+            futureList.add(future);
+            taskMap.put(task.getTaskId(), new Pair<GridTask, List<Future<?>>>(task, futureList));
         }
     }
 
-    private void aggregateTaskResults(final Map<String, Pair<GridTask, Future<?>>> taskMap, final BlockingQueue<GridTaskResult> resultQueue)
+    private void aggregateTaskResults(final Map<String, Pair<GridTask, List<Future<?>>>> taskMap, final BlockingQueue<GridTaskResult> resultQueue)
             throws GridException {
         final int numTasks = taskMap.size();
-        for(int i = 0; i < numTasks; i++) {
+        for(int finishedTasks = 0; finishedTasks < numTasks; finishedTasks++) {
             final GridTaskResult result;
             try {
                 result = resultQueue.take();
@@ -234,42 +242,69 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
             final String taskId = result.getTaskId();
             final GridTaskResultPolicy policy = job.result(result);
             switch(policy) {
-                case CONTINUE:
+                case CONTINUE: {
                     taskMap.remove(taskId);
                     break;
+                }
+                case CONTINUE_WITH_SPECULATIVE_TASKS: {
+                    taskMap.remove(taskId);
+                    for(final GridTask task : result.getSpeculativeTasks()) {
+                        String speculativeTaskId = task.getTaskId();
+                        Pair<GridTask, List<Future<?>>> entry = taskMap.get(speculativeTaskId);
+                        if(entry == null) {// Is the task already finished?
+                            LOG.info("No need to run a speculative task: " + speculativeTaskId);
+                        } else {
+                            Future<?> newFuture = runSpeculativeTask(task, resultQueue); // SKIP handling is required for speculative tasks
+                            if(newFuture != null) {
+                                List<Future<?>> futures = entry.getSecond();
+                                futures.add(newFuture);
+                            }
+                        }
+                    }
+                    break;
+                }
                 case RETURN:
                     taskMap.remove(taskId);
                     return;
-                case CANCEL_RETURN:
+                case CANCEL_RETURN: {
                     taskMap.remove(taskId);
                     if(!taskMap.isEmpty()) {
                         cancelRemainingTasks(taskMap);
                     }
                     return;
+                }
                 case FAILOVER: {
-                    Pair<GridTask, Future<?>> entry = taskMap.get(taskId);
+                    Pair<GridTask, List<Future<?>>> entry = taskMap.get(taskId);
                     GridTask task = entry.getFirst();
-                    Future<?> future = failover(task, resultQueue);
-                    entry.setSecond(future);
-                    i--;
+                    Future<?> newFuture = failover(task, resultQueue);
+                    List<Future<?>> futureList = entry.getSecond();
+                    futureList.add(newFuture);
+                    finishedTasks--;
                     break;
                 }
+                case SKIP:
+                    finishedTasks--;
+                    break;
                 default:
                     assert false : "Unexpected policy: " + policy;
             }
         }
     }
 
-    private void cancelRemainingTasks(final Map<String, Pair<GridTask, Future<?>>> taskMap) {
-        for(Pair<GridTask, Future<?>> entry : taskMap.values()) {
-            final Future<?> future = entry.getSecond();
-            if(!future.isDone()) {
-                // TODO send cancel request
-                future.cancel(true);
+    private void cancelRemainingTasks(final Map<String, Pair<GridTask, List<Future<?>>>> taskMap) {
+        for(final Pair<GridTask, List<Future<?>>> entry : taskMap.values()) {
+            final List<Future<?>> futures = entry.getSecond();
+            assert (futures != null);
+            for(final Future<?> future : futures) {
+                if(!future.isDone()) {
+                    // TODO send cancel request
+                    future.cancel(true);
+                }
             }
         }
     }
 
+    @Nonnull
     private Future<?> failover(@CheckForNull final GridTask task, final BlockingQueue<GridTaskResult> resultQueue)
             throws GridException {
         if(task == null) {
@@ -288,9 +323,30 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
         GridNode node = selector.selectNode(candidates, config);
         assert (node != null);
         if(LOG.isWarnEnabled()) {
-            LOG.warn("[Failover] Assigned a job [" + job + "] to node [" + node + "]");
+            LOG.warn("[Failover] Assigned a task [" + task.getTaskId() + "] to node [" + node + "]");
         }
         task.setTransferToReplica(localNode);
+        GridTaskAssignor workerTask = new GridTaskAssignor(task, node, taskProc, communicationMgr, resultQueue);
+        return execPool.submit(workerTask);
+    }
+
+    @Nullable
+    private Future<?> runSpeculativeTask(@CheckForNull final GridTask task, final BlockingQueue<GridTaskResult> resultQueue) {
+        if(task == null) {
+            throw new IllegalArgumentException();
+        }
+        GridNode localNode = config.getLocalNode();
+        final List<GridNode> candidates = task.listFailoverCandidates(localNode, router);
+        if(candidates.isEmpty()) {
+            return null;
+        }
+        GridNodeSelector selector = config.getNodeSelector();
+        GridNode node = selector.selectNode(candidates, config);
+        assert (node != null);
+        if(LOG.isInfoEnabled()) {
+            LOG.info("[Speculative Execution] Assigned a speculative task [" + task.getTaskId()
+                    + "] to node [" + node + "]");
+        }
         GridTaskAssignor workerTask = new GridTaskAssignor(task, node, taskProc, communicationMgr, resultQueue);
         return execPool.submit(workerTask);
     }

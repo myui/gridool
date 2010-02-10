@@ -43,8 +43,13 @@ import java.io.ObjectOutput;
 import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Nonnegative;
@@ -76,6 +81,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
     private static final int DEFAULT_RECVFILE_WRITER_CONCURRENCY = 3;
     private static final int DEFAULT_COPYINTO_TABLE_CONCURRENCY = 2;
+    private static final float DEFAULT_INVOKE_SPECULATIVE_TASKS_FACTOR = 0.75f;
 
     // remote resources    
     @GridRegistryResource
@@ -84,11 +90,15 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     // --------------------------------------------
     // local only resources    
 
+    private transient Map<String, ParallelSQLMapTask> remainingTasks;
+    private transient Set<GridNode> finishedNodes;
+
     private transient String outputTableName;
     private transient String reduceQuery;
     private transient boolean outputAsView;
-    @Deprecated
-    private transient int oneThirdOfTasks;
+    private transient long mapStarted;
+    private transient long waitForStartSpeculativeTask;
+    private transient int thresholdForSpeculativeTask;
     private transient ExecutorService recvExecs;
     private transient ExecutorService copyintoExecs;
 
@@ -103,7 +113,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return true;
     }
 
-    public Map<GridTask, GridNode> map(GridTaskRouter router, JobConf jobConf) throws GridException {
+    public Map<GridTask, GridNode> map(final GridTaskRouter router, final JobConf jobConf)
+            throws GridException {
         // phase #1 preparation
         DistributionCatalog catalog = registry.getDistributionCatalog();
         final SQLTranslator translator = new SQLTranslator(catalog);
@@ -124,16 +135,24 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         // phase #2 map tasks
         final int numNodes = masters.length;
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
+        final Map<String, ParallelSQLMapTask> reverseMap = new HashMap<String, ParallelSQLMapTask>(numNodes);
         for(int tasknum = 0; tasknum < numNodes; tasknum++) {
             GridNode node = masters[tasknum];
             ParallelSQLMapTask task = new ParallelSQLMapTask(this, node, tasknum, mapQuery, sockAddr, catalog);
             map.put(task, node);
+            String taskId = task.getTaskId();
+            reverseMap.put(taskId, task);
         }
 
+        this.remainingTasks = reverseMap;
+        this.finishedNodes = new HashSet<GridNode>(numNodes);
         this.outputTableName = outputTableName;
         this.reduceQuery = getReduceQuery(jobConf.reduceQuery, outputTableName, translator);
         this.outputAsView = jobConf.isOutputAsView();
-        this.oneThirdOfTasks = Math.max(numNodes / 3, 2);
+        this.mapStarted = System.currentTimeMillis();
+        this.waitForStartSpeculativeTask = (numNodes <= 1) ? -1L
+                : jobConf.getWaitForStartSpeculativeTask();
+        this.thresholdForSpeculativeTask = Math.min(1, (int) (numNodes * jobConf.getInvokeSpeculativeTasksFactor()));
         this.recvExecs = startFileReciever(xferServer);
         this.copyintoExecs = ExecutorFactory.newFixedThreadPool(jobConf.getCopyIntoTableConcurrency(), "CopyIntoTableThread", true);
         return map;
@@ -224,20 +243,44 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return translated.replace("<src>", outputTableName);
     }
 
-    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
+    public GridTaskResultPolicy result(final GridTaskResult result) throws GridException {
+        final String taskId = result.getTaskId();
+        final ParallelSQLMapTask task = remainingTasks.get(taskId);
+        if(task == null) {
+            // task already returned by an other node.
+            return GridTaskResultPolicy.SKIP;
+        }
+
         final ParallelSQLMapTaskResult taskResult = result.getResult();
         if(taskResult == null) {
-            // on task failure
+            // on task failure                       
             if(LOG.isWarnEnabled()) {
                 GridException err = result.getException();
                 LOG.warn("task failed: " + result.getTaskId(), err);
             }
-            DistributionCatalog catalog = registry.getDistributionCatalog();
+
+            GridNode taskMaster = task.getTaskMasterNode();
             GridNode failedNode = result.getExecutedNode();
             assert (failedNode != null);
+            DistributionCatalog catalog = registry.getDistributionCatalog();
             catalog.setNodeState(failedNode, NodeState.suspected);
-            return GridTaskResultPolicy.FAILOVER;
+            //finishedNodes.remove(finishedNodes);
+
+            if(failedNode.equals(taskMaster)) {
+                return GridTaskResultPolicy.FAILOVER;
+            } else {
+                // fail-over handling is not needed for a speculative task
+                return GridTaskResultPolicy.SKIP;
+            }
         }
+
+        if(remainingTasks.remove(taskId) == null) {
+            LOG.warn("Unexpected condition: other thread concurrently removed the task: " + taskId); // TODO REVIEWME Could this cause?
+            return GridTaskResultPolicy.SKIP;
+        }
+
+        GridNode taskMaster = taskResult.getMasterNode();
+        finishedNodes.add(taskMaster);
 
         // # 3 invoke COPY INTO table
         final DBAccessor dba = registry.getDbAccessor();
@@ -251,6 +294,18 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                 }
             }
         });
+
+        // TODO invoke speculative tasks if needed 
+        if(waitForStartSpeculativeTask > 0 && !remainingTasks.isEmpty()) {
+            long elapsed = mapStarted - System.currentTimeMillis();
+            if(elapsed >= waitForStartSpeculativeTask) {
+                int numFinished = finishedNodes.size();
+                if(numFinished >= thresholdForSpeculativeTask) {
+                    setSpeculativeTasks(result, remainingTasks, finishedNodes);
+                    return GridTaskResultPolicy.CONTINUE_WITH_SPECULATIVE_TASKS;
+                }
+            }
+        }
 
         return GridTaskResultPolicy.CONTINUE;
     }
@@ -292,6 +347,30 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             throw new IllegalStateException("File does not exist: " + file.getAbsolutePath());
         }
         return file.getAbsolutePath();
+    }
+
+    private static void setSpeculativeTasks(@Nonnull final GridTaskResult result, @Nonnull final Map<String, ParallelSQLMapTask> remainingTasks, @Nonnull final Set<GridNode> finishedNodes) {
+        if(remainingTasks.isEmpty()) {
+            return;
+        }
+
+        final List<GridTask> tasksToRun = new ArrayList<GridTask>(remainingTasks.size());
+        for(final ParallelSQLMapTask task : remainingTasks.values()) {
+            boolean hasCandicate = false;
+            final GridNode[] candidates = task.listFailoverCandidates();
+            for(final GridNode candidate : candidates) {
+                if(finishedNodes.contains(candidate)) {
+                    hasCandicate = true;
+                    break;
+                }
+            }
+            if(hasCandicate) {
+                tasksToRun.add(task);
+            }
+        }
+        if(!tasksToRun.isEmpty()) {
+            result.setSpeculativeTasks(tasksToRun);
+        }
     }
 
     public String reduce() throws GridException {
@@ -341,9 +420,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         private String reduceQuery;
 
         private boolean outputAsView;
-        @Deprecated
-        private long waitForStartSpeculativeTask; // TODO
-
+        private long waitForStartSpeculativeTask;
+        private float invokeSpeculativeTasksFactor = DEFAULT_INVOKE_SPECULATIVE_TASKS_FACTOR;
         private int recvFileConcurrency = DEFAULT_RECVFILE_WRITER_CONCURRENCY;
         private int copyIntoTableConcurrency = DEFAULT_COPYINTO_TABLE_CONCURRENCY;
 
@@ -374,8 +452,25 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             return waitForStartSpeculativeTask;
         }
 
-        public void setWaitForStartSpeculativeTask(long waitForStartSpeculativeTask) {
-            this.waitForStartSpeculativeTask = waitForStartSpeculativeTask;
+        /**
+         * @param mills Wait time in milliseconds for speculative execution. Set -1L To disable speculative execution (default: -1L).
+         */
+        public void setWaitForStartSpeculativeTask(long mills) {
+            this.waitForStartSpeculativeTask = mills;
+        }
+
+        public float getInvokeSpeculativeTasksFactor() {
+            return invokeSpeculativeTasksFactor;
+        }
+
+        /**
+         * @param factor 0 < factor < 1
+         */
+        public void setInvokeSpeculativeTasksFactor(float factor) {
+            if(factor <= 0f || factor >= 1f) {
+                throw new IllegalArgumentException("Illegal factor: " + factor);
+            }
+            this.invokeSpeculativeTasksFactor = factor;
         }
 
         public int getRecvFileConcurrency() {

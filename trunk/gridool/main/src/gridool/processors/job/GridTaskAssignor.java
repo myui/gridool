@@ -79,12 +79,12 @@ public final class GridTaskAssignor implements Runnable {
         try {
             communicationMgr.sendTaskRequest(task, dstNode);
         } catch (GridException ex) {
-            LOG.error("Failed sending a Task[ " + task + " ] to node [ " + dstNode + " ].");
+            LOG.error("Failed sending a Task[ " + task + " ] to node [ " + dstNode + " ]");
             String taskId = task.getTaskId();
             GridTaskResult result = new GridTaskResultImpl(taskId, dstNode, ex);
             resultQueue.add(result);
         } catch (Throwable e) {
-            LOG.fatal("Failed sending a Task[ " + task + " ] to node [ " + dstNode + " ].");
+            LOG.fatal("Failed sending a Task[ " + task + " ] to node [ " + dstNode + " ]");
             String taskId = task.getTaskId();
             GridTaskResult result = new GridTaskResultImpl(taskId, dstNode, new GridException(e));
             resultQueue.add(result);

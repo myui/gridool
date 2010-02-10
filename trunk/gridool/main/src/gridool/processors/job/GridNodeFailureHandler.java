@@ -28,6 +28,7 @@ import gridool.discovery.DiscoveryEvent;
 import gridool.discovery.GridDiscoveryListener;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
@@ -47,14 +48,14 @@ import xbird.util.struct.Pair;
 public final class GridNodeFailureHandler implements GridDiscoveryListener {
 
     private final Map<GridTask, GridNode> mappedTasks;
-    private final Map<String, Pair<GridTask, Future<?>>> remainingTaskMap;
+    private final Map<String, Pair<GridTask, List<Future<?>>>> remainingTaskMap;
     private final BlockingQueue<GridTaskResult> resultQueue;
 
     private final Object lock = new Object();
     @GuardedBy("lock")
     private Map<GridNode, String> node2taskMap = null;
 
-    public GridNodeFailureHandler(@Nonnull final Map<GridTask, GridNode> mappedTasks, @Nonnull final Map<String, Pair<GridTask, Future<?>>> taskMap, @Nonnull final BlockingQueue<GridTaskResult> resultQueue) {
+    public GridNodeFailureHandler(@Nonnull final Map<GridTask, GridNode> mappedTasks, @Nonnull final Map<String, Pair<GridTask, List<Future<?>>>> taskMap, @Nonnull final BlockingQueue<GridTaskResult> resultQueue) {
         this.mappedTasks = mappedTasks;
         this.remainingTaskMap = taskMap;
         this.resultQueue = resultQueue;
@@ -78,7 +79,7 @@ public final class GridNodeFailureHandler implements GridDiscoveryListener {
         synchronized(lock) {
             if(node2taskMap == null) {
                 map = new HashMap<GridNode, String>();
-                for(Pair<GridTask, Future<?>> e : remainingTaskMap.values()) {
+                for(Pair<GridTask, List<Future<?>>> e : remainingTaskMap.values()) {
                     GridTask task = e.getFirst();
                     GridNode mappedNode = mappedTasks.get(task);
                     String taskId = task.getTaskId();

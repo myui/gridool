@@ -57,6 +57,8 @@ public interface GridJob<A, R> extends Serializable, GridAnnotatable {
 
     /**
      * Asynchronous callback invoked every time a response from remote execution is returned.
+     * Note that {@link GridTaskResultPolicy#SKIP} handling is required when enabling speculative tasks.
+     * 
      * @return Result policy that tells how to process further upcoming task results.
      */
     GridTaskResultPolicy result(@Nonnull GridTaskResult result)
