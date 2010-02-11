@@ -100,7 +100,7 @@ public final class ParallelSQLExecCommand extends CommandBase {
     }
 
     public String usage() {
-        return constructHelp("Executes a parallel SQL job", "-mapquery FILENAME -reducequery FILENAME -outputTable NAME [-asview true] [-waitSPE SECONDS] execute sql");
+        return constructHelp("Executes a parallel SQL job", "-mapQuery FILENAME -reduceQuery FILENAME -outputTable NAME [-asView true] [-waitSPE SECONDS] execute sql");
     }
 
 }
