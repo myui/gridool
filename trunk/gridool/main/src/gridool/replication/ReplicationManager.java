@@ -227,7 +227,7 @@ public final class ReplicationManager {
                 LOG.error("failed to execute a query: " + sql, sqlex);
                 return;
             }
-            final String[] dbnames = (String[]) result;
+            final List<String> dbnames = (List<String>) result;
             for(final String dbname : dbnames) {
                 if(!replicaNameStack.contains(dbname)) {
                     replicaNameStack.push(dbname);
