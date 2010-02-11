@@ -62,6 +62,10 @@ public abstract class DiscoveryServiceBase implements GridDiscoveryService {
         return GridDiscoveryService.class.getName();
     }
 
+    public boolean isDaemon() {
+        return true;
+    }
+
     public void addListener(@Nonnull GridDiscoveryListener listener) {
         wlock.lock();
         try {

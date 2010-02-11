@@ -55,23 +55,12 @@ public final class DirectoryService implements GridService {
         registry.setDirectory(directory);
     }
 
-    private static ILocalDirectory createLocalDirectory(LockManager lockManager, GridConfiguration config) {
-        final DirectoryIndexType type = config.getDirectoryIndexType();
-        final ILocalDirectory ld;
-        switch(type) {
-            case tcb:
-                ld = new TcbLocalDirectory(lockManager);
-                break;
-            case bfile:
-            default:
-                ld = new DefaultLocalDirectory(lockManager);
-                break;
-        }
-        return ld;
-    }
-
     public String getServiceName() {
         return DirectoryService.class.getName();
+    }
+
+    public boolean isDaemon() {
+        return false;
     }
 
     public void start() throws GridException {
@@ -90,6 +79,21 @@ public final class DirectoryService implements GridService {
             LOG.debug(e.getMessage(), e);
             throw new GridException(e.getMessage(), e.getCause());
         }
+    }
+
+    private static ILocalDirectory createLocalDirectory(LockManager lockManager, GridConfiguration config) {
+        final DirectoryIndexType type = config.getDirectoryIndexType();
+        final ILocalDirectory ld;
+        switch(type) {
+            case tcb:
+                ld = new TcbLocalDirectory(lockManager);
+                break;
+            case bfile:
+            default:
+                ld = new DefaultLocalDirectory(lockManager);
+                break;
+        }
+        return ld;
     }
 
 }

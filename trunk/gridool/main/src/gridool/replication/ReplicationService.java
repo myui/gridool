@@ -18,9 +18,8 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.metrics;
+package gridool.replication;
 
-import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.GridResourceRegistry;
 import gridool.GridService;
@@ -32,34 +31,31 @@ import javax.annotation.Nonnull;
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405@gmail.com)
+ * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class GridNodeMetricsService implements GridService {
+public final class ReplicationService implements GridService {
 
-    private final GridNodeMetricsProvider provider;
+    @Nonnull
+    private final ReplicationManager replMgr;
 
-    public GridNodeMetricsService(@Nonnull GridResourceRegistry registry, @Nonnull GridConfiguration config) {
-        this.provider = new GridNodeMetricsProvider(registry, config);
-        registry.setNodeMetricsService(this);
+    public ReplicationService(@Nonnull GridResourceRegistry registry) {
+        this.replMgr = registry.getReplicationManager();
     }
 
     public String getServiceName() {
-        return GridNodeMetricsService.class.getName();
+        return ReplicationService.class.getName();
     }
 
     public boolean isDaemon() {
-        return true;
-    }
-
-    public GridNodeMetricsProvider getMetricsProvider() {
-        return provider;
+        return false;
     }
 
     public void start() throws GridException {
-        provider.start();
+        replMgr.start();
     }
 
     public void stop() throws GridException {
-        provider.stop();
+        replMgr.stop();
     }
+
 }

@@ -73,7 +73,7 @@ public final class GridResourceRegistry {
     private GridTaskProcessor taskProcessor;
     private ILocalDirectory directory;
     private GridExecutionMonitor executionMonitor;
-    
+
     private final DBAccessor dbAccessor;
     private final ReplicationManager replicationManager;
     private final DistributionCatalog distributionCatalog;
@@ -86,8 +86,8 @@ public final class GridResourceRegistry {
         GridTaskMetricsCounter counter = new GridTaskMetricsCounter();
         this.taskMetricsCounter = new AtomicReference<GridTaskMetricsCounter>(counter);
         this.dbAccessor = DBAccessorFactory.createDBAccessor();
-        this.replicationManager = new ReplicationManager(kernel, config);
-        this.distributionCatalog = new DistributionCatalog(dbAccessor);      
+        this.replicationManager = new ReplicationManager(kernel, dbAccessor, config);
+        this.distributionCatalog = new DistributionCatalog(dbAccessor);
     }
 
     public GridKernel getGridKernel() {
@@ -232,7 +232,7 @@ public final class GridResourceRegistry {
     public DBAccessor getDbAccessor() {
         return dbAccessor;
     }
-    
+
     @Nonnull
     public ReplicationManager getReplicationManager() {
         return replicationManager;

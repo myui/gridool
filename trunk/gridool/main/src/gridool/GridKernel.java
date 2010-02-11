@@ -33,6 +33,7 @@ import gridool.monitor.GridMonitorFactory;
 import gridool.processors.GridProcessorProvider;
 import gridool.processors.job.GridJobProcessor;
 import gridool.processors.task.GridTaskProcessorService;
+import gridool.replication.ReplicationService;
 import gridool.routing.GridTaskRouter;
 import gridool.routing.GridTaskRouterFactory;
 import gridool.taskqueue.GridTaskQueueManager;
@@ -105,8 +106,9 @@ public final class GridKernel {
 
         GridTaskProcessorService taskProcServ = GridProcessorProvider.createTaskProcessorService(communicationMgr, monitor, resourceRegistry, config);
         DirectoryService dirServ = new DirectoryService(config, resourceRegistry);
+        ReplicationService replServ = new ReplicationService(resourceRegistry);
 
-        registerServices(metricsServ, discoveryServ, communicationServ, taskProcServ, dirServ);
+        registerServices(metricsServ, discoveryServ, communicationServ, taskProcServ, dirServ, replServ);
 
         this.jobProcessor = new GridJobProcessor(monitor, resourceRegistry, config);
     }

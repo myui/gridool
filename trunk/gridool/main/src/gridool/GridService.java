@@ -29,6 +29,8 @@ package gridool;
  */
 public interface GridService {
     
+    boolean isDaemon();
+    
     String getServiceName();
 
     void start() throws GridException;

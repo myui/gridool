@@ -20,8 +20,6 @@
  */
 package gridool.communication.transport.srv;
 
-import javax.annotation.CheckForNull;
-
 import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.GridNode;
@@ -30,6 +28,8 @@ import gridool.communication.transport.CommunicationServiceBase;
 import gridool.discovery.DiscoveryEvent;
 import gridool.discovery.GridDiscoveryListener;
 import gridool.discovery.GridDiscoveryService;
+
+import javax.annotation.CheckForNull;
 
 /**
  * 

@@ -45,6 +45,10 @@ public abstract class CommunicationServiceBase
         return GridCommunicationService.class.getName();
     }
 
+    public boolean isDaemon() {
+        return true;
+    }
+
     public GridNode getLocalNode() {
         return localNode;
     }

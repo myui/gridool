@@ -21,15 +21,19 @@
 package gridool.replication;
 
 import gridool.GridConfiguration;
+import gridool.GridException;
 import gridool.GridJobFuture;
 import gridool.GridKernel;
 import gridool.GridNode;
 import gridool.GridTask;
 import gridool.communication.payload.GridNodeInfo;
+import gridool.db.helpers.DBAccessor;
 import gridool.processors.task.GridTaskProcessor;
 import gridool.replication.jobs.ReplicateTaskJob;
+import gridool.util.GridUtils;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +50,6 @@ import org.apache.commons.logging.LogFactory;
 import xbird.config.Settings;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.jdbc.ResultSetHandler;
-import xbird.util.jdbc.handlers.ColumnListHandler;
 import xbird.util.jdbc.handlers.ScalarHandler;
 
 /**
@@ -64,6 +67,7 @@ public final class ReplicationManager {
     }
 
     private final GridKernel kernel;
+    private final DBAccessor dba;
     private final GridNode localMasterNode;
     private final ReplicaSelector replicaSelector;
     private final ReplicaCoordinator replicaCoordinator;
@@ -72,15 +76,16 @@ public final class ReplicationManager {
     @GuardedBy("lock")
     private final Stack<String> replicaNameStack;
     @GuardedBy("lock")
-    private final Map<GridNode, String> replicaDbMappingCache;
+    private final Map<String, String> replicaDbMappingCache;
 
-    public ReplicationManager(@Nonnull GridKernel kernel, @Nonnull GridConfiguration config) {
+    public ReplicationManager(@Nonnull GridKernel kernel, @Nonnull DBAccessor dba, @Nonnull GridConfiguration config) {
         this.kernel = kernel;
+        this.dba = dba;
         this.localMasterNode = config.getLocalNode();
         this.replicaSelector = ReplicationModuleBuilder.createReplicaSelector();
         this.replicaCoordinator = ReplicationModuleBuilder.createReplicaCoordinator(kernel, config);
         this.replicaNameStack = new Stack<String>();
-        this.replicaDbMappingCache = new HashMap<GridNode, String>(32);
+        this.replicaDbMappingCache = new HashMap<String, String>(32);
     }
 
     @Nonnull
@@ -97,6 +102,44 @@ public final class ReplicationManager {
     public ReplicaCoordinator getReplicaCoordinator() {
         return replicaCoordinator;
     }
+
+    public void start() throws GridException {
+        final String sql = "SELECT dbname, nodeinfo FROM \"" + replicaTableName + "\"";
+        final ResultSetHandler rsh = new ResultSetHandler() {
+            public Object handle(ResultSet rs) throws SQLException {
+                while(rs.next()) {
+                    String dbname = rs.getString(1);
+                    assert (dbname != null);
+                    String nodeinfo = rs.getString(2);
+                    if(nodeinfo == null) {
+                        if(!replicaNameStack.contains(dbname)) {
+                            replicaNameStack.push(dbname);
+                        }
+                    } else {
+                        String prevMapping = replicaDbMappingCache.put(nodeinfo, dbname);
+                        if(nodeinfo.equals(prevMapping)) {
+                            throw new IllegalStateException("Invalid mapping for node[" + nodeinfo
+                                    + "]; Old:" + prevMapping + ", New:" + dbname);
+                        }
+                    }
+                }
+                return null;
+            }
+        };
+        final Connection conn = GridUtils.getPrimaryDbConnection(dba);
+        try {
+            JDBCUtils.query(conn, sql, rsh);
+        } catch (SQLException e) {
+            // avoid table does not exist error
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("Table '" + replicaTableName + "' does not exist?", e);
+            }
+        } finally {
+            JDBCUtils.closeQuietly(conn);
+        }
+    }
+
+    public void stop() throws GridException {}
 
     /**
      * @see GridTaskProcessor#processTask(GridTask)
@@ -142,11 +185,12 @@ public final class ReplicationManager {
 
             String query = "SELECT dbname FROM \"" + replicaTableName + "\" WHERE nodeinfo = ?";
             Object[] params = new Object[1];
-            params[0] = masterNode.getKey();
+            String masterNodeId = masterNode.getKey();
+            params[0] = masterNodeId;
             ResultSetHandler handler = new ScalarHandler("dbname");
             String replicaId = (String) JDBCUtils.query(conn, query, params, handler);
 
-            replicaDbMappingCache.put(masterNode, replicaId);
+            replicaDbMappingCache.put(masterNodeId, replicaId);
             return replicaId;
         }
     }
@@ -164,13 +208,14 @@ public final class ReplicationManager {
                 String replicaDbName = replicaNameStack.pop();
                 if(replicaDbName != null) {
                     Object[] params = new Object[2];
-                    params[0] = masterNode.getKey();
+                    String masterNodeId = masterNode.getKey();
+                    params[0] = masterNodeId;
                     params[1] = replicaDbName;
                     final int rows = JDBCUtils.update(conn, "UPDATE \"" + replicaTableName
                             + "\" SET nodeinfo = ? WHERE dbname = ?", params);
                     if(rows == 1) {
                         conn.commit();
-                        if(replicaDbMappingCache.put(masterNode, replicaDbName) != null) {
+                        if(replicaDbMappingCache.put(masterNodeId, replicaDbName) != null) {
                             throw new IllegalStateException();
                         }
                         return true;
@@ -186,60 +231,35 @@ public final class ReplicationManager {
 
     public boolean registerReplicaDatabase(@Nonnull Connection conn, String... dbnames)
             throws SQLException {
+        final int dblen = dbnames.length;
+        if(dblen < 1) {
+            return false;
+        }
         synchronized(lock) {
-            final int dblen = dbnames.length;
-            if(dblen < 1) {
-                return false;
+            prepareReplicaTable(conn, replicaTableName, replicaNameStack);
+            final Object[][] params = new String[dblen][];
+            for(int i = 0; i < dblen; i++) {
+                String dbname = dbnames[i];
+                params[i] = new String[] { dbname };
             }
-            int pushed = prepareReplicaTable(conn, replicaTableName, replicaNameStack);
-            final int remaining = dblen - pushed;
-            if(remaining > 0) {
-                final Object[][] params = new String[remaining][];
-                for(int i = 0; i < dblen; i++) {
-                    final String dbname = dbnames[i];
-                    if(!replicaNameStack.contains(dbname)) {
-                        replicaNameStack.push(dbname);
-                    }
-                    params[i] = new String[] { dbname };
-                }
-                JDBCUtils.batch(conn, "INSERT INTO \"" + replicaTableName + "\"(dbname) values(?)", params);
-                conn.commit();
-            }
+            JDBCUtils.batch(conn, "INSERT INTO \"" + replicaTableName + "\"(dbname) values(?)", params);
+            conn.commit();
             return true;
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static int prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, @Nonnull final Stack<String> replicaNameStack) {
+    private static void prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, @Nonnull final Stack<String> replicaNameStack) {
         final String ddl = "CREATE TABLE \"" + replicaTableName
                 + "\"(dbname varchar(30) primary key, nodeinfo varchar(30))";
-        int pushed = 0;
         try {
             JDBCUtils.update(conn, ddl);
         } catch (SQLException e) {
-            // table already exists
+            // avoid table already exists error
             try {
                 conn.rollback();
             } catch (SQLException sqle) {
                 LOG.warn("failed to rollback", sqle);
             }
-            final Object result;
-            String sql = "SELECT dbname FROM \"" + replicaTableName + "\" WHERE nodeinfo IS NULL";
-            ColumnListHandler<String> rsh = new ColumnListHandler<String>();
-            try {
-                result = JDBCUtils.query(conn, sql, rsh);
-            } catch (SQLException sqlex) {
-                LOG.error("failed to execute a query: " + sql, sqlex);
-                return 0;
-            }
-            final List<String> dbnames = (List<String>) result;
-            for(final String dbname : dbnames) {
-                if(!replicaNameStack.contains(dbname)) {
-                    replicaNameStack.push(dbname);
-                    pushed++;
-                }
-            }
         }
-        return pushed;
     }
 }

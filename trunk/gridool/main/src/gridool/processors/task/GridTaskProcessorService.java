@@ -20,9 +20,6 @@
  */
 package gridool.processors.task;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.GridResourceRegistry;
@@ -31,6 +28,9 @@ import gridool.GridTask;
 import gridool.monitor.GridExecutionMonitor;
 import gridool.taskqueue.GridTaskQueueManager;
 import gridool.taskqueue.receiver.ReceiverIncomingTaskQueue;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * 
@@ -56,6 +56,10 @@ public final class GridTaskProcessorService implements GridService, Runnable {
 
     public String getServiceName() {
         return GridTaskProcessorService.class.getName();
+    }
+
+    public boolean isDaemon() {
+        return true;
     }
 
     public void start() throws GridException {
