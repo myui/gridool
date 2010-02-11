@@ -320,7 +320,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final String sql = constructCopyIntoQuery(result, outputTableName);
         final Connection conn = GridUtils.getPrimaryDbConnection(dba, false);
         try {
-            conn.setAutoCommit(false);
             JDBCUtils.update(conn, sql);
             conn.commit();
         } catch (SQLException e) {
@@ -402,8 +401,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             query = "CREATE TABLE " + outputTableName + " AS (SELECT * FROM " + inputViewName
                     + ") WITH DATA";
         }
-
-        final Connection conn = GridUtils.getPrimaryDbConnection(dba, false);
+        final Connection conn = GridUtils.getPrimaryDbConnection(dba, true);
         try {
             JDBCUtils.update(conn, query);
         } catch (SQLException e) {

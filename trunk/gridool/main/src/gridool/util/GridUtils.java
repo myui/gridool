@@ -362,7 +362,9 @@ public final class GridUtils {
         final Connection conn;
         try {
             conn = dba.getPrimaryDbConnection();
-            conn.setAutoCommit(autoCommit);
+            if(conn.getAutoCommit() != autoCommit) {
+                conn.setAutoCommit(autoCommit);
+            }
         } catch (SQLException e) {
             LOG.error(e);
             throw new GridException("failed connecting to the primary database: "

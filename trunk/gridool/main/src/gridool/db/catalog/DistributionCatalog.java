@@ -130,9 +130,9 @@ public final class DistributionCatalog {
                 return null;
             }
         };
-        final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor, false);
-        try {            
-            if(!prepareDistributionTable(conn, distributionTableName)) {
+        final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor, true);
+        try {
+            if(!prepareDistributionTable(conn, distributionTableName, true)) {
                 JDBCUtils.query(conn, sql, rsh);
             }
         } catch (SQLException e) {
@@ -168,15 +168,21 @@ public final class DistributionCatalog {
                     }
                 }
             }
-            final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor, false);
             final String insertQuery = "INSERT INTO \"" + distributionTableName
                     + "\" VALUES(?, ?, ?, ?)";
             final Object[][] params = toNewParams(distKey, master, slaves);
+            final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor, false);
             try {
                 JDBCUtils.batch(conn, insertQuery, params);
+                conn.commit();
             } catch (SQLException e) {
                 String errmsg = "Failed to execute a query: " + insertQuery;
                 LOG.error(errmsg, e);
+                try {
+                    conn.rollback();
+                } catch (SQLException sqle) {
+                    LOG.warn("rollback failed", e);
+                }
                 throw new GridException(errmsg, e);
             } finally {
                 JDBCUtils.closeQuietly(conn);
@@ -258,13 +264,13 @@ public final class DistributionCatalog {
                 nodeWS.state = newState;
                 return prevState;
             }
-            final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor, false);
             final String sql = "UPDATE \"" + distributionTableName
                     + "\" SET state = ? WHERE node = ?";
             int nodeState = newState.getStateNumber();
             byte[] nodeBytes = node.toBytes(true);
             String nodeRaw = StringUtils.toString(nodeBytes);
             final Object[] params = new Object[] { nodeState, nodeRaw };
+            final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor, true);
             try {
                 JDBCUtils.update(conn, sql, params);
             } catch (SQLException e) {
@@ -557,18 +563,23 @@ public final class DistributionCatalog {
         return list;
     }
 
-    private static boolean prepareDistributionTable(@Nonnull final Connection conn, final String distributionTableName) {
+    private static boolean prepareDistributionTable(@Nonnull final Connection conn, final String distributionTableName, final boolean autoCommit) {
         final String ddl = "CREATE TABLE \""
                 + distributionTableName
                 + "\"(distkey varchar(50) NOT NULL, node varchar(32) NOT NULL, masternode varchar(32), state TINYINT NOT NULL)";
         try {
             JDBCUtils.update(conn, ddl);
+            if(!autoCommit) {
+                conn.commit();
+            }
         } catch (SQLException e) {
             // avoid table already exists error
-            try {
-                conn.rollback();
-            } catch (SQLException sqle) {
-                LOG.warn("failed to rollback", sqle);
+            if(!autoCommit) {
+                try {
+                    conn.rollback();
+                } catch (SQLException sqle) {
+                    LOG.warn("failed to rollback", sqle);
+                }
             }
             return false;
         }

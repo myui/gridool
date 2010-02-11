@@ -126,9 +126,9 @@ public final class ReplicationManager {
                 return null;
             }
         };
-        final Connection conn = GridUtils.getPrimaryDbConnection(dba, false);
+        final Connection conn = GridUtils.getPrimaryDbConnection(dba, true);
         try {
-            prepareReplicaTable(conn, replicaTableName);
+            prepareReplicaTable(conn, replicaTableName, true);
             JDBCUtils.query(conn, sql, rsh);
         } catch (SQLException e) {
             // avoid table does not exist error
@@ -268,17 +268,22 @@ public final class ReplicationManager {
         }
     }
 
-    private static void prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName) {
+    private static void prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, final boolean autoCommit) {
         final String ddl = "CREATE TABLE \"" + replicaTableName
                 + "\"(dbname varchar(30) primary key, nodeinfo varchar(30))";
         try {
             JDBCUtils.update(conn, ddl);
+            if(!autoCommit) {
+                conn.commit();
+            }
         } catch (SQLException e) {
             // avoid table already exists error
-            try {
-                conn.rollback();
-            } catch (SQLException sqle) {
-                LOG.warn("failed to rollback", sqle);
+            if(!autoCommit) {
+                try {
+                    conn.rollback();
+                } catch (SQLException sqle) {
+                    LOG.warn("failed to rollback", sqle);
+                }
             }
         }
     }

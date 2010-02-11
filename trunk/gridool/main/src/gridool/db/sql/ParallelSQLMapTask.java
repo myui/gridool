@@ -127,6 +127,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         final int rows;
         final Connection dbConn = getDbConnection(taskMasterNode, registry);
         try {
+            dbConn.setAutoCommit(true);
             rows = executeCopyIntoQuery(dbConn, query, tmpFile);
         } catch (SQLException e) {
             LOG.error(e);
