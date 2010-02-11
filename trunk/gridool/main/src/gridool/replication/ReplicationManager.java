@@ -191,10 +191,10 @@ public final class ReplicationManager {
             if(dblen < 1) {
                 return false;
             }
-            prepareReplicaTable(conn, replicaTableName, replicaNameStack);
-            final Object[][] params = new String[dblen][];
+            int pushed = prepareReplicaTable(conn, replicaTableName, replicaNameStack);
+            final Object[][] params = new String[dblen - pushed][];
             for(int i = 0; i < dblen; i++) {
-                String dbname = dbnames[i];
+                final String dbname = dbnames[i];
                 if(!replicaNameStack.contains(dbname)) {
                     replicaNameStack.push(dbname);
                 }
@@ -207,9 +207,10 @@ public final class ReplicationManager {
     }
 
     @SuppressWarnings("unchecked")
-    private static void prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, @Nonnull final Stack<String> replicaNameStack) {
+    private static int prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, @Nonnull final Stack<String> replicaNameStack) {
         final String ddl = "CREATE TABLE \"" + replicaTableName
                 + "\"(dbname varchar(30) primary key, nodeinfo varchar(30))";
+        int pushed = 0;
         try {
             JDBCUtils.update(conn, ddl);
         } catch (SQLException e) {
@@ -226,14 +227,16 @@ public final class ReplicationManager {
                 result = JDBCUtils.query(conn, sql, rsh);
             } catch (SQLException sqlex) {
                 LOG.error("failed to execute a query: " + sql, sqlex);
-                return;
+                return 0;
             }
             final List<String> dbnames = (List<String>) result;
             for(final String dbname : dbnames) {
                 if(!replicaNameStack.contains(dbname)) {
                     replicaNameStack.push(dbname);
+                    pushed++;
                 }
             }
         }
+        return pushed;
     }
 }
