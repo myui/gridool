@@ -116,11 +116,11 @@ public final class CoordinateReplicaTaskHandler implements ReplicaCoordinatorLis
             return false;
         }
 
-        Arrays.sort(succeedNodes);
+        final List<GridNode> succeededList = Arrays.asList(succeedNodes);
         final Iterator<GridNode> itor = addedReplicas.iterator();
         while(itor.hasNext()) {
             GridNode node = itor.next();
-            if(Arrays.binarySearch(succeedNodes, node) < 0) {
+            if(!succeededList.contains(node)) {
                 LOG.warn("failed to configure replica: " + node);
                 itor.remove();
             }
@@ -162,8 +162,7 @@ public final class CoordinateReplicaTaskHandler implements ReplicaCoordinatorLis
             return map;
         }
 
-        public GridTaskResultPolicy result(GridTaskResult result)
-                throws GridException {
+        public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
             final Boolean succeed = result.getResult();
             if(succeed != null && succeed.booleanValue()) {
                 GridNode executedNode = result.getExecutedNode();
