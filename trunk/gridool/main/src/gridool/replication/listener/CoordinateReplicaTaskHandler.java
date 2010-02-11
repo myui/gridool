@@ -116,6 +116,7 @@ public final class CoordinateReplicaTaskHandler implements ReplicaCoordinatorLis
             return false;
         }
 
+        Arrays.sort(succeedNodes);
         final Iterator<GridNode> itor = addedReplicas.iterator();
         while(itor.hasNext()) {
             GridNode node = itor.next();
