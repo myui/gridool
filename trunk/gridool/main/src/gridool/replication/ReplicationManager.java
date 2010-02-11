@@ -219,7 +219,7 @@ public final class ReplicationManager {
                 LOG.warn("failed to rollback", sqle);
             }
             final Object result;
-            String sql = "SELECT dbname FROM \"" + replicaTableName + "\" AND nodeinfo IS NULL";
+            String sql = "SELECT dbname FROM \"" + replicaTableName + "\" WHERE nodeinfo IS NULL";
             ColumnListHandler<String> rsh = new ColumnListHandler<String>();
             try {
                 result = JDBCUtils.query(conn, sql, rsh);
