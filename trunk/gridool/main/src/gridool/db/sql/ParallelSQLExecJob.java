@@ -44,6 +44,7 @@ import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -120,10 +121,15 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final SQLTranslator translator = new SQLTranslator(catalog);
         final String mapQuery = translator.translateQuery(jobConf.mapQuery);
         final GridNode[] masters = catalog.getMasters(DistributionCatalog.defaultDistributionKey);
+        final int numNodes = masters.length;
+        if(numNodes == 0) {
+            return Collections.emptyMap();
+        }
         DBAccessor dba = registry.getDbAccessor();
         final String outputTableName = jobConf.outputTableName;
         runPreparation(dba, mapQuery, masters, outputTableName);
 
+        // run file receiver
         final InetSocketAddress sockAddr;
         final TransferServer xferServer = createTransferServer(jobConf.getRecvFileConcurrency());
         try {
@@ -133,7 +139,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         }
 
         // phase #2 map tasks
-        final int numNodes = masters.length;
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
         final Map<String, ParallelSQLMapTask> reverseMap = new HashMap<String, ParallelSQLMapTask>(numNodes);
         for(int tasknum = 0; tasknum < numNodes; tasknum++) {

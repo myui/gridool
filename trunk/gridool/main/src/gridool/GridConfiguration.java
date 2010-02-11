@@ -52,6 +52,7 @@ import xbird.util.primitive.Primitives;
 public final class GridConfiguration implements GridConfigurationMBean {
     private static final long serialVersionUID = -5466809166525908272L;
 
+    private boolean dbFeatureEnabled;
     private final int numberOfVirtualNodes;
     private transient HashFunction hashFunction = null;
     private transient GridLoadProbe probe = null;
@@ -78,6 +79,7 @@ public final class GridConfiguration implements GridConfigurationMBean {
     private final GridNodeInfo localNode;
 
     public GridConfiguration() {
+        this.dbFeatureEnabled = Boolean.parseBoolean(Settings.getThroughSystemProperty("gridool.db.feature_enabled"));
         this.numberOfVirtualNodes = Primitives.parseInt(Settings.get("gridool.num_virtual_nodes"), 64);
         this.metricsSyncFrequency = Primitives.parseInt(Settings.get("gridool.metrics.sync_freq"), 5000);
         this.metricsSyncInitialDelay = Primitives.parseInt(Settings.get("gridool.metrics.sync_initial_delay"), 3000);
@@ -98,6 +100,14 @@ public final class GridConfiguration implements GridConfigurationMBean {
         this.ldIdxType = DirectoryIndexType.resolve(Settings.get("gridool.ld.idxtype"));
         InetAddress addr = NetUtils.getLocalHost();
         this.localNode = new GridNodeInfo(addr, transportServerPort, superNode);
+    }
+
+    public boolean isDbFeatureEnabled() {
+        return dbFeatureEnabled;
+    }
+
+    public void setDbFeatureEnabled(boolean dbFeatureEnabled) {
+        this.dbFeatureEnabled = dbFeatureEnabled;
     }
 
     public int getNumberOfVirtualNodes() {

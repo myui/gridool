@@ -85,6 +85,10 @@ public class GridNodeInfo implements GridNode, Externalizable {
         this.superNode = superNode;
     }
 
+    public GridNodeInfo(@CheckForNull InetAddress addr, int port, @CheckForNull byte[] macAddr) {
+        this(addr, port, macAddr, false);
+    }
+
     protected GridNodeInfo(@CheckForNull GridNode copyNode, @Nullable GridNodeMetrics metrics) {
         if(copyNode == null) {
             throw new IllegalArgumentException();
@@ -169,14 +173,17 @@ public class GridNodeInfo implements GridNode, Externalizable {
     // -----------------------------------------------------------
 
     /**
+     * 20 bytes or 32 bytes
+     * 
      * 4 bytes - ip address length
      * 1 byte  - has mac address
      * 1 byte  - is super node
-     * N bytes - ip addr
+     * N bytes - ip addr (N=4 oe N=16)
      * 4 bytes - port number
      * 6 bytes - mac addr (optional)
      */
-    public final byte[] toBytes(boolean includeMacAddr) {
+    @Nonnull
+    public byte[] toBytes(boolean includeMacAddr) {
         final byte[] ip = addr.getAddress();
         byte[] ret = null;
         if(includeMacAddr) {

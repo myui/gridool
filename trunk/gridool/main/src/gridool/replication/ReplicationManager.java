@@ -63,7 +63,7 @@ public final class ReplicationManager {
     private static final Log LOG = LogFactory.getLog(ReplicationManager.class);
     private static final String replicaTableName;
     static {
-        replicaTableName = Settings.get("gridool.db.replication.replica_tblname", "_replica");
+        replicaTableName = Settings.get("gridool.db.replication.replica_tbl", "_replica");
     }
 
     private final GridKernel kernel;
@@ -128,6 +128,7 @@ public final class ReplicationManager {
         };
         final Connection conn = GridUtils.getPrimaryDbConnection(dba);
         try {
+            prepareReplicaTable(conn, replicaTableName);
             JDBCUtils.query(conn, sql, rsh);
         } catch (SQLException e) {
             // avoid table does not exist error
@@ -251,7 +252,7 @@ public final class ReplicationManager {
                 }
             }
             if(remaining > 0) {
-                prepareReplicaTable(conn, replicaTableName);
+                //prepareReplicaTable(conn, replicaTableName);
                 final Object[][] params = new String[remaining][];
                 for(int i = 0; i < dblen; i++) {
                     final String dbname = dbnames[i];

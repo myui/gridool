@@ -35,18 +35,24 @@ import javax.annotation.Nonnull;
 public enum NodeState {
 
     /* Normal condition */
-    normal,
+    normal(0),
     /* Under maintenance. Should not route tasks */
-    underMaintenance,
+    underMaintenance(1),
     /* Suspected as irregular */
-    suspected,
+    suspected(-2),
     /* Under irregular condition */
-    dead;
+    dead(-1);
 
+    private final int stateNumber;
     private final ReadWriteLock lock;
 
-    private NodeState() {
+    private NodeState(int stateNumber) {
+        this.stateNumber = stateNumber;
         this.lock = new ReentrantReadWriteLock();
+    }
+
+    public int getStateNumber() {
+        return stateNumber;
     }
 
     public boolean isValid() {
@@ -54,8 +60,23 @@ public enum NodeState {
     }
 
     @Nonnull
-    public ReadWriteLock getLock() {
+    public ReadWriteLock getLock() {//TODO REVIEWME
         return lock;
+    }
+
+    public static NodeState resolve(final int stateNo) {
+        switch(stateNo) {
+            case 0:
+                return normal;
+            case 1:
+                return underMaintenance;
+            case -2:
+                return suspected;
+            case -1:
+                return dead;
+            default:
+                throw new IllegalArgumentException("Unexpected stateNo: " + stateNo);
+        }
     }
 
 }

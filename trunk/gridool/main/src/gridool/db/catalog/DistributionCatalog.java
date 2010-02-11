@@ -20,8 +20,11 @@
  */
 package gridool.db.catalog;
 
+import gridool.GridException;
 import gridool.GridNode;
+import gridool.communication.payload.GridNodeInfo;
 import gridool.db.helpers.DBAccessor;
+import gridool.util.GridUtils;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -40,10 +43,15 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import xbird.config.Settings;
 import xbird.util.collections.ints.IntArrayList;
 import xbird.util.jdbc.JDBCUtils;
+import xbird.util.jdbc.ResultSetHandler;
 import xbird.util.lang.ArrayUtils;
+import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
 
 /**
@@ -54,22 +62,25 @@ import xbird.util.struct.Pair;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class DistributionCatalog {
+    private static final Log LOG = LogFactory.getLog(DistributionCatalog.class);
 
     public static final String defaultDistributionKey = "";
     public static final String DummyFieldNameForPrimaryKey = "";
     public static final String hiddenFieldName;
+    private static final String distributionTableName;
     static {
         hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
+        distributionTableName = Settings.get("gridool.db.partitioning.catalog_tbl", "_distribution");
     }
 
     @Nonnull
     private final DBAccessor dbAccessor;
-
+    @Nonnull
     private final Object lock = new Object();
     @GuardedBy("lock")
-    private final Map<String, Map<NodeWithState, List<NodeWithState>>> distributionCache;
+    private final Map<String, Map<NodeWithState, List<NodeWithState>>> distributionMap;
     @GuardedBy("lock")
-    private final Map<GridNode, NodeWithState> nodeStateMap;
+    private final Map<String, NodeWithState> nodeStateMap;
 
     @GuardedBy("partitionKeyMappping")
     private final Map<String, Map<String, PartitionKey>> partitionKeyMappping;
@@ -79,35 +90,120 @@ public final class DistributionCatalog {
             throw new IllegalArgumentException();
         }
         this.dbAccessor = dbAccessor;
-        this.distributionCache = new HashMap<String, Map<NodeWithState, List<NodeWithState>>>(12);
-        this.nodeStateMap = new HashMap<GridNode, NodeWithState>(64);
+        this.distributionMap = new HashMap<String, Map<NodeWithState, List<NodeWithState>>>(12);
+        this.nodeStateMap = new HashMap<String, NodeWithState>(64);
         this.partitionKeyMappping = new HashMap<String, Map<String, PartitionKey>>(32);
     }
 
-    public void registerPartition(@Nonnull GridNode master, @Nonnull final List<GridNode> slaves, @Nonnull final String distKey) {
+    public void start() throws GridException {
+        final String sql = "SELECT distkey, node, masternode, state FROM \""
+                + distributionTableName + "\" ORDER BY masternode ASC"; // NULLs last
+        final ResultSetHandler rsh = new ResultSetHandler() {
+            public Object handle(ResultSet rs) throws SQLException {
+                while(rs.next()) {
+                    String distkey = rs.getString(1);
+                    String nodestr = rs.getString(2);
+                    String masterStr = rs.getString(3); // may be null
+                    int state = rs.getInt(4);
+
+                    Map<NodeWithState, List<NodeWithState>> masterSlaveMapping = distributionMap.get(distkey);
+                    if(masterSlaveMapping == null) {
+                        masterSlaveMapping = new HashMap<NodeWithState, List<NodeWithState>>(32);
+                        distributionMap.put(distkey, masterSlaveMapping);
+                    }
+                    NodeWithState nodeWS = internNodeState(nodestr, state);
+                    if(masterStr == null) {// master
+                        masterSlaveMapping.put(nodeWS, new ArrayList<NodeWithState>(4));
+                    } else {// slave
+                        NodeWithState masterWS = getNodeState(masterStr);
+                        if(masterWS == null) {
+                            throw new IllegalStateException("Master node of slave '" + nodeWS.node
+                                    + "' is not found");
+                        }
+                        List<NodeWithState> slaves = masterSlaveMapping.get(masterWS);
+                        if(slaves == null) {//sanity check
+                            throw new IllegalStateException();
+                        }
+                        slaves.add(nodeWS);
+                    }
+                }
+                return null;
+            }
+        };
+        final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor);
+        try {
+            if(!prepareDistributionTable(conn, distributionTableName)) {
+                JDBCUtils.query(conn, sql, rsh);
+            }
+        } catch (SQLException e) {
+            String errmsg = "Failed to execute a query: " + sql;
+            LOG.fatal(errmsg, e);
+            throw new GridException(errmsg, e);
+        } finally {
+            JDBCUtils.closeQuietly(conn);
+        }
+    }
+
+    public void stop() throws GridException {}
+
+    public void registerPartition(@Nonnull GridNode master, @Nonnull final List<GridNode> slaves, @Nonnull final String distKey)
+            throws GridException {
         synchronized(lock) {
-            Map<NodeWithState, List<NodeWithState>> mapping = distributionCache.get(distKey);
+            Map<NodeWithState, List<NodeWithState>> mapping = distributionMap.get(distKey);
             if(mapping == null) {
                 mapping = new HashMap<NodeWithState, List<NodeWithState>>(32);
-                distributionCache.put(distKey, mapping);
                 mapping.put(wrapNode(master, true), wrapNodes(slaves, true));
+                if(distributionMap.put(distKey, mapping) != null) {
+                    throw new IllegalStateException();
+                }
             } else {
                 List<NodeWithState> oldSlaves = mapping.get(mapping);
                 if(oldSlaves == null) {
-                    mapping.put(wrapNode(master, true), wrapNodes(slaves, true));
+                    if(mapping.put(wrapNode(master, true), wrapNodes(slaves, true)) != null) {
+                        throw new IllegalStateException();
+                    }
                 } else {
                     for(GridNode slave : slaves) {
                         oldSlaves.add(wrapNode(slave, true));
                     }
                 }
             }
+            final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor);
+            final String insertQuery = "INSERT INTO \"" + distributionTableName
+                    + "\" VALUES(?, ?, ?, ?)";
+            final Object[][] params = toNewParams(distKey, master, slaves);
+            try {
+                JDBCUtils.batch(conn, insertQuery, params);
+            } catch (SQLException e) {
+                String errmsg = "Failed to execute a query: " + insertQuery;
+                LOG.error(errmsg, e);
+                throw new GridException(errmsg, e);
+            } finally {
+                JDBCUtils.closeQuietly(conn);
+            }
         }
     }
 
+    private static Object[][] toNewParams(@Nonnull final String distkey, @Nonnull final GridNode master, @Nonnull final List<GridNode> slaves) {
+        final Object[][] params = new Object[slaves.size() + 1][];
+        final Integer normalState = NodeState.normal.getStateNumber();
+        byte[] masterBytes = master.toBytes(true);
+        final String masterRaw = StringUtils.toString(masterBytes);
+        params[0] = new Object[] { distkey, masterRaw, null, normalState };
+        for(int i = 0; i < slaves.size(); i++) {
+            GridNode node = slaves.get(i);
+            byte[] b = node.toBytes(true); // 20 bytes or 32 bytes, thus can be a Java string
+            String slaveRaw = StringUtils.toString(b);
+            params[i + 1] = new Object[] { distkey, slaveRaw, masterRaw, normalState };
+        }
+        return params;
+    }
+
+    @Nonnull
     public GridNode[] getMasters(@Nullable final String distKey) {
         final GridNode[] masters;
         synchronized(lock) {
-            final Map<NodeWithState, List<NodeWithState>> mapping = distributionCache.get(distKey);
+            final Map<NodeWithState, List<NodeWithState>> mapping = distributionMap.get(distKey);
             if(mapping == null) {
                 return new GridNode[0];
             }
@@ -117,10 +213,11 @@ public final class DistributionCatalog {
         return masters;
     }
 
+    @Nonnull
     public GridNode[] getSlaves(@Nonnull final GridNode master, @Nullable final String distKey) {
         final GridNode[] slaves;
         synchronized(lock) {
-            final Map<NodeWithState, List<NodeWithState>> mapping = distributionCache.get(distKey);
+            final Map<NodeWithState, List<NodeWithState>> mapping = distributionMap.get(distKey);
             if(mapping == null) {
                 return new GridNode[0];
             }
@@ -136,8 +233,9 @@ public final class DistributionCatalog {
 
     @Nullable
     public NodeState getNodeState(@Nonnull final GridNode node) {
+        final String nodeID = node.getKey();
         synchronized(lock) {
-            final NodeWithState nodeinfo = nodeStateMap.get(node);
+            final NodeWithState nodeinfo = nodeStateMap.get(nodeID);
             if(nodeinfo == null) {
                 return null;
             }
@@ -145,19 +243,39 @@ public final class DistributionCatalog {
         }
     }
 
-    public NodeState setNodeState(@Nonnull final GridNode node, @Nonnull final NodeState newState) {
+    public NodeState setNodeState(@Nonnull final GridNode node, @Nonnull final NodeState newState)
+            throws GridException {
+        final String nodeID = node.getKey();
+        final NodeState prevState;
         synchronized(lock) {
-            NodeWithState nodeinfo = nodeStateMap.get(node);
-            if(nodeinfo == null) {
-                nodeinfo = new NodeWithState(node, newState);
-                nodeStateMap.put(node, nodeinfo);
-                return null;
+            NodeWithState nodeWS = nodeStateMap.get(nodeID);
+            if(nodeWS == null) {
+                nodeWS = new NodeWithState(node, newState);
+                nodeStateMap.put(nodeID, nodeWS);
+                prevState = null;
             } else {
-                NodeState prevState = nodeinfo.state;
-                nodeinfo.state = newState;
+                prevState = nodeWS.state;
+                nodeWS.state = newState;
                 return prevState;
             }
+            final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor);
+            final String sql = "UPDATE \"" + distributionTableName
+                    + "\" SET state = ? WHERE node = ?";
+            int nodeState = newState.getStateNumber();
+            byte[] nodeBytes = node.toBytes(true);
+            String nodeRaw = StringUtils.toString(nodeBytes);
+            final Object[] params = new Object[] { nodeState, nodeRaw };
+            try {
+                JDBCUtils.update(conn, sql, params);
+            } catch (SQLException e) {
+                String errmsg = "failed to execute a query: " + sql;
+                LOG.error(errmsg, e);
+                throw new GridException(errmsg, e);
+            } finally {
+                JDBCUtils.closeQuietly(conn);
+            }
         }
+        return prevState;
     }
 
     public int getPartitioningKey(@Nonnull final String tableName, @Nonnull final String fieldName)
@@ -329,7 +447,7 @@ public final class DistributionCatalog {
                 shift++;
                 fieldPartitionMap.put(columnName, pkey);
             }
-        }        
+        }
         return returnNull ? null : new Pair<int[], int[]>(pkeyIdxs, fkeyIdxs);
     }
 
@@ -349,16 +467,59 @@ public final class DistributionCatalog {
             this.state = state;
         }
 
+        NodeWithState(GridNode node, int stateNo) {
+            this.node = node;
+            this.state = NodeState.resolve(stateNo);
+        }
+
         boolean isValid() {
             return state.isValid();
         }
+
+        @Override
+        public int hashCode() {
+            return node.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if(obj == this) {
+                return true;
+            }
+            if(obj instanceof NodeWithState) {
+                NodeWithState other = (NodeWithState) obj;
+                return node.equals(other.node);
+            }
+            return false;
+        }
+
+    }
+
+    private NodeWithState internNodeState(final String nodestr, final int stateNo) {
+        byte[] b = StringUtils.getBytes(nodestr);
+        GridNode node = GridNodeInfo.fromBytes(b);
+        String nodeId = node.getKey();
+        NodeWithState nodeWS = nodeStateMap.get(nodeId);
+        if(nodeWS == null) {
+            nodeWS = new NodeWithState(node, stateNo);
+            nodeStateMap.put(nodeId, nodeWS);
+        }
+        return nodeWS;
+    }
+
+    private NodeWithState getNodeState(final String nodestr) {
+        byte[] b = StringUtils.getBytes(nodestr);
+        GridNode node = GridNodeInfo.fromBytes(b);
+        String nodeId = node.getKey();
+        return nodeStateMap.get(nodeId);
     }
 
     private NodeWithState wrapNode(final GridNode node, final boolean replace) {
-        NodeWithState nodeWS = nodeStateMap.get(node);
+        final String nodeId = node.getKey();
+        NodeWithState nodeWS = nodeStateMap.get(nodeId);
         if(nodeWS == null || (replace && nodeWS.isValid() == false)) {
             nodeWS = new NodeWithState(node);
-            nodeStateMap.put(node, nodeWS);
+            nodeStateMap.put(nodeId, nodeWS);
         }
         return nodeWS;
     }
@@ -394,5 +555,23 @@ public final class DistributionCatalog {
             }
         }
         return list;
+    }
+
+    private static boolean prepareDistributionTable(@Nonnull final Connection conn, final String distributionTableName) {
+        final String ddl = "CREATE TABLE \""
+                + distributionTableName
+                + "\"(distkey varchar(50) NOT NULL, node varchar(32) NOT NULL, masternode varchar(32), state TINYINT NOT NULL)";
+        try {
+            JDBCUtils.update(conn, ddl);
+        } catch (SQLException e) {
+            // avoid table already exists error
+            try {
+                conn.rollback();
+            } catch (SQLException sqle) {
+                LOG.warn("failed to rollback", sqle);
+            }
+            return false;
+        }
+        return true;
     }
 }

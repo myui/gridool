@@ -18,39 +18,45 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool;
+package gridool.db;
 
-import java.net.InetAddress;
-import java.util.List;
+import gridool.GridException;
+import gridool.GridResourceRegistry;
+import gridool.GridService;
+import gridool.db.catalog.DistributionCatalog;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * 
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
- * @author Makoto YUI (yuin405@gmail.com)
+ * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public interface GridNode extends GridLocatable {
+public final class GridDatabaseService implements GridService {
 
     @Nonnull
-    InetAddress getPhysicalAdress();
+    private final DistributionCatalog catalog;
 
-    int getPort();
+    public GridDatabaseService(@Nonnull GridResourceRegistry registry) {
+        this.catalog = registry.getDistributionCatalog();
+    }
 
-    @Nullable
-    GridNodeMetrics getMetrics();
+    public String getServiceName() {
+        return GridDatabaseService.class.getName();
+    }
 
-    void setMetrics(@Nonnull GridNodeMetrics metrics);
+    public boolean isDaemon() {
+        return false;
+    }
 
-    @Deprecated
-    boolean isSuperNode();
+    public void start() throws GridException {
+        catalog.start();
+    }
 
-    @Nonnull
-    List<GridNode> getReplicas();
-
-    byte[] toBytes(boolean includeMacAddr);
+    public void stop() throws GridException {
+        catalog.stop();
+    }
 
 }

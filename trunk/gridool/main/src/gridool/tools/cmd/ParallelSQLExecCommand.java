@@ -30,6 +30,7 @@ import java.rmi.RemoteException;
 import xbird.util.cmdline.CommandBase;
 import xbird.util.cmdline.CommandException;
 import xbird.util.cmdline.Option.BooleanOption;
+import xbird.util.cmdline.Option.IntOption;
 import xbird.util.cmdline.Option.StringOption;
 import xbird.util.datetime.StopWatch;
 import xbird.util.io.FileUtils;
@@ -48,6 +49,7 @@ public final class ParallelSQLExecCommand extends CommandBase {
         addOption(new StringOption("reduceQuery", true));
         addOption(new StringOption("outputTable", null, false));
         addOption(new BooleanOption("asView", Boolean.FALSE, false));
+        addOption(new IntOption("waitSPE", -1, false));
     }
 
     public boolean match(String[] args) {
@@ -83,7 +85,7 @@ public final class ParallelSQLExecCommand extends CommandBase {
         String outputTable = getOption("outputTable");
         Boolean asView = getOption("asView");
         Integer waitSPE = getOption("waitSPE");
-        long waitInMills = waitSPE.longValue() * 1000L;
+        long waitInMills = (waitSPE.intValue() == -1) ? -1L : (waitSPE.longValue() * 1000L);
         ParallelSQLExecJob.JobConf jobConf = new ParallelSQLExecJob.JobConf(outputTable, mapQuery, reduceQuery, asView, waitInMills);
 
         final StopWatch sw = new StopWatch();

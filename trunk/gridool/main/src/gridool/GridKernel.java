@@ -23,6 +23,7 @@ package gridool;
 import gridool.communication.CommunicationServiceProvider;
 import gridool.communication.GridCommunicationManager;
 import gridool.communication.GridCommunicationService;
+import gridool.db.GridDatabaseService;
 import gridool.deployment.GridDeploymentJob;
 import gridool.directory.DirectoryService;
 import gridool.discovery.DiscoveryServiceProvider;
@@ -106,9 +107,15 @@ public final class GridKernel {
 
         GridTaskProcessorService taskProcServ = GridProcessorProvider.createTaskProcessorService(communicationMgr, monitor, resourceRegistry, config);
         DirectoryService dirServ = new DirectoryService(config, resourceRegistry);
-        ReplicationService replServ = new ReplicationService(resourceRegistry);
 
-        registerServices(metricsServ, discoveryServ, communicationServ, taskProcServ, dirServ, replServ);
+        registerServices(metricsServ, discoveryServ, communicationServ, taskProcServ, dirServ);
+
+        // DB services
+        if(config.isDbFeatureEnabled()) {
+            ReplicationService replServ = new ReplicationService(resourceRegistry);
+            GridDatabaseService databaseServ = new GridDatabaseService(resourceRegistry);
+            registerServices(replServ, databaseServ);
+        }
 
         this.jobProcessor = new GridJobProcessor(monitor, resourceRegistry, config);
     }
