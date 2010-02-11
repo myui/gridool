@@ -192,16 +192,19 @@ public final class ReplicationManager {
                 return false;
             }
             int pushed = prepareReplicaTable(conn, replicaTableName, replicaNameStack);
-            final Object[][] params = new String[dblen - pushed][];
-            for(int i = 0; i < dblen; i++) {
-                final String dbname = dbnames[i];
-                if(!replicaNameStack.contains(dbname)) {
-                    replicaNameStack.push(dbname);
+            final int remaining = dblen - pushed;
+            if(remaining > 0) {
+                final Object[][] params = new String[remaining][];
+                for(int i = 0; i < dblen; i++) {
+                    final String dbname = dbnames[i];
+                    if(!replicaNameStack.contains(dbname)) {
+                        replicaNameStack.push(dbname);
+                    }
+                    params[i] = new String[] { dbname };
                 }
-                params[i] = new String[] { dbname };
+                JDBCUtils.batch(conn, "INSERT INTO \"" + replicaTableName + "\"(dbname) values(?)", params);
+                conn.commit();
             }
-            JDBCUtils.batch(conn, "INSERT INTO \"" + replicaTableName + "\"(dbname) values(?)", params);
-            conn.commit();
             return true;
         }
     }
