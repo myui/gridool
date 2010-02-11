@@ -357,14 +357,18 @@ public final class GridUtils {
     }
 
     @Nonnull
-    public static Connection getPrimaryDbConnection(final DBAccessor dba) throws GridException {
+    public static Connection getPrimaryDbConnection(final DBAccessor dba, boolean autoCommit)
+            throws GridException {
+        final Connection conn;
         try {
-            return dba.getPrimaryDbConnection();
+            conn = dba.getPrimaryDbConnection();
+            conn.setAutoCommit(autoCommit);
         } catch (SQLException e) {
             LOG.error(e);
             throw new GridException("failed connecting to the primary database: "
                     + dba.getPrimaryDbName());
         }
+        return conn;
     }
 
 }

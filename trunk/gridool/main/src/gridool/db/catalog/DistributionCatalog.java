@@ -130,8 +130,8 @@ public final class DistributionCatalog {
                 return null;
             }
         };
-        final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor);
-        try {
+        final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor, false);
+        try {            
             if(!prepareDistributionTable(conn, distributionTableName)) {
                 JDBCUtils.query(conn, sql, rsh);
             }
@@ -168,7 +168,7 @@ public final class DistributionCatalog {
                     }
                 }
             }
-            final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor);
+            final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor, false);
             final String insertQuery = "INSERT INTO \"" + distributionTableName
                     + "\" VALUES(?, ?, ?, ?)";
             final Object[][] params = toNewParams(distKey, master, slaves);
@@ -258,7 +258,7 @@ public final class DistributionCatalog {
                 nodeWS.state = newState;
                 return prevState;
             }
-            final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor);
+            final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor, false);
             final String sql = "UPDATE \"" + distributionTableName
                     + "\" SET state = ? WHERE node = ?";
             int nodeState = newState.getStateNumber();

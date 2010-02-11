@@ -318,7 +318,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     private static void invokeCopyIntoTable(@Nonnull final ParallelSQLMapTaskResult result, @Nonnull final String outputTableName, @Nonnull final DBAccessor dba)
             throws GridException {
         final String sql = constructCopyIntoQuery(result, outputTableName);
-        final Connection conn = GridUtils.getPrimaryDbConnection(dba);
+        final Connection conn = GridUtils.getPrimaryDbConnection(dba, false);
         try {
             conn.setAutoCommit(false);
             JDBCUtils.update(conn, sql);
@@ -403,7 +403,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                     + ") WITH DATA";
         }
 
-        final Connection conn = GridUtils.getPrimaryDbConnection(dba);
+        final Connection conn = GridUtils.getPrimaryDbConnection(dba, false);
         try {
             JDBCUtils.update(conn, query);
         } catch (SQLException e) {

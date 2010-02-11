@@ -126,7 +126,7 @@ public final class ReplicationManager {
                 return null;
             }
         };
-        final Connection conn = GridUtils.getPrimaryDbConnection(dba);
+        final Connection conn = GridUtils.getPrimaryDbConnection(dba, false);
         try {
             prepareReplicaTable(conn, replicaTableName);
             JDBCUtils.query(conn, sql, rsh);

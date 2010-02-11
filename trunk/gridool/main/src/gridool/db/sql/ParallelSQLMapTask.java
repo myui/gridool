@@ -162,9 +162,9 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         final Connection dbConn;
         GridNode localMaster = replMgr.getLocalMasterNode();
         if(taskMasterNode.equals(localMaster)) {
-            dbConn = GridUtils.getPrimaryDbConnection(dba);
+            dbConn = GridUtils.getPrimaryDbConnection(dba, false);
         } else {
-            final Connection primaryConn = GridUtils.getPrimaryDbConnection(dba);
+            final Connection primaryConn = GridUtils.getPrimaryDbConnection(dba, false);
             try {
                 String replicaDbName = replMgr.getReplicaDatabaseName(primaryConn, taskMasterNode);
                 dbConn = dba.getConnection(replicaDbName);
