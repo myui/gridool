@@ -236,19 +236,33 @@ public final class ReplicationManager {
             return false;
         }
         synchronized(lock) {
-            prepareReplicaTable(conn, replicaTableName, replicaNameStack);
-            final Object[][] params = new String[dblen][];
+            int remaining = 0;
             for(int i = 0; i < dblen; i++) {
                 String dbname = dbnames[i];
-                params[i] = new String[] { dbname };
+                if(replicaNameStack.contains(dbname)) {
+                    dbnames[i] = null;
+                } else {
+                    remaining++;
+                }
             }
-            JDBCUtils.batch(conn, "INSERT INTO \"" + replicaTableName + "\"(dbname) values(?)", params);
-            conn.commit();
+            if(remaining > 0) {
+                prepareReplicaTable(conn, replicaTableName);
+                final Object[][] params = new String[remaining][];
+                for(int i = 0; i < dblen; i++) {
+                    final String dbname = dbnames[i];
+                    if(dbname != null) {
+                        params[i] = new String[] { dbname };
+                        replicaNameStack.push(dbname);
+                    }
+                }
+                JDBCUtils.batch(conn, "INSERT INTO \"" + replicaTableName + "\"(dbname) values(?)", params);
+                conn.commit();
+            }
             return true;
         }
     }
 
-    private static void prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, @Nonnull final Stack<String> replicaNameStack) {
+    private static void prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName) {
         final String ddl = "CREATE TABLE \"" + replicaTableName
                 + "\"(dbname varchar(30) primary key, nodeinfo varchar(30))";
         try {
