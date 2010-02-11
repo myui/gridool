@@ -321,14 +321,15 @@ public final class DistributionCatalog {
             shift++;
             fieldPartitionMap.put(DummyFieldNameForPrimaryKey, pkeyForPrimary);
         }
-        for(int i = 0; i < fkeyIdxs.length; i++) {
-            int fkey = fkeyIdxs[i];
-            String columnName = columnPosNameMapping.get(fkey);
-            PartitionKey pkey = new PartitionKey(pkeyIdxs, false, 1 << shift);
-            shift++;
-            fieldPartitionMap.put(columnName, pkey);
-        }
-
+        if(fkeyIdxs != null) {
+            for(int i = 0; i < fkeyIdxs.length; i++) {
+                int fkey = fkeyIdxs[i];
+                String columnName = columnPosNameMapping.get(fkey);
+                PartitionKey pkey = new PartitionKey(pkeyIdxs, false, 1 << shift);
+                shift++;
+                fieldPartitionMap.put(columnName, pkey);
+            }
+        }        
         return returnNull ? null : new Pair<int[], int[]>(pkeyIdxs, fkeyIdxs);
     }
 
