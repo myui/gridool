@@ -206,6 +206,7 @@ public final class ReplicationManager {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static void prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, @Nonnull final Stack<String> replicaNameStack) {
         final String ddl = "CREATE TABLE \"" + replicaTableName
                 + "\"(dbname varchar(30) primary key, nodeinfo varchar(30))";
