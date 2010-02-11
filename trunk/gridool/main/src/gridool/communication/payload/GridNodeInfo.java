@@ -173,14 +173,15 @@ public class GridNodeInfo implements GridNode, Externalizable {
     // -----------------------------------------------------------
 
     /**
-     * 20 bytes or 32 bytes
-     * 
+     * 14 bytes (no mac/IPv4) or 20 bytes (hac mac/IPv4) 26 bytes (no mac/IPv6) or 32 bytes (has mac/IPv6).
+     * <pre>
      * 4 bytes - ip address length
      * 1 byte  - has mac address
      * 1 byte  - is super node
      * N bytes - ip addr (N=4 oe N=16)
      * 4 bytes - port number
      * 6 bytes - mac addr (optional)
+     * </pre>
      */
     @Nonnull
     public byte[] toBytes(boolean includeMacAddr) {
