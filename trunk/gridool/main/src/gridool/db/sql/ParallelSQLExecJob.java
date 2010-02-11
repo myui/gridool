@@ -152,7 +152,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         this.mapStarted = System.currentTimeMillis();
         this.waitForStartSpeculativeTask = (numNodes <= 1) ? -1L
                 : jobConf.getWaitForStartSpeculativeTask();
-        this.thresholdForSpeculativeTask = Math.min(1, (int) (numNodes * jobConf.getInvokeSpeculativeTasksFactor()));
+        this.thresholdForSpeculativeTask = Math.max(1, (int) (numNodes * jobConf.getInvokeSpeculativeTasksFactor()));
         this.recvExecs = startFileReciever(xferServer);
         this.copyintoExecs = ExecutorFactory.newFixedThreadPool(jobConf.getCopyIntoTableConcurrency(), "CopyIntoTableThread", true);
         return map;
