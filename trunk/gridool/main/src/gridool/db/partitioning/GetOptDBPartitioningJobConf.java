@@ -142,7 +142,7 @@ public class GetOptDBPartitioningJobConf extends DBPartitioningJobConf {
     }
 
     @Override
-    protected String getBaseTableName() {
+    public String getBaseTableName() {
         if(baseTableName == null) {
             throw new IllegalStateException("Should provide -baseTbl option when DBPartitioningJobConf#partitionigKeyIndices() is not overloaded");
         }

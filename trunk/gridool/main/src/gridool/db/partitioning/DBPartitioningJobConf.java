@@ -52,9 +52,7 @@ public abstract class DBPartitioningJobConf implements Serializable {
     public abstract String getTableName();
 
     @Nonnull
-    protected String getBaseTableName() {
-        throw new UnsupportedOperationException();
-    }
+    public abstract String getBaseTableName();
 
     public char getFieldSeparator() {
         return '\t';

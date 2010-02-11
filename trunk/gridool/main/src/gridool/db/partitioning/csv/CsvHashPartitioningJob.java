@@ -84,7 +84,7 @@ public final class CsvHashPartitioningJob extends
         final String csvFileName = ops.getFileName();
         final boolean append = !ops.isFirst();
         final DBPartitioningJobConf jobConf = ops.getJobConf();
-        final String tableName = jobConf.getTableName();
+        final String tableName = jobConf.getBaseTableName();
         final Pair<int[], int[]> partitioningKeys;
         try {
             partitioningKeys = catalog.getPartitioningKeyPositions(tableName);
