@@ -46,6 +46,7 @@ import org.apache.commons.logging.LogFactory;
 import xbird.config.Settings;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.jdbc.ResultSetHandler;
+import xbird.util.jdbc.handlers.ColumnListHandler;
 import xbird.util.jdbc.handlers.ScalarHandler;
 
 /**
@@ -143,7 +144,7 @@ public final class ReplicationManager {
             Object[] params = new Object[1];
             params[0] = masterNode.getKey();
             ResultSetHandler handler = new ScalarHandler("dbname");
-            String replicaId = (String) JDBCUtils.query(query, params, handler);
+            String replicaId = (String) JDBCUtils.query(conn, query, params, handler);
 
             replicaDbMappingCache.put(masterNode, replicaId);
             return replicaId;
@@ -173,7 +174,7 @@ public final class ReplicationManager {
                             throw new IllegalStateException();
                         }
                         return true;
-                    } else {                        
+                    } else {
                         return false;
                     }
                 }
@@ -190,7 +191,7 @@ public final class ReplicationManager {
             if(dblen < 1) {
                 return false;
             }
-            prepareReplicaTable(conn, replicaTableName);
+            prepareReplicaTable(conn, replicaTableName, replicaNameStack);
             final Object[][] params = new String[dblen][];
             for(int i = 0; i < dblen; i++) {
                 String dbname = dbnames[i];
@@ -205,7 +206,7 @@ public final class ReplicationManager {
         }
     }
 
-    private static void prepareReplicaTable(@Nonnull Connection conn, @Nonnull String replicaTableName) {
+    private static void prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, @Nonnull final Stack<String> replicaNameStack) {
         final String ddl = "CREATE TABLE \"" + replicaTableName
                 + "\"(dbname varchar(30) primary key, nodeinfo varchar(30))";
         try {
@@ -216,6 +217,21 @@ public final class ReplicationManager {
                 conn.rollback();
             } catch (SQLException sqle) {
                 LOG.warn("failed to rollback", sqle);
+            }
+            final Object result;
+            String sql = "SELECT dbname FROM \"" + replicaTableName + "\" AND nodeinfo IS NULL";
+            ColumnListHandler<String> rsh = new ColumnListHandler<String>();
+            try {
+                result = JDBCUtils.query(conn, sql, rsh);
+            } catch (SQLException sqlex) {
+                LOG.error("failed to execute a query: " + sql, sqlex);
+                return;
+            }
+            final String[] dbnames = (String[]) result;
+            for(final String dbname : dbnames) {
+                if(!replicaNameStack.contains(dbname)) {
+                    replicaNameStack.push(dbname);
+                }
             }
         }
     }

@@ -355,7 +355,7 @@ public final class GridUtils {
             throw new IllegalArgumentException("Invalid DB url: " + dburl);
         }
     }
-    
+
     @Nonnull
     public static Connection getPrimaryDbConnection(final DBAccessor dba) throws GridException {
         try {
