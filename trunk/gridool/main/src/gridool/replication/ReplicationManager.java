@@ -117,7 +117,7 @@ public final class ReplicationManager {
                         }
                     } else {
                         String prevMapping = replicaDbMappingCache.put(nodeinfo, dbname);
-                        if(nodeinfo.equals(prevMapping)) {
+                        if(prevMapping != null && nodeinfo.equals(prevMapping)) {
                             throw new IllegalStateException("Invalid mapping for node[" + nodeinfo
                                     + "]; Old:" + prevMapping + ", New:" + dbname);
                         }
@@ -177,15 +177,15 @@ public final class ReplicationManager {
 
     public String getReplicaDatabaseName(@Nonnull Connection conn, @Nonnull GridNode masterNode)
             throws SQLException {
+        final String masterNodeId = masterNode.getKey();
         synchronized(lock) {
-            String replicaIdCached = replicaDbMappingCache.get(masterNode);
+            String replicaIdCached = replicaDbMappingCache.get(masterNodeId);
             if(replicaIdCached != null) {
                 return replicaIdCached;
             }
 
             String query = "SELECT dbname FROM \"" + replicaTableName + "\" WHERE nodeinfo = ?";
             Object[] params = new Object[1];
-            String masterNodeId = masterNode.getKey();
             params[0] = masterNodeId;
             ResultSetHandler handler = new ScalarHandler("dbname");
             String replicaId = (String) JDBCUtils.query(conn, query, params, handler);
@@ -200,15 +200,15 @@ public final class ReplicationManager {
         if(!addReplicas) {
             throw new UnsupportedOperationException();
         }
+        final String masterNodeId = masterNode.getKey();
         synchronized(lock) {
-            if(replicaDbMappingCache.containsKey(masterNode)) {
+            if(replicaDbMappingCache.containsKey(masterNodeId)) {
                 return true;
             }
             if(!replicaNameStack.isEmpty()) {
                 String replicaDbName = replicaNameStack.pop();
                 if(replicaDbName != null) {
                     Object[] params = new Object[2];
-                    String masterNodeId = masterNode.getKey();
                     params[0] = masterNodeId;
                     params[1] = replicaDbName;
                     final int rows = JDBCUtils.update(conn, "UPDATE \"" + replicaTableName
@@ -238,8 +238,13 @@ public final class ReplicationManager {
         synchronized(lock) {
             int remaining = 0;
             for(int i = 0; i < dblen; i++) {
-                String dbname = dbnames[i];
+                final String dbname = dbnames[i];
                 if(replicaNameStack.contains(dbname)) {
+                    dbnames[i] = null;
+                } else if(replicaDbMappingCache.containsValue(dbname)) {
+                    if(LOG.isDebugEnabled()) {
+                        LOG.debug("Replica '" + dbname + "' is already mapped");
+                    }
                     dbnames[i] = null;
                 } else {
                     remaining++;
