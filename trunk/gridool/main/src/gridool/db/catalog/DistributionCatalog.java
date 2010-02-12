@@ -148,6 +148,7 @@ public final class DistributionCatalog {
     public void registerPartition(@Nonnull GridNode master, @Nonnull final List<GridNode> slaves, @Nonnull final String distKey)
             throws GridException {
         synchronized(lock) {
+            boolean needToInsertDb = true;
             Map<NodeWithState, List<NodeWithState>> mapping = distributionMap.get(distKey);
             if(mapping == null) {
                 mapping = new HashMap<NodeWithState, List<NodeWithState>>(32);
@@ -163,10 +164,19 @@ public final class DistributionCatalog {
                         throw new IllegalStateException();
                     }
                 } else {
+                    boolean noAdd = true;
                     for(final GridNode slave : slaves) {
-                        slaveList.add(wrapNode(slave, true));
+                        NodeWithState slaveWS = wrapNode(slave, true);
+                        if(!slaveList.contains(slaveWS)) {
+                            slaveList.add(slaveWS);
+                            noAdd = false;
+                        }
                     }
+                    needToInsertDb = !noAdd;
                 }
+            }
+            if(!needToInsertDb) {
+                return;
             }
             final String insertQuery = "INSERT INTO \"" + distributionTableName
                     + "\" VALUES(?, ?, ?, ?)";
@@ -518,9 +528,13 @@ public final class DistributionCatalog {
     private NodeWithState wrapNode(final GridNode node, final boolean replace) {
         final String nodeId = node.getKey();
         NodeWithState nodeWS = nodeStateMap.get(nodeId);
-        if(nodeWS == null || (replace && nodeWS.isValid() == false)) {
+        if(nodeWS == null) {
             nodeWS = new NodeWithState(node);
             nodeStateMap.put(nodeId, nodeWS);
+        } else {
+            if(replace && !nodeWS.isValid()) {
+                nodeWS.state = NodeState.normal;
+            }
         }
         return nodeWS;
     }

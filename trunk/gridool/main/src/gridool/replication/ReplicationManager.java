@@ -105,7 +105,7 @@ public final class ReplicationManager {
 
     public void start() throws GridException {
         final String sql = "SELECT dbname, nodeinfo FROM \"" + replicaTableName
-                + "\" ORDER BY clock ASC"; // order by to push newer one into the top of stack
+                + "\" ORDER BY entryno ASC"; // order by to push newer one into the top of stack
         final ResultSetHandler rsh = new ResultSetHandler() {
             public Object handle(ResultSet rs) throws SQLException {
                 while(rs.next()) {
@@ -270,8 +270,9 @@ public final class ReplicationManager {
     }
 
     private static void prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, final boolean autoCommit) {
-        final String ddl = "CREATE TABLE \"" + replicaTableName
-                + "\"(dbname varchar(30) PRIMARY KEY, nodeinfo VARCHAR(30), clock INT auto_increment)";
+        final String ddl = "CREATE TABLE \""
+                + replicaTableName
+                + "\"(dbname varchar(30) PRIMARY KEY, nodeinfo VARCHAR(30), entryno INT auto_increment)";
         try {
             JDBCUtils.update(conn, ddl);
             if(!autoCommit) {
