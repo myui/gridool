@@ -105,7 +105,7 @@ public final class ReplicationManager {
 
     public void start() throws GridException {
         final String sql = "SELECT dbname, nodeinfo FROM \"" + replicaTableName
-                + "\" ORDER BY ctime";
+                + "\" ORDER BY ctime ASC"; // order by to push newer one into the top of stack
         final ResultSetHandler rsh = new ResultSetHandler() {
             public Object handle(ResultSet rs) throws SQLException {
                 while(rs.next()) {
