@@ -176,6 +176,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         }
         try {
             JDBCUtils.update(conn, prepareQuery);
+            conn.commit();
         } catch (SQLException e) {
             LOG.error("An error caused in the preparation phase", e);
             throw new GridException(e);

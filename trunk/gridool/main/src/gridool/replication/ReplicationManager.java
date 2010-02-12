@@ -68,7 +68,7 @@ public final class ReplicationManager {
 
     private final GridKernel kernel;
     private final DBAccessor dba;
-    private final GridNode localMasterNode;
+    private final GridNodeInfo localMasterNode;
     private final ReplicaSelector replicaSelector;
     private final ReplicaCoordinator replicaCoordinator;
 

@@ -66,8 +66,8 @@ public final class SQLTranslator {
         if(!query.contains("partitioned by") && !query.contains("PARTITIONED BY")) {
             return query;
         }
-
-        final StreamTokenizer tokenizer = new StreamTokenizer(new StringReader(query));
+        String trimedQuery = query.trim();
+        final StreamTokenizer tokenizer = new StreamTokenizer(new StringReader(trimedQuery));
         tokenizer.resetSyntax();
         tokenizer.wordChars('a', 'z');
         tokenizer.wordChars('A', 'Z');
