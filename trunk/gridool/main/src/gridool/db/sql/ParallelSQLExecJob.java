@@ -246,20 +246,20 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final String mockViewName = MOCK_TABLE_NAME_PREFIX + outputName;
         buf.append("DROP VIEW \"" + mockViewName + "\";\n");
         if(outputMethod != OutputMethod.view) {
-            // #2 drop tmp tables
             final String unionViewName = getUnionViewName(outputName);
-            final int numTasks = masters.length;
-            for(int i = 0; i < numTasks; i++) {
-                buf.append("DROP TABLE \"");
-                buf.append(unionViewName);
-                buf.append("task");
-                buf.append(i);
-                buf.append("\";\n");
-            }
-            // #3 drop union view
+            // #2 drop union view
             buf.append("DROP VIEW \"");
             buf.append(unionViewName);
             buf.append("\";");
+            // #3 drop tmp tables
+            final int numTasks = masters.length;
+            for(int i = 0; i < numTasks; i++) {
+                buf.append("\nDROP TABLE \"");
+                buf.append(unionViewName);
+                buf.append("task");
+                buf.append(i);
+                buf.append("\";");
+            }
         }
         return buf.toString();
     }
@@ -467,7 +467,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                 return null;
             }
         };
-        final Connection conn = GridUtils.getPrimaryDbConnection(dba, false);
+        final Connection conn = GridUtils.getPrimaryDbConnection(dba, true);
         try {
             conn.setReadOnly(true);
             JDBCUtils.query(conn, reduceQuery, rsh);
