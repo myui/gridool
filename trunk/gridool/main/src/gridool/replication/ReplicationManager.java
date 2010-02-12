@@ -271,7 +271,7 @@ public final class ReplicationManager {
 
     private static void prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, final boolean autoCommit) {
         final String ddl = "CREATE TABLE \"" + replicaTableName
-                + "\"(dbname varchar(30) PRIMARY KEY, nodeinfo VARCHAR(30), clock SERIAL)";
+                + "\"(dbname varchar(30) PRIMARY KEY, nodeinfo VARCHAR(30), clock INT auto_increment)";
         try {
             JDBCUtils.update(conn, ddl);
             if(!autoCommit) {
