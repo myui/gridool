@@ -83,6 +83,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     private static final int DEFAULT_RECVFILE_WRITER_CONCURRENCY = 3;
     private static final int DEFAULT_COPYINTO_TABLE_CONCURRENCY = 2;
     private static final float DEFAULT_INVOKE_SPECULATIVE_TASKS_FACTOR = 0.75f;
+    private static final String TMP_TABLE_NAME_PREFIX = "_tmp";
 
     // remote resources    
     @GridRegistryResource
@@ -191,25 +192,25 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         }
         final String unionViewName = getUnionViewName(outputTableName);
         final StringBuilder buf = new StringBuilder(512);
-        buf.append("CREATE VIEW ");
+        buf.append("CREATE VIEW \"");
         final String mockViewName = "_mock" + outputTableName;
         buf.append(mockViewName);
-        buf.append(" AS (\n");
+        buf.append("\" AS (\n");
         buf.append(mapQuery);
         buf.append("\n);\n");
         final int numTasks = masters.length;
         for(int i = 0; i < numTasks; i++) {
-            buf.append("CREATE TABLE ");
+            buf.append("CREATE TABLE \"");
             buf.append(unionViewName);
             buf.append("task");
             buf.append(i);
-            buf.append(" (LIKE ");
+            buf.append("\" (LIKE ");
             buf.append(mockViewName);
             buf.append(");\n");
         }
-        buf.append("CREATE VIEW ");
+        buf.append("CREATE VIEW \"");
         buf.append(unionViewName);
-        buf.append(" AS (\n");
+        buf.append("\" AS (\n");
         final int lastTask = numTasks - 1;
         for(int i = 0; i < lastTask; i++) {
             buf.append("SELECT * FROM ");
@@ -227,7 +228,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     }
 
     private static String getUnionViewName(String outputTableName) {
-        return "_tmp" + outputTableName;
+        return TMP_TABLE_NAME_PREFIX + outputTableName;
     }
 
     private static TransferServer createTransferServer(@Nonnegative int concurrency) {
@@ -318,7 +319,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
     private static void invokeCopyIntoTable(@Nonnull final ParallelSQLMapTaskResult result, @Nonnull final String outputTableName, @Nonnull final DBAccessor dba)
             throws GridException {
-        final String sql = constructCopyIntoQuery(result, outputTableName);
+        final File file = getImportingFile(result, outputTableName);
+        final String sql = constructCopyIntoQuery(file, result, outputTableName);
         final Connection conn = GridUtils.getPrimaryDbConnection(dba, false);
         try {
             JDBCUtils.update(conn, sql);
@@ -327,31 +329,35 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             LOG.error(e);
             throw new GridException("failed to execute a query: " + sql, e);
         } finally {
+            if(!file.delete()) {
+                LOG.warn("Could not delete a file: " + file.getAbsolutePath());
+            }
             JDBCUtils.closeQuietly(conn);
         }
     }
 
-    private static String constructCopyIntoQuery(final ParallelSQLMapTaskResult result, final String outputTableName) {
-        int taskNum = result.getTaskNumber();
-        String tableName = getTemporaryTaskTableName(outputTableName, taskNum);
+    private static File getImportingFile(final ParallelSQLMapTaskResult result, final String outputTableName) {
         String fileName = result.getFileName();
-        String filePath = getLoadFilePath(fileName);
-        int records = result.getNumRows();
-        return "COPY " + records + " RECORDS INTO '" + tableName + "' FROM '" + filePath + '\'';
-    }
-
-    private static String getTemporaryTaskTableName(String retTableName, int taskNumber) {
-        return "tmp" + retTableName + "task" + taskNumber;
-    }
-
-    private static String getLoadFilePath(String fileName) {
         DbCollection rootCol = DbCollection.getRootCollection();
         File colDir = rootCol.getDirectory();
         File file = new File(colDir, fileName);
         if(!file.exists()) {
             throw new IllegalStateException("File does not exist: " + file.getAbsolutePath());
         }
-        return file.getAbsolutePath();
+        return file;
+    }
+
+    private static String constructCopyIntoQuery(final File file, final ParallelSQLMapTaskResult result, final String outputTableName) {
+        final int records = result.getNumRows();
+        int taskNum = result.getTaskNumber();
+        final String tableName = getTemporaryTaskTableName(outputTableName, taskNum);
+        final String filePath = file.getAbsolutePath();
+        return "COPY " + records + " RECORDS INTO \"" + tableName + "\" FROM '" + filePath
+                + "' USING DELIMITERS '|','\n','\"'";
+    }
+
+    private static String getTemporaryTaskTableName(String retTableName, int taskNumber) {
+        return TMP_TABLE_NAME_PREFIX + retTableName + "task" + taskNumber;
     }
 
     private static void setSpeculativeTasks(@Nonnull final GridTaskResult result, @Nonnull final Map<String, ParallelSQLMapTask> remainingTasks, @Nonnull final Set<GridNode> finishedNodes) {
@@ -512,7 +518,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             out.writeInt(recvFileConcurrency);
             out.writeInt(copyIntoTableConcurrency);
         }
-
     }
 
 }

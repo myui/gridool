@@ -190,7 +190,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             formedQuery = formedQuery.substring(0, endIndex - 1);
         }
         String filepath = outFile.getAbsolutePath();
-        String copyIntoQuery = "COPY (" + formedQuery + ") INTO '" + filepath + '\'';
+        String copyIntoQuery = "COPY (" + formedQuery + ") INTO '" + filepath + "' USING DELIMITERS '|','\n','\"'";
 
         if(LOG.isDebugEnabled()) {
             LOG.debug("Executing a SQL: " + copyIntoQuery);
