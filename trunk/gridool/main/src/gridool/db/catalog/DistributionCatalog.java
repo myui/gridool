@@ -519,12 +519,14 @@ public final class DistributionCatalog {
         return nodeWS;
     }
 
+    @Nullable
     private NodeWithState getNodeState(final String nodeInfo) {
         GridNode node = GridUtils.fromNodeInfo(nodeInfo);
         String nodeId = node.getKey();
         return nodeStateMap.get(nodeId);
     }
 
+    @Nonnull
     private NodeWithState wrapNode(final GridNode node, final boolean replace) {
         final String nodeId = node.getKey();
         NodeWithState nodeWS = nodeStateMap.get(nodeId);
@@ -539,6 +541,7 @@ public final class DistributionCatalog {
         return nodeWS;
     }
 
+    @Nonnull
     private List<NodeWithState> wrapNodes(final List<GridNode> nodes, final boolean replace) {
         if(nodes.isEmpty()) {
             return Collections.emptyList();
@@ -553,6 +556,7 @@ public final class DistributionCatalog {
         return list;
     }
 
+    @Nonnull
     private List<GridNode> unwrapNodes(final Collection<NodeWithState> nodes, final boolean validate) {
         if(nodes.isEmpty()) {
             return Collections.emptyList();
