@@ -120,7 +120,8 @@ public final class DistributionCatalog {
                         }
                         List<NodeWithState> slaves = masterSlaveMapping.get(masterWS);
                         if(slaves == null) {//sanity check
-                            throw new IllegalStateException();
+                            throw new IllegalStateException("Slaves list is null for master: "
+                                    + masterStr);
                         }
                         slaves.add(nodeWS);
                     }
@@ -155,14 +156,15 @@ public final class DistributionCatalog {
                     throw new IllegalStateException();
                 }
             } else {
-                List<NodeWithState> oldSlaves = mapping.get(mapping);
-                if(oldSlaves == null) {
-                    if(mapping.put(wrapNode(master, true), wrapNodes(slaves, true)) != null) {
+                NodeWithState masterWS = wrapNode(master, true);
+                final List<NodeWithState> slaveList = mapping.get(masterWS);
+                if(slaveList == null) {
+                    if(mapping.put(masterWS, wrapNodes(slaves, true)) != null) {
                         throw new IllegalStateException();
                     }
                 } else {
-                    for(GridNode slave : slaves) {
-                        oldSlaves.add(wrapNode(slave, true));
+                    for(final GridNode slave : slaves) {
+                        slaveList.add(wrapNode(slave, true));
                     }
                 }
             }
