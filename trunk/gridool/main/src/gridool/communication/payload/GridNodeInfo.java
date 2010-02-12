@@ -110,6 +110,7 @@ public class GridNodeInfo implements GridNode, Externalizable {
         }
         this.addr = copyNode.getPhysicalAdress();
         this.macAddr = copyNode.getMacAdress();
+        assert (macAddr != null);
         this.port = copyNode.getPort();
         this.superNode = copyNode.isSuperNode();
         this.idenfider = copyNode.getKey();
@@ -224,6 +225,7 @@ public class GridNodeInfo implements GridNode, Externalizable {
         } catch (UnknownHostException e) {
             throw new IllegalStateException(e);
         }
+        assert (macLength > 0);
         final byte[] macAddr = new byte[macLength];
         System.arraycopy(in, 7 + ipLength, macAddr, 0, macLength);
         return new GridNodeInfo(ipAddr, port, macAddr, superNode);

@@ -104,7 +104,8 @@ public final class ReplicationManager {
     }
 
     public void start() throws GridException {
-        final String sql = "SELECT dbname, nodeinfo FROM \"" + replicaTableName + "\"";
+        final String sql = "SELECT dbname, nodeinfo FROM \"" + replicaTableName
+                + "\" ORDER BY ctime";
         final ResultSetHandler rsh = new ResultSetHandler() {
             public Object handle(ResultSet rs) throws SQLException {
                 while(rs.next()) {
@@ -118,8 +119,8 @@ public final class ReplicationManager {
                     } else {
                         String prevMapping = replicaDbMappingCache.put(nodeinfo, dbname);
                         if(prevMapping != null && nodeinfo.equals(prevMapping)) {
-                            throw new IllegalStateException("Invalid mapping for node[" + nodeinfo
-                                    + "]; Old:" + prevMapping + ", New:" + dbname);
+                            throw new IllegalStateException("Invalid mapping for node '" + nodeinfo
+                                    + "' [Old:" + prevMapping + ", New:" + dbname + ']');
                         }
                     }
                 }
@@ -269,8 +270,9 @@ public final class ReplicationManager {
     }
 
     private static void prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, final boolean autoCommit) {
-        final String ddl = "CREATE TABLE \"" + replicaTableName
-                + "\"(dbname varchar(30) primary key, nodeinfo varchar(30))";
+        final String ddl = "CREATE TABLE \""
+                + replicaTableName
+                + "\"(dbname varchar(30) PRIMARY KEY, nodeinfo VARCHAR(30), ctime TIMESTAMP NOT NULL DEFAULT now())";
         try {
             JDBCUtils.update(conn, ddl);
             if(!autoCommit) {
