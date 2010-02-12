@@ -278,6 +278,9 @@ public final class ReplicationManager {
                 conn.commit();
             }
         } catch (SQLException e) {
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("failed executing a query: " + ddl, e);
+            }
             // avoid table already exists error
             if(!autoCommit) {
                 try {
