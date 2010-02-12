@@ -196,7 +196,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         buf.append(mockViewName);
         buf.append(" AS (\n");
         buf.append(mapQuery);
-        buf.append(");\n");
+        buf.append("\n);\n");
         final int numTasks = masters.length;
         for(int i = 0; i < numTasks; i++) {
             buf.append("CREATE TABLE ");
