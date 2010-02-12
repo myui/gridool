@@ -20,9 +20,9 @@
  */
 package gridool.util;
 
+import gridool.GridNode;
 import gridool.communication.payload.GridNodeInfo;
 import junit.framework.TestCase;
-import xbird.util.net.NetUtils;
 import xbird.util.string.StringUtils;
 
 /**
@@ -51,25 +51,34 @@ public class GridUtilsTest extends TestCase {
         System.out.println(generatedStr);
         assertEquals(idxName + ' ' + key1Str, generatedStr);
     }
-    
+
     public void testAlterFileName() {
-        String res1 = GridUtils.alterFileName("test.csv", new GridNodeInfo(NetUtils.getLocalHost(), 333, false));
+        String res1 = GridUtils.alterFileName("test.csv", new GridNodeInfo(333, false));
         System.out.println(res1);
-        
-        String res2 = GridUtils.alterFileName("test.1.csv", new GridNodeInfo(NetUtils.getLocalHost(), 333, false));
+
+        String res2 = GridUtils.alterFileName("test.1.csv", new GridNodeInfo(333, false));
         System.out.println(res2);
-        
-        String res3 = GridUtils.alterFileName("test.1.", new GridNodeInfo(NetUtils.getLocalHost(), 333, false));
+
+        String res3 = GridUtils.alterFileName("test.1.", new GridNodeInfo(333, false));
         System.out.println(res3);
-        
-        String res4 = GridUtils.alterFileName(".", new GridNodeInfo(NetUtils.getLocalHost(), 333, false));
+
+        String res4 = GridUtils.alterFileName(".", new GridNodeInfo(333, false));
         System.out.println(res4);
-        
-        String res5 = GridUtils.alterFileName("..", new GridNodeInfo(NetUtils.getLocalHost(), 333, false));
+
+        String res5 = GridUtils.alterFileName("..", new GridNodeInfo(333, false));
         System.out.println(res5);
-        
-        String res6 = GridUtils.alterFileName("test8.8.7.7.csv", new GridNodeInfo(NetUtils.getLocalHost(), 333, false));
-        System.out.println(res6);        
+
+        String res6 = GridUtils.alterFileName("test8.8.7.7.csv", new GridNodeInfo(333, false));
+        System.out.println(res6);
     }
 
+    public void testFromNodeInfo() {
+        String test1 = "08-00-27-DC-4A-9E/255.255.255.255:77777";
+        GridNode node1 = GridUtils.fromNodeInfo(test1);
+        assertEquals(test1, GridUtils.toNodeInfo(node1));
+
+        String test2 = "08-00-27-DC-4A-9E/25.5.25.255:7";
+        GridNode node2 = GridUtils.fromNodeInfo(test2);
+        assertEquals(test2, GridUtils.toNodeInfo(node2));
+    }
 }

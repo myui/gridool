@@ -33,13 +33,10 @@ import gridool.routing.GridNodeSelectorFactory;
 import gridool.util.DefaultHashFunction;
 import gridool.util.HashFunction;
 
-import java.net.InetAddress;
-
 import javax.annotation.Nonnull;
 
 import xbird.config.Settings;
 import xbird.util.lang.ObjectUtils;
-import xbird.util.net.NetUtils;
 import xbird.util.primitive.Primitives;
 
 /**
@@ -98,8 +95,7 @@ public final class GridConfiguration implements GridConfigurationMBean {
         this.joinToMembership = System.getProperty("gridool.kernel.nojoin") == null;
         this.superNode = Boolean.parseBoolean(Settings.getThroughSystemProperty("gridool.superNode"));
         this.ldIdxType = DirectoryIndexType.resolve(Settings.get("gridool.ld.idxtype"));
-        InetAddress addr = NetUtils.getLocalHost();
-        this.localNode = new GridNodeInfo(addr, transportServerPort, superNode);
+        this.localNode = new GridNodeInfo(transportServerPort, superNode);
     }
 
     public boolean isDbFeatureEnabled() {

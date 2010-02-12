@@ -22,7 +22,6 @@ package gridool.db.catalog;
 
 import gridool.GridException;
 import gridool.GridNode;
-import gridool.communication.payload.GridNodeInfo;
 import gridool.db.helpers.DBAccessor;
 import gridool.util.GridUtils;
 
@@ -51,7 +50,6 @@ import xbird.util.collections.ints.IntArrayList;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.jdbc.ResultSetHandler;
 import xbird.util.lang.ArrayUtils;
-import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
 
 /**
@@ -193,13 +191,11 @@ public final class DistributionCatalog {
     private static Object[][] toNewParams(@Nonnull final String distkey, @Nonnull final GridNode master, @Nonnull final List<GridNode> slaves) {
         final Object[][] params = new Object[slaves.size() + 1][];
         final Integer normalState = NodeState.normal.getStateNumber();
-        byte[] masterBytes = master.toBytes(true);
-        final String masterRaw = StringUtils.toString(masterBytes);
+        final String masterRaw = GridUtils.toNodeInfo(master);
         params[0] = new Object[] { distkey, masterRaw, null, normalState };
         for(int i = 0; i < slaves.size(); i++) {
             GridNode node = slaves.get(i);
-            byte[] b = node.toBytes(true); // 20 bytes or 32 bytes, thus can be a Java string
-            String slaveRaw = StringUtils.toString(b);
+            String slaveRaw = GridUtils.toNodeInfo(node);
             params[i + 1] = new Object[] { distkey, slaveRaw, masterRaw, normalState };
         }
         return params;
@@ -267,8 +263,7 @@ public final class DistributionCatalog {
             final String sql = "UPDATE \"" + distributionTableName
                     + "\" SET state = ? WHERE node = ?";
             int nodeState = newState.getStateNumber();
-            byte[] nodeBytes = node.toBytes(true);
-            String nodeRaw = StringUtils.toString(nodeBytes);
+            String nodeRaw = GridUtils.toNodeInfo(node);
             final Object[] params = new Object[] { nodeState, nodeRaw };
             final Connection conn = GridUtils.getPrimaryDbConnection(dbAccessor, true);
             try {
@@ -501,9 +496,8 @@ public final class DistributionCatalog {
 
     }
 
-    private NodeWithState internNodeState(final String nodestr, final int stateNo) {
-        byte[] b = StringUtils.getBytes(nodestr);
-        GridNode node = GridNodeInfo.fromBytes(b);
+    private NodeWithState internNodeState(final String nodeInfo, final int stateNo) {
+        GridNode node = GridUtils.fromNodeInfo(nodeInfo);
         String nodeId = node.getKey();
         NodeWithState nodeWS = nodeStateMap.get(nodeId);
         if(nodeWS == null) {
@@ -513,9 +507,8 @@ public final class DistributionCatalog {
         return nodeWS;
     }
 
-    private NodeWithState getNodeState(final String nodestr) {
-        byte[] b = StringUtils.getBytes(nodestr);
-        GridNode node = GridNodeInfo.fromBytes(b);
+    private NodeWithState getNodeState(final String nodeInfo) {
+        GridNode node = GridUtils.fromNodeInfo(nodeInfo);
         String nodeId = node.getKey();
         return nodeStateMap.get(nodeId);
     }
@@ -566,7 +559,7 @@ public final class DistributionCatalog {
     private static boolean prepareDistributionTable(@Nonnull final Connection conn, final String distributionTableName, final boolean autoCommit) {
         final String ddl = "CREATE TABLE \""
                 + distributionTableName
-                + "\"(distkey varchar(50) NOT NULL, node varchar(32) NOT NULL, masternode varchar(32), state TINYINT NOT NULL)";
+                + "\"(distkey varchar(50) NOT NULL, node varchar(50) NOT NULL, masternode varchar(50), state TINYINT NOT NULL)";
         try {
             JDBCUtils.update(conn, ddl);
             if(!autoCommit) {

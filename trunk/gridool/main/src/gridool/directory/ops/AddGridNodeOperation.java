@@ -72,7 +72,7 @@ public final class AddGridNodeOperation implements DirectoryOperation {
     }
 
     public Serializable execute(ILocalDirectory directory) throws GridException {
-        final byte[] v = node.toBytes(false);
+        final byte[] v = node.toBytes();
         try {
             directory.addMapping(keys, v);
         } catch (DbException e) {

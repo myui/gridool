@@ -38,6 +38,9 @@ public interface GridNode extends GridLocatable {
     @Nonnull
     InetAddress getPhysicalAdress();
 
+    @Nonnull
+    byte[] getMacAdress();
+
     int getPort();
 
     @Nullable
@@ -50,7 +53,5 @@ public interface GridNode extends GridLocatable {
 
     @Nonnull
     List<GridNode> getReplicas();
-
-    byte[] toBytes(boolean includeMacAddr);
 
 }

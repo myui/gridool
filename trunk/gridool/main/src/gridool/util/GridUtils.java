@@ -96,32 +96,42 @@ public final class GridUtils {
         return jobId + '#' + Long.toString(time) + '/' + Integer.toString(hashcode);
     }
 
-    public static String getNodeIdentifier(@Nonnull InetAddress addr, int port) {
-        final String macAddr = NetUtils.getMacAddressStr(addr);
-        if(macAddr == null) {
-            return addr.getHostAddress() + ':' + port;
-        }
-        return macAddr + ':' + port;
-    }
-
     public static String getNodeIdentifier(@Nonnull byte[] mac, int port) {
-        return NetUtils.formatMacAddr(mac) + ':' + port;
+        return NetUtils.encodeMacAddress(mac) + ':' + port;
     }
 
     public static String getNodeIdentifier(@Nonnull GridNode node) {
-        return getNodeIdentifier(node.getPhysicalAdress(), node.getPort());
+        return getNodeIdentifier(node.getMacAdress(), node.getPort());
     }
 
-    public static String getNodeInfo(@Nonnull InetAddress addr, int port) {
-        final String macAddr = NetUtils.getMacAddressStr(addr);
-        if(macAddr == null) {
-            return addr.getHostAddress() + ':' + port;
+    /**
+     * @return 08-00-27-DC-4A-9E/255.255.255.255:77777 (about 39 characters)
+     */
+    public static String toNodeInfo(@Nonnull GridNode node) {
+        byte[] macAddr = node.getMacAdress();
+        String macAddrStr = NetUtils.encodeMacAddress(macAddr);
+        String ipAddr = node.getPhysicalAdress().getHostAddress();
+        int port = node.getPort();
+        return macAddrStr + '/' + ipAddr + ':' + port;
+    }
+
+    public static GridNode fromNodeInfo(@Nonnull String nodeInfo) {
+        int slashPos = nodeInfo.indexOf('/');
+        if(slashPos < 1) {
+            throw new IllegalArgumentException("Invalid NodeInfo format: " + nodeInfo);
         }
-        return macAddr + '/' + addr.getHostAddress() + ':' + port;
-    }
+        String macAddrStr = nodeInfo.substring(0, slashPos);
+        int colonPos = nodeInfo.indexOf(':', slashPos);
+        if(colonPos < 0) {
+            throw new IllegalArgumentException("Invalid NodeInfo format: " + nodeInfo);
+        }
+        String ipAddrStr = nodeInfo.substring(slashPos + 1, colonPos);
+        String portStr = nodeInfo.substring(colonPos + 1);
+        int port = Integer.parseInt(portStr);
 
-    public static String getNodeInfo(@Nonnull GridNode node) {
-        return getNodeInfo(node.getPhysicalAdress(), node.getPort());
+        InetAddress ipAddr = NetUtils.getInetAddressByName(ipAddrStr);
+        byte[] macAddr = NetUtils.decodeMacAddress(macAddrStr);
+        return new GridNodeInfo(ipAddr, port, macAddr, false);
     }
 
     @Nonnull
