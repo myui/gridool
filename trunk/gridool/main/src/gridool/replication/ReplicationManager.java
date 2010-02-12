@@ -129,8 +129,9 @@ public final class ReplicationManager {
         };
         final Connection conn = GridUtils.getPrimaryDbConnection(dba, true);
         try {
-            prepareReplicaTable(conn, replicaTableName, true);
-            JDBCUtils.query(conn, sql, rsh);
+            if(!prepareReplicaTable(conn, replicaTableName, true)) {
+                JDBCUtils.query(conn, sql, rsh);
+            }
         } catch (SQLException e) {
             // avoid table does not exist error
             if(LOG.isDebugEnabled()) {
@@ -269,7 +270,7 @@ public final class ReplicationManager {
         }
     }
 
-    private static void prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, final boolean autoCommit) {
+    private static boolean prepareReplicaTable(@Nonnull final Connection conn, @Nonnull final String replicaTableName, final boolean autoCommit) {
         final String ddl = "CREATE TABLE \""
                 + replicaTableName
                 + "\"(dbname varchar(30) PRIMARY KEY, nodeinfo VARCHAR(30), entryno INT auto_increment)";
@@ -290,6 +291,8 @@ public final class ReplicationManager {
                     LOG.warn("failed to rollback", sqle);
                 }
             }
+            return false;
         }
+        return true;
     }
 }
