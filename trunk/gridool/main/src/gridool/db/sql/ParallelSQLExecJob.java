@@ -42,6 +42,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.InetSocketAddress;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -64,8 +65,10 @@ import org.apache.commons.logging.LogFactory;
 import xbird.storage.DbCollection;
 import xbird.util.concurrent.ExecutorFactory;
 import xbird.util.concurrent.ExecutorUtils;
+import xbird.util.csv.CsvWriter;
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
+import xbird.util.jdbc.ResultSetHandler;
 import xbird.util.xfer.RecievedFileWriter;
 import xbird.util.xfer.TransferRequestListener;
 import xbird.util.xfer.TransferServer;
@@ -86,6 +89,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     private static final float DEFAULT_INVOKE_SPECULATIVE_TASKS_FACTOR = 0.75f;
     private static final String TMP_TABLE_NAME_PREFIX = "_tmp";
     private static final String MOCK_TABLE_NAME_PREFIX = "_mock";
+    private static final String MONETDB_NULL_STRING = "";
 
     // remote resources    
     @GridRegistryResource
@@ -97,9 +101,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     private transient Map<String, ParallelSQLMapTask> remainingTasks;
     private transient Set<GridNode> finishedNodes;
 
-    private transient String outputTableName;
+    private transient String outputName;
     private transient String reduceQuery;
-    private transient boolean outputAsView;
+    private transient OutputMethod outputMethod;
     private transient String destroyQuery;
     private transient long mapStarted;
     private transient long waitForStartSpeculativeTask;
@@ -130,8 +134,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             return Collections.emptyMap();
         }
         DBAccessor dba = registry.getDbAccessor();
-        final String outputTableName = jobConf.outputTableName;
-        runPreparation(dba, mapQuery, masters, outputTableName);
+        final String outputName = jobConf.getOutputName();
+        runPreparation(dba, mapQuery, masters, outputName);
 
         // run file receiver
         final InetSocketAddress sockAddr;
@@ -155,10 +159,10 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
         this.remainingTasks = reverseMap;
         this.finishedNodes = new HashSet<GridNode>(numNodes);
-        this.outputTableName = outputTableName;
-        this.reduceQuery = getReduceQuery(jobConf.reduceQuery, outputTableName, translator);
-        this.outputAsView = jobConf.isOutputAsView();
-        this.destroyQuery = constructDestroyQuery(masters, outputTableName, outputAsView);
+        this.outputName = outputName;
+        this.reduceQuery = getReduceQuery(jobConf.reduceQuery, outputName, translator);
+        this.outputMethod = jobConf.getOutputMethod();
+        this.destroyQuery = constructDestroyQuery(masters, outputName, outputMethod);
         this.mapStarted = System.currentTimeMillis();
         this.waitForStartSpeculativeTask = (numNodes <= 1) ? -1L
                 : jobConf.getWaitForStartSpeculativeTask();
@@ -168,9 +172,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return map;
     }
 
-    private static void runPreparation(final DBAccessor dba, final String mapQuery, final GridNode[] masters, final String outputTableName)
+    private static void runPreparation(final DBAccessor dba, final String mapQuery, final GridNode[] masters, final String outputName)
             throws GridException {
-        final String prepareQuery = constructInitQuery(mapQuery, masters, outputTableName);
+        final String prepareQuery = constructInitQuery(mapQuery, masters, outputName);
         final Connection conn;
         try {
             conn = dba.getPrimaryDbConnection();
@@ -191,14 +195,14 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     }
 
     @Nonnull
-    private static String constructInitQuery(final String mapQuery, final GridNode[] masters, final String outputTableName) {
+    private static String constructInitQuery(final String mapQuery, final GridNode[] masters, final String outputName) {
         if(masters.length == 0) {
             throw new IllegalArgumentException();
         }
-        final String unionViewName = getUnionViewName(outputTableName);
+        final String unionViewName = getUnionViewName(outputName);
         final StringBuilder buf = new StringBuilder(512);
         buf.append("CREATE VIEW \"");
-        final String mockViewName = MOCK_TABLE_NAME_PREFIX + outputTableName;
+        final String mockViewName = MOCK_TABLE_NAME_PREFIX + outputName;
         buf.append(mockViewName);
         buf.append("\" AS (\n");
         buf.append(mapQuery);
@@ -209,41 +213,41 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             buf.append(unionViewName);
             buf.append("task");
             buf.append(i);
-            buf.append("\" (LIKE ");
+            buf.append("\" (LIKE \"");
             buf.append(mockViewName);
-            buf.append(");\n");
+            buf.append("\");\n");
         }
         buf.append("CREATE VIEW \"");
         buf.append(unionViewName);
         buf.append("\" AS (\n");
         final int lastTask = numTasks - 1;
         for(int i = 0; i < lastTask; i++) {
-            buf.append("SELECT * FROM ");
+            buf.append("SELECT * FROM \"");
             buf.append(unionViewName);
             buf.append("task");
             buf.append(i);
-            buf.append(" UNION ALL \n");
+            buf.append("\" UNION ALL \n");
         }
-        buf.append("SELECT * FROM ");
+        buf.append("SELECT * FROM \"");
         buf.append(unionViewName);
         buf.append("task");
         buf.append(lastTask);
-        buf.append("\n);");
+        buf.append("\"\n);");
         return buf.toString();
     }
 
     @Nonnull
-    private static String constructDestroyQuery(final GridNode[] masters, final String outputTableName, final boolean outputAsView) {
+    private static String constructDestroyQuery(@Nonnull final GridNode[] masters, @Nonnull final String outputName, @Nonnull final OutputMethod outputMethod) {
         if(masters.length == 0) {
             throw new IllegalArgumentException();
         }
         final StringBuilder buf = new StringBuilder(512);
         // #1 drop mock view
-        final String mockViewName = MOCK_TABLE_NAME_PREFIX + outputTableName;
+        final String mockViewName = MOCK_TABLE_NAME_PREFIX + outputName;
         buf.append("DROP VIEW \"" + mockViewName + "\";\n");
-        if(!outputAsView) {
+        if(outputMethod != OutputMethod.view) {
             // #2 drop tmp tables
-            final String unionViewName = getUnionViewName(outputTableName);
+            final String unionViewName = getUnionViewName(outputName);
             final int numTasks = masters.length;
             for(int i = 0; i < numTasks; i++) {
                 buf.append("DROP TABLE \"");
@@ -260,8 +264,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return buf.toString();
     }
 
-    private static String getUnionViewName(String outputTableName) {
-        return TMP_TABLE_NAME_PREFIX + outputTableName;
+    private static String getUnionViewName(String outputName) {
+        return TMP_TABLE_NAME_PREFIX + outputName;
     }
 
     private static TransferServer createTransferServer(@Nonnegative int concurrency) {
@@ -277,11 +281,11 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return execServ;
     }
 
-    private static String getReduceQuery(@Nonnull String queryTemplate, @Nonnull String outputTableName, @Nonnull SQLTranslator translator)
+    private static String getReduceQuery(@Nonnull String queryTemplate, @Nonnull String outputName, @Nonnull SQLTranslator translator)
             throws GridException {
         String translated = translator.translateQuery(queryTemplate);
-        final String inputViewName = getUnionViewName(outputTableName);
-        return translated.replace("<src>", inputViewName);
+        final String inputViewName = getUnionViewName(outputName);
+        return translated.replace("<src>", '"' + inputViewName + '"');
     }
 
     public GridTaskResultPolicy result(final GridTaskResult result) throws GridException {
@@ -328,10 +332,10 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         copyintoExecs.execute(new Runnable() {
             public void run() {
                 try {
-                    invokeCopyIntoTable(taskResult, outputTableName, dba);
+                    invokeCopyIntoTable(taskResult, outputName, dba);
                 } catch (GridException e) {
                     LOG.error(e);
-                    throw new IllegalStateException("Copy Into table failed: " + outputTableName, e);
+                    throw new IllegalStateException("Copy Into table failed: " + outputName, e);
                 }
             }
         });
@@ -351,10 +355,10 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return GridTaskResultPolicy.CONTINUE;
     }
 
-    private static void invokeCopyIntoTable(@Nonnull final ParallelSQLMapTaskResult result, @Nonnull final String outputTableName, @Nonnull final DBAccessor dba)
+    private static void invokeCopyIntoTable(@Nonnull final ParallelSQLMapTaskResult result, @Nonnull final String outputName, @Nonnull final DBAccessor dba)
             throws GridException {
-        final File file = getImportingFile(result, outputTableName);
-        final String sql = constructCopyIntoQuery(file, result, outputTableName);
+        final File file = getImportingFile(result, outputName);
+        final String sql = constructCopyIntoQuery(file, result, outputName);
         final Connection conn = GridUtils.getPrimaryDbConnection(dba, false);
         try {
             JDBCUtils.update(conn, sql);
@@ -370,7 +374,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         }
     }
 
-    private static File getImportingFile(final ParallelSQLMapTaskResult result, final String outputTableName) {
+    private static File getImportingFile(final ParallelSQLMapTaskResult result, final String outputName) {
         String fileName = result.getFileName();
         DbCollection rootCol = DbCollection.getRootCollection();
         File colDir = rootCol.getDirectory();
@@ -381,10 +385,10 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return file;
     }
 
-    private static String constructCopyIntoQuery(final File file, final ParallelSQLMapTaskResult result, final String outputTableName) {
+    private static String constructCopyIntoQuery(final File file, final ParallelSQLMapTaskResult result, final String outputName) {
         final int records = result.getNumRows();
         int taskNum = result.getTaskNumber();
-        final String tableName = getTemporaryTaskTableName(outputTableName, taskNum);
+        final String tableName = getTemporaryTaskTableName(outputName, taskNum);
         final String filePath = file.getAbsolutePath();
         return "COPY " + records + " RECORDS INTO \"" + tableName + "\" FROM '" + filePath
                 + "' USING DELIMITERS '|','\n','\"'";
@@ -426,25 +430,72 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
         // Invoke final aggregation query
         final DBAccessor dba = registry.getDbAccessor();
-        invokeReduceQuery(reduceQuery, outputTableName, dba, outputAsView);
+        String res = invokeReduceQuery(reduceQuery, outputName, dba, outputMethod);
         // TODO clear up tmp resources in other thread
 
-        // Invoke garbage collection in other thead (remove tmp tables/views)
+        // Invoke garbage collection in other thread (remove tmp tables/views)
         GarbageTableDestroyer destroyer = new GarbageTableDestroyer(destroyQuery, dba);
         Thread destroyThread = new Thread(destroyer, "GarbageTableDestroyer");
         destroyThread.setDaemon(true);
         destroyThread.start();
 
-        return outputTableName;
+        return res;
     }
 
-    private static void invokeReduceQuery(@Nonnull final String reduceQuery, @Nonnull final String outputTableName, @Nonnull final DBAccessor dba, final boolean outputAsView)
+    private static String invokeReduceQuery(@Nonnull final String reduceQuery, @Nonnull final String outputName, @Nonnull final DBAccessor dba, final OutputMethod outputMethod)
+            throws GridException {
+        if(outputMethod.isDDL()) {
+            return invokeReduceDDL(dba, reduceQuery, outputName, outputMethod);
+        } else {
+            return invokeReduceDML(dba, reduceQuery, outputName, outputMethod);
+        }
+    }
+
+    private static String invokeReduceDML(final DBAccessor dba, final String reduceQuery, final String outputTableName, final OutputMethod outputMethod)
+            throws GridException {
+        if(outputMethod != OutputMethod.csvFile) {
+            throw new IllegalArgumentException("Unexpected OutputMethod: " + outputMethod);
+        }
+        DbCollection rootCol = DbCollection.getRootCollection();
+        File colDir = rootCol.getDirectory();
+
+        final File outFile = new File(colDir, outputTableName + ".csv");
+        final CsvWriter writer = new CsvWriter(outFile);
+        final ResultSetHandler rsh = new ResultSetHandler() {
+            public Object handle(ResultSet rs) throws SQLException {
+                writer.writeAll(rs, MONETDB_NULL_STRING, false);
+                return null;
+            }
+        };
+        final Connection conn = GridUtils.getPrimaryDbConnection(dba, false);
+        try {
+            conn.setReadOnly(true);
+            JDBCUtils.query(conn, reduceQuery, rsh);
+        } catch (SQLException e) {
+            String errmsg = "failed running a reduce query: " + reduceQuery;
+            LOG.error(errmsg, e);
+            throw new GridException(errmsg, e);
+        } finally {
+            JDBCUtils.closeQuietly(conn);
+            writer.close();
+        }
+
+        if(!outFile.exists()) {
+            throw new IllegalStateException("Output file does not exist:"
+                    + outFile.getAbsolutePath());
+        }
+        return outFile.getAbsolutePath();
+    }
+
+    private static String invokeReduceDDL(final DBAccessor dba, final String reduceQuery, final String outputTableName, final OutputMethod outputMethod)
             throws GridException {
         final String query;
-        if(outputAsView) {
-            query = "CREATE VIEW " + outputTableName + " AS (" + reduceQuery + ')';
+        if(outputMethod == OutputMethod.view) {
+            query = "CREATE VIEW \"" + outputTableName + "\" AS (" + reduceQuery + ')';
+        } else if(outputMethod == OutputMethod.table) {
+            query = "CREATE TABLE \"" + outputTableName + "\" AS (" + reduceQuery + ") WITH DATA";
         } else {
-            query = "CREATE TABLE " + outputTableName + " AS (" + reduceQuery + ") WITH DATA";
+            throw new IllegalStateException("Unexpected OutputMethod: " + outputMethod);
         }
         final Connection conn = GridUtils.getPrimaryDbConnection(dba, true);
         try {
@@ -456,6 +507,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         } finally {
             JDBCUtils.closeQuietly(conn);
         }
+        return outputTableName;
     }
 
     private static final class GarbageTableDestroyer implements Runnable {
@@ -489,13 +541,14 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     public static final class JobConf implements Externalizable {
 
         @Nonnull
-        private String outputTableName;
+        private/* final */String outputName;
         @Nonnull
-        private String mapQuery;
+        private/* final */String mapQuery;
         @Nonnull
-        private String reduceQuery;
+        private/* final */String reduceQuery;
+        @Nonnull
+        private/* final */OutputMethod outputMethod;
 
-        private boolean outputAsView;
         private long waitForStartSpeculativeTask;
         private float invokeSpeculativeTasksFactor = DEFAULT_INVOKE_SPECULATIVE_TASKS_FACTOR;
         private int recvFileConcurrency = DEFAULT_RECVFILE_WRITER_CONCURRENCY;
@@ -504,24 +557,33 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         public JobConf() {}//Externalizable
 
         public JobConf(@Nonnull String mapQuery, @Nonnull String reduceQuery) {
-            this(null, mapQuery, reduceQuery, false, -1L);
+            this(null, mapQuery, reduceQuery, OutputMethod.csvFile, -1L);
         }
 
-        public JobConf(@Nullable String outputTableName, @Nonnull String mapQuery, @Nonnull String reduceQuery, boolean outputAsView, long waitForStartSpeculativeTask) {
-            this.outputTableName = (outputTableName == null) ? GridUtils.generateQueryName()
-                    : outputTableName;
+        public JobConf(@Nullable String outputName, @Nonnull String mapQuery, @Nonnull String reduceQuery, @Nonnull OutputMethod outputMethod, long waitForStartSpeculativeTask) {
+            this.outputName = (outputName == null) ? GridUtils.generateQueryName() : outputName;
             this.mapQuery = mapQuery;
             this.reduceQuery = reduceQuery;
-            this.outputAsView = outputAsView;
+            this.outputMethod = outputMethod;
             this.waitForStartSpeculativeTask = waitForStartSpeculativeTask;
         }
 
-        public boolean isOutputAsView() {
-            return outputAsView;
+        @Nonnull
+        public String getOutputName() {
+            return outputName;
         }
 
-        public void setOutputAsView(boolean outputAsView) {
-            this.outputAsView = outputAsView;
+        public void setOutputName(@Nonnull String outputName) {
+            this.outputName = outputName;
+        }
+
+        @Nonnull
+        public OutputMethod getOutputMethod() {
+            return outputMethod;
+        }
+
+        public void setOutputMethod(@Nonnull OutputMethod outputMethod) {
+            this.outputMethod = outputMethod;
         }
 
         public long getWaitForStartSpeculativeTask() {
@@ -531,7 +593,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         /**
          * @param mills Wait time in milliseconds for speculative execution. Set -1L To disable speculative execution (default: -1L).
          */
-        public void setWaitForStartSpeculativeTask(long mills) {
+        public void setWaitForStartSpeculativeTask(@Nonnegative long mills) {
             this.waitForStartSpeculativeTask = mills;
         }
 
@@ -566,23 +628,72 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            this.outputTableName = IOUtils.readString(in);
+            this.outputName = IOUtils.readString(in);
             this.mapQuery = IOUtils.readString(in);
             this.reduceQuery = IOUtils.readString(in);
-            this.outputAsView = in.readBoolean();
+            this.outputMethod = OutputMethod.resolve(in.readByte());
             this.waitForStartSpeculativeTask = in.readLong();
             this.recvFileConcurrency = in.readInt();
             this.copyIntoTableConcurrency = in.readInt();
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            IOUtils.writeString(outputTableName, out);
+            IOUtils.writeString(outputName, out);
             IOUtils.writeString(mapQuery, out);
             IOUtils.writeString(reduceQuery, out);
-            out.writeBoolean(outputAsView);
+            out.writeByte(outputMethod.id);
             out.writeLong(waitForStartSpeculativeTask);
             out.writeInt(recvFileConcurrency);
             out.writeInt(copyIntoTableConcurrency);
+        }
+    }
+
+    public enum OutputMethod {
+
+        /** Default File */
+        csvFile(1),
+        /** As table */
+        table(2),
+        /** As view */
+        view(3);
+
+        private final int id;
+
+        private OutputMethod(int id) {
+            this.id = id;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        public boolean isDDL() {
+            return id != 1;
+        }
+
+        public static OutputMethod resolve(@Nonnull final int id) {
+            switch(id) {
+                case 1:
+                    return csvFile;
+                case 2:
+                    return table;
+                case 3:
+                    return view;
+                default:
+                    throw new IllegalArgumentException("Illegal OutputMethod ID: " + id);
+            }
+        }
+
+        public static OutputMethod resolve(@Nonnull final String method) {
+            if("csv".equalsIgnoreCase(method) || "csvfile".equalsIgnoreCase(method)) {
+                return csvFile;
+            } else if("table".equalsIgnoreCase(method)) {
+                return table;
+            } else if("view".equalsIgnoreCase(method)) {
+                return view;
+            } else {
+                throw new IllegalArgumentException("Illegal OutputMethod: " + method);
+            }
         }
     }
 

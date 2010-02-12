@@ -355,7 +355,7 @@ public final class GridUtils {
     }
 
     public static String generateQueryName() {
-        return "Q" + System.nanoTime();
+        return "q" + System.nanoTime();
     }
 
     public static String extractDbName(@Nonnull String dburl) {

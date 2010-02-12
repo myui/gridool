@@ -23,13 +23,13 @@ package gridool.tools.cmd;
 import gridool.Grid;
 import gridool.GridClient;
 import gridool.db.sql.ParallelSQLExecJob;
+import gridool.db.sql.ParallelSQLExecJob.OutputMethod;
 
 import java.io.File;
 import java.rmi.RemoteException;
 
 import xbird.util.cmdline.CommandBase;
 import xbird.util.cmdline.CommandException;
-import xbird.util.cmdline.Option.BooleanOption;
 import xbird.util.cmdline.Option.IntOption;
 import xbird.util.cmdline.Option.StringOption;
 import xbird.util.datetime.StopWatch;
@@ -48,7 +48,7 @@ public final class ParallelSQLExecCommand extends CommandBase {
         addOption(new StringOption("mapQuery", true));
         addOption(new StringOption("reduceQuery", true));
         addOption(new StringOption("outputTable", null, false));
-        addOption(new BooleanOption("asView", Boolean.FALSE, false));
+        addOption(new StringOption("outputMethod", "csvfile", false));
         addOption(new IntOption("waitSPE", -1, false));
     }
 
@@ -83,10 +83,11 @@ public final class ParallelSQLExecCommand extends CommandBase {
         String mapQuery = FileUtils.toString(mapFile);
         String reduceQuery = FileUtils.toString(reduceFile);
         String outputTable = getOption("outputTable");
-        Boolean asView = getOption("asView");
+        String method = getOption("outputMethod");
+        OutputMethod outputMethod = OutputMethod.resolve(method);
         Integer waitSPE = getOption("waitSPE");
         long waitInMills = (waitSPE.intValue() == -1) ? -1L : (waitSPE.longValue() * 1000L);
-        ParallelSQLExecJob.JobConf jobConf = new ParallelSQLExecJob.JobConf(outputTable, mapQuery, reduceQuery, asView, waitInMills);
+        ParallelSQLExecJob.JobConf jobConf = new ParallelSQLExecJob.JobConf(outputTable, mapQuery, reduceQuery, outputMethod, waitInMills);
 
         final StopWatch sw = new StopWatch();
         final Grid grid = new GridClient();

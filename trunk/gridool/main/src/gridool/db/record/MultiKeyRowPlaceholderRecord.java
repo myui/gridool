@@ -111,14 +111,15 @@ public class MultiKeyRowPlaceholderRecord implements DBRecord, Externalizable {
             final String column = resultSet.getString(i);
             if(column == null) {
                 line.append(nullStr);
-            }
-            final String columnClass = meta.getColumnClassName(i);
-            if("java.lang.String".equals(columnClass)) {
-                line.append(quote);
-                line.append(escapeString(column));
-                line.append(quote);
             } else {
-                line.append(column);
+                final String columnClass = meta.getColumnClassName(i);
+                if("java.lang.String".equals(columnClass)) {
+                    line.append(quote);
+                    line.append(escapeString(column));
+                    line.append(quote);
+                } else {
+                    line.append(column);
+                }
             }
         }
         line.append(recSep);

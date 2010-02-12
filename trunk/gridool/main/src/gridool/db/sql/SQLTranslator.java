@@ -63,10 +63,10 @@ public final class SQLTranslator {
 
     @Nonnull
     public String translateQuery(@Nonnull final String query) throws GridException {
-        if(!query.contains("partitioned by") && !query.contains("PARTITIONED BY")) {
-            return query;
+        final String trimedQuery = query.trim();
+        if(!trimedQuery.contains("partitioned by") && !trimedQuery.contains("PARTITIONED BY")) {
+            return trimedQuery;
         }
-        String trimedQuery = query.trim();
         final StreamTokenizer tokenizer = new StreamTokenizer(new StringReader(trimedQuery));
         tokenizer.resetSyntax();
         tokenizer.wordChars('a', 'z');
