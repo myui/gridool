@@ -118,7 +118,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
 
         final File tmpFile;
         try {
-            tmpFile = File.createTempFile("ParallelSQLMapTask" + taskNumber, "csv");
+            tmpFile = File.createTempFile("ParallelSQLMapTask" + taskNumber, ".csv");
         } catch (IOException e) {
             throw new GridException(e);
         }
@@ -190,7 +190,8 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             formedQuery = formedQuery.substring(0, endIndex - 1);
         }
         String filepath = outFile.getAbsolutePath();
-        String copyIntoQuery = "COPY (" + formedQuery + ") INTO '" + filepath + "' USING DELIMITERS '|','\n','\"'";
+        String copyIntoQuery = "COPY (" + formedQuery + ") INTO '" + filepath
+                + "' USING DELIMITERS '|','\n','\"'";
 
         if(LOG.isDebugEnabled()) {
             LOG.debug("Executing a SQL: " + copyIntoQuery);
