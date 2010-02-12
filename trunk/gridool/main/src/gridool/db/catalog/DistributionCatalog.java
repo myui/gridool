@@ -95,7 +95,7 @@ public final class DistributionCatalog {
 
     public void start() throws GridException {
         final String sql = "SELECT distkey, node, masternode, state FROM \""
-                + distributionTableName + "\" ORDER BY masternode ASC"; // NULLs last
+                + distributionTableName + "\" ORDER BY masternode DESC"; // NULLs last (for MonetDB)
         final ResultSetHandler rsh = new ResultSetHandler() {
             public Object handle(ResultSet rs) throws SQLException {
                 while(rs.next()) {
