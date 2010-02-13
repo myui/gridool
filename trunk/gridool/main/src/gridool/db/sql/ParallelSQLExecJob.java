@@ -386,8 +386,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             LOG.warn(warnmsg);
             throw new GridException(warnmsg);
         }
-        if(LOG.isInfoEnabled()) {
-            LOG.info(affected + " records processed: " + sql);
+        if(LOG.isDebugEnabled()) {
+            LOG.debug(affected + " records processed: " + sql);
         }
     }
 
