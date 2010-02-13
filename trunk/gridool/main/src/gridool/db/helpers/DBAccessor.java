@@ -20,12 +20,16 @@
  */
 package gridool.db.helpers;
 
+import gridool.GridException;
 import gridool.util.GridUtils;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
 import javax.annotation.Nonnull;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import xbird.config.Settings;
 import xbird.util.jdbc.JDBCUtils;
@@ -38,6 +42,7 @@ import xbird.util.jdbc.JDBCUtils;
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
 public class DBAccessor {
+    private static final Log LOG = LogFactory.getLog(DBAccessor.class);
 
     protected static final String PROP_DRIVER = "gridool.db.driver";
     protected static final String PROP_DBURL = "gridool.db.primarydb.url";
@@ -110,6 +115,23 @@ public class DBAccessor {
 
     protected String extractDbName(@Nonnull String dburl) {
         return GridUtils.extractDbName(dburl);
+    }
+
+    @Nonnull
+    public static Connection getPrimaryDbConnection(final DBAccessor dba, boolean autoCommit)
+            throws GridException {
+        final Connection conn;
+        try {
+            conn = dba.getPrimaryDbConnection();
+            if(conn.getAutoCommit() != autoCommit) {
+                conn.setAutoCommit(autoCommit);
+            }
+        } catch (SQLException e) {
+            LOG.error(e);
+            throw new GridException("failed connecting to the primary database: "
+                    + dba.getPrimaryDbName());
+        }
+        return conn;
     }
 
 }

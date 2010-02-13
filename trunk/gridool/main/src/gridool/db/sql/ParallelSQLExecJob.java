@@ -370,7 +370,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             throws GridException {
         final File file = getImportingFile(result, outputName);
         final String sql = constructCopyIntoQuery(file, result, outputName);
-        final Connection conn = GridUtils.getPrimaryDbConnection(dba, false);
+        final Connection conn = DBAccessor.getPrimaryDbConnection(dba, false);
         final int affected;
         try {
             affected = JDBCUtils.update(conn, sql);
@@ -489,7 +489,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                 return null;
             }
         };
-        final Connection conn = GridUtils.getPrimaryDbConnection(dba, true);
+        final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true);
         try {
             conn.setReadOnly(true);
             JDBCUtils.query(conn, reduceQuery, rsh);
@@ -519,7 +519,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         } else {
             throw new IllegalStateException("Unexpected OutputMethod: " + outputMethod);
         }
-        final Connection conn = GridUtils.getPrimaryDbConnection(dba, true);
+        final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true);
         try {
             JDBCUtils.update(conn, query);
         } catch (SQLException e) {

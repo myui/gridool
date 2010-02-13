@@ -28,9 +28,9 @@ import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridTaskAdapter;
 import gridool.db.catalog.DistributionCatalog;
 import gridool.db.helpers.DBAccessor;
+import gridool.db.sql.SQLTranslator.QueryString;
 import gridool.replication.ReplicationManager;
 import gridool.routing.GridTaskRouter;
-import gridool.util.GridUtils;
 
 import java.io.Externalizable;
 import java.io.File;
@@ -126,20 +126,54 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             throw new GridException(e);
         }
 
-        // #1 invoke COPY INTO file
+        final QueryString[] queries = SQLTranslator.divideQuery(query, true);
+        final String selectQuery;
+        final boolean singleStatement = (queries.length == 1);
+        if(singleStatement) {
+            selectQuery = query;
+        } else {
+            for(QueryString qs : queries) {
+                if(qs.isSelect()) {
+                    selectQuery = qs.getQuery();
+                    break;
+                }
+            }
+            throw new IllegalStateException();
+        }
+
         final int rows;
         final Connection dbConn = getDbConnection(taskMasterNode, registry);
         try {
-            dbConn.setAutoCommit(true);
-            rows = executeCopyIntoQuery(dbConn, query, tmpFile);
+            if(singleStatement) {
+                dbConn.setAutoCommit(true);
+                // #1 invoke COPY INTO file
+                rows = executeCopyIntoQuery(dbConn, selectQuery, tmpFile);
+            } else {
+                dbConn.setAutoCommit(false);
+                // #1-1 DDL before map SELECT queries (e.g., create view)
+                issueDDLBeforeSelect(dbConn, queries);
+                // #1-2 invoke COPY INTO file
+                rows = executeCopyIntoQuery(dbConn, selectQuery, tmpFile);
+                // #1-3 DDL after map SELECT queries (e.g., drop view)
+                issueDDLAfterSelect(dbConn, queries);
+                dbConn.commit();
+            }
         } catch (SQLException e) {
-            LOG.error(e);
+            String errmsg = "Failed to execute a query: \n" + query;
+            LOG.error(errmsg, e);
+            if(singleStatement) {
+                try {
+                    dbConn.rollback();
+                } catch (SQLException rbe) {
+                    LOG.warn("Rollback failed", rbe);
+                }
+            }
+            throw new GridException(errmsg, e);
+        } finally {
+            JDBCUtils.closeQuietly(dbConn);
             if(!tmpFile.delete()) {
                 LOG.warn("deletint a temp file failed: " + tmpFile.getAbsolutePath());
             }
-            throw new GridException(e);
-        } finally {
-            JDBCUtils.closeQuietly(dbConn);
         }
 
         // #2 send file
@@ -155,31 +189,6 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         }
 
         return new ParallelSQLMapTaskResult(taskMasterNode, sentFileName, taskNumber, rows);
-    }
-
-    @Nonnull
-    private static Connection getDbConnection(final GridNode taskMasterNode, final GridResourceRegistry registry)
-            throws GridException {
-        DBAccessor dba = registry.getDbAccessor();
-        ReplicationManager replMgr = registry.getReplicationManager();
-
-        final Connection dbConn;
-        GridNode localMaster = replMgr.getLocalMasterNode();
-        if(taskMasterNode.equals(localMaster)) {
-            dbConn = GridUtils.getPrimaryDbConnection(dba, false);
-        } else {
-            final Connection primaryConn = GridUtils.getPrimaryDbConnection(dba, false);
-            try {
-                String replicaDbName = replMgr.getReplicaDatabaseName(primaryConn, taskMasterNode);
-                dbConn = dba.getConnection(replicaDbName);
-            } catch (SQLException e) {
-                LOG.error(e);
-                throw new GridException(e);
-            } finally {
-                JDBCUtils.closeQuietly(primaryConn);
-            }
-        }
-        return dbConn;
     }
 
     private static int executeCopyIntoQuery(final Connection conn, final String mapQuery, final File outFile)
@@ -200,6 +209,85 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             LOG.debug("Executing a SQL: " + copyIntoQuery);
         }
         return JDBCUtils.update(conn, copyIntoQuery);
+    }
+
+    private static void issueDDLBeforeSelect(@Nonnull final Connection conn, @Nonnull final QueryString[] queries)
+            throws GridException {
+        assert (queries.length > 1);
+        final StringBuilder queryBuf = new StringBuilder(256);
+        for(QueryString qs : queries) {
+            if(qs.isSelect()) {
+                break;
+            } else {
+                assert (qs.isDDL());
+                queryBuf.append(qs.getQuery());
+                queryBuf.append(";\n");
+            }
+        }
+        if(queryBuf.length() == 0) {
+            return;
+        }
+        final String query = queryBuf.toString();
+        try {
+            JDBCUtils.update(conn, query);
+        } catch (SQLException e) {
+            LOG.error("Failed to execute a query: " + query, e);
+            throw new GridException(e);
+        }
+    }
+
+    private static void issueDDLAfterSelect(@Nonnull final Connection conn, @Nonnull final QueryString[] queries)
+            throws GridException {
+        assert (queries.length > 1);
+        final StringBuilder queryBuf = new StringBuilder(256);
+        boolean foundSelect = false;
+        for(QueryString qs : queries) {
+            if(qs.isSelect()) {
+                assert (foundSelect == false);
+                foundSelect = true;
+            } else {
+                if(foundSelect) {
+                    assert (qs.isDDL());
+                    queryBuf.append(qs.getQuery());
+                    queryBuf.append(";\n");
+                }
+            }
+        }
+        if(queryBuf.length() == 0) {
+            return;
+        }
+        final String query = queryBuf.toString();
+        try {
+            JDBCUtils.update(conn, query);
+        } catch (SQLException e) {
+            LOG.error("Failed to execute a query: " + query, e);
+            throw new GridException(e);
+        }
+    }
+
+    @Nonnull
+    private static Connection getDbConnection(final GridNode taskMasterNode, final GridResourceRegistry registry)
+            throws GridException {
+        DBAccessor dba = registry.getDbAccessor();
+        ReplicationManager replMgr = registry.getReplicationManager();
+
+        final Connection dbConn;
+        GridNode localMaster = replMgr.getLocalMasterNode();
+        if(taskMasterNode.equals(localMaster)) {
+            dbConn = DBAccessor.getPrimaryDbConnection(dba, false);
+        } else {
+            final Connection primaryConn = DBAccessor.getPrimaryDbConnection(dba, false);
+            try {
+                String replicaDbName = replMgr.getReplicaDatabaseName(primaryConn, taskMasterNode);
+                dbConn = dba.getConnection(replicaDbName);
+            } catch (SQLException e) {
+                LOG.error(e);
+                throw new GridException(e);
+            } finally {
+                JDBCUtils.closeQuietly(primaryConn);
+            }
+        }
+        return dbConn;
     }
 
     static final class ParallelSQLMapTaskResult implements Externalizable {

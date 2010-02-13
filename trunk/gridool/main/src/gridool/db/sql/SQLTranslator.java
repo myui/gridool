@@ -29,9 +29,13 @@ import java.io.IOException;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+
+import xbird.util.string.StringUtils;
 
 /**
  * 
@@ -50,6 +54,7 @@ public final class SQLTranslator {
     private static final int TT_RPAR = ')';
     private static final int TT_QUOTE = '\'';
     private static final int TT_DQUOTE = '\"';
+    private static final int TT_SEMICOLON = ';';
 
     @Nonnull
     private final DistributionCatalog catalog;
@@ -211,6 +216,132 @@ public final class SQLTranslator {
         queryBuf.append(bitset);
         queryBuf.append(") = ");
         queryBuf.append(bitset);
+    }
+
+    @Nonnull
+    public static QueryString[] divideQuery(@Nonnull final String query, final boolean verifyAsSelect) {
+        final List<QueryString> queryList = new ArrayList<QueryString>(4);
+        final StringBuilder buf = new StringBuilder(query.length());
+
+        final StreamTokenizer tokenizer = new StreamTokenizer(new StringReader(query));
+        tokenizer.resetSyntax();
+        tokenizer.wordChars(0, TT_SEMICOLON - 1); // set everything excepting ";" as wordChars
+        tokenizer.wordChars(TT_SEMICOLON + 1, 255); // set everything excepting ";" as wordChars
+        tokenizer.quoteChar(TT_QUOTE);
+        tokenizer.quoteChar(TT_DQUOTE);
+        int tt;
+        try {
+            while((tt = tokenizer.nextToken()) != TT_EOF) {
+                if(tt == TT_WORD) {
+                    String token = tokenizer.sval;
+                    buf.append(token);
+                } else if(tt == TT_QUOTE || tt == TT_DQUOTE) {
+                    char quote = (char) tt;
+                    buf.append(quote);
+                    buf.append(tokenizer.sval);
+                    buf.append(quote);
+                } else {
+                    if(tt != TT_SEMICOLON) {
+                        throw new IllegalStateException("SemiColon is expected but was "
+                                + ((char) tt));
+                    }
+                    if(buf.length() > 0) {
+                        String q = buf.toString().trim();
+                        if(!q.isEmpty()) {
+                            queryList.add(new QueryString(q));
+                        }
+                        StringUtils.clear(buf);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("failed to parse a query: " + query, e);
+        }
+        if(buf.length() > 0) {
+            String q = buf.toString().trim();
+            if(!q.isEmpty()) {
+                queryList.add(new QueryString(q));
+            }
+        }
+
+        final int numStmts = queryList.size();
+        if(numStmts == 0) {
+            throw new IllegalArgumentException("Illegal query: " + query);
+        } else if(numStmts == 1) {
+            return new QueryString[] { new QueryString(query) };
+        }
+
+        final QueryString[] queries = new QueryString[numStmts];
+        queryList.toArray(queries);
+
+        if(verifyAsSelect) {
+            if(!inValidSelectQuery(queries)) {
+                throw new IllegalArgumentException("Invalid as a SELECT query: " + query
+                        + "\n(DDL)* Select (DDL)* is accepted here.");
+            }
+        }
+
+        return queries;
+    }
+
+    /**
+     * (DDL)* Select (DDL)* is accepted.
+     */
+    private static boolean inValidSelectQuery(final QueryString[] qstrs) {
+        boolean foundSelect = false;
+        for(final QueryString qs : qstrs) {
+            if(qs.isSelect()) {
+                if(foundSelect) {
+                    return false;
+                }
+                foundSelect = true;
+            } else {
+                if(!qs.isDDL()) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    static final class QueryString {
+
+        private final String query;
+        private final boolean isSelect;
+        private final boolean isDDL;
+
+        QueryString(@CheckForNull String query) {
+            if(query == null) {
+                throw new IllegalArgumentException();
+            }
+            this.query = query;
+            String lcQuery = query.toLowerCase();
+            this.isSelect = lcQuery.startsWith("select");
+            this.isDDL = isDDL(lcQuery);
+        }
+
+        @Nonnull
+        String getQuery() {
+            return query;
+        }
+
+        boolean isSelect() {
+            return isSelect;
+        }
+
+        boolean isDDL() {
+            return isDDL;
+        }
+
+        private static boolean isDDL(final String query) {
+            return query.startsWith("create") || query.startsWith("drop");
+        }
+
+        @Override
+        public String toString() {
+            return query;
+        }
+
     }
 
 }
