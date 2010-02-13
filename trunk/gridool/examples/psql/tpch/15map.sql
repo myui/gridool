@@ -30,7 +30,5 @@ where
 		from
 			revenue0
 	)
-order by
-	s_suppkey;
 
 drop view revenue0;

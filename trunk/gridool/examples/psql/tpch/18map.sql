@@ -4,7 +4,7 @@ select
 	o_orderkey,
 	o_orderdate,
 	o_totalprice,
-	sum(l_quantity)
+	sum(l_quantity) as C6
 from
 	customer,
 	orders,
@@ -33,7 +33,4 @@ group by
 	o_orderkey,
 	o_orderdate,
 	o_totalprice
-order by
-	o_totalprice desc,
-	o_orderdate
-limit 100;
+

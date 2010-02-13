@@ -1,7 +1,7 @@
 select
 	cntrycode,
-	count(*) as numcust,
-	sum(c_acctbal) as totacctbal
+	count(*) as C2,
+	sum(c_acctbal) as C3
 from
 	(
 		select
@@ -36,5 +36,4 @@ from
 	) as custsale
 group by
 	cntrycode
-order by
-	cntrycode;
+

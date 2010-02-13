@@ -1,5 +1,5 @@
 select
-	sum(l_extendedprice* (1 - l_discount)) as revenue
+	sum(l_extendedprice* (1 - l_discount)) as C1
 from
 	lineitem,
 	part

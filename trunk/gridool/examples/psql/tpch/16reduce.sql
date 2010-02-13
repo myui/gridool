@@ -13,7 +13,7 @@ where
 	and p_brand <> 'Brand#45'
 	and p_type not like 'MEDIUM POLISHED%'
 	and p_size in (49, 14, 23, 45, 19, 3, 36, 9)
-	and ps_suppkey not in (
+	and ps_suppkey not in (	-- false positive may cause on ps_suppkey due to lack of s_suppkey
 		select
 			s_suppkey
 		from
