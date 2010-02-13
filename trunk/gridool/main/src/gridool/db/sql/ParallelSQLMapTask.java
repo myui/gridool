@@ -121,7 +121,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
 
         final File tmpFile;
         try {
-            tmpFile = File.createTempFile("ParallelSQLMapTask" + taskNumber, ".csv");
+            tmpFile = File.createTempFile("ParallelSQLMapTask" + taskNumber + "_", ".csv");
         } catch (IOException e) {
             throw new GridException(e);
         }

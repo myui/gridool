@@ -386,6 +386,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             LOG.warn(warnmsg);
             throw new GridException(warnmsg);
         }
+        if(LOG.isInfoEnabled()) {
+            LOG.info(affected + " records processed: " + sql);
+        }
     }
 
     private static File getImportingFile(final ParallelSQLMapTaskResult result, final String outputName) {
