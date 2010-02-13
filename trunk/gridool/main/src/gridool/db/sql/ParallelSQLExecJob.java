@@ -194,6 +194,11 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             conn.commit();
         } catch (SQLException e) {
             LOG.error("An error caused in the preparation phase", e);
+            try {
+                conn.rollback();
+            } catch (SQLException sqle) {
+                LOG.warn("Failed to rollback", sqle);
+            }
             throw new GridException(e);
         } finally {
             JDBCUtils.closeQuietly(conn);
