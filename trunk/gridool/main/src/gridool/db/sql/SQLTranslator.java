@@ -202,6 +202,7 @@ public final class SQLTranslator {
         }
 
         if(onlyPrimary) {
+            queryBuf.append('"');
             queryBuf.append(tableName);
             queryBuf.append("\".\"");
             queryBuf.append(DistributionCatalog.hiddenFieldName);
