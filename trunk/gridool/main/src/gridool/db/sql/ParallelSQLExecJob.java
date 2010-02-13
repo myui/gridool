@@ -365,8 +365,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final File file = getImportingFile(result, outputName);
         final String sql = constructCopyIntoQuery(file, result, outputName);
         final Connection conn = GridUtils.getPrimaryDbConnection(dba, false);
+        final int affected;
         try {
-            JDBCUtils.update(conn, sql);
+            affected = JDBCUtils.update(conn, sql);
             conn.commit();
         } catch (SQLException e) {
             LOG.error(e);
@@ -376,6 +377,13 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                 LOG.warn("Could not delete a file: " + file.getAbsolutePath());
             }
             JDBCUtils.closeQuietly(conn);
+        }
+        int expected = result.getNumRows();
+        if(affected != expected) {
+            String warnmsg = "COPY INTO TABLE failed [Expected: " + expected + ", Inserted: "
+                    + affected + ']';
+            LOG.warn(warnmsg);
+            throw new GridException(warnmsg);
         }
     }
 
