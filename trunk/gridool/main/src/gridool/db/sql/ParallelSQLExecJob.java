@@ -527,6 +527,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             Connection conn = null;
             try {
                 conn = dba.getPrimaryDbConnection();
+                conn.setAutoCommit(false);
                 JDBCUtils.update(conn, destroyQuery);
                 conn.commit();
             } catch (SQLException e) {
