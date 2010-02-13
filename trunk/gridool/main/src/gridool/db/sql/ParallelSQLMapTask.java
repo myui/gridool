@@ -93,13 +93,16 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
     @Override
     public List<GridNode> listFailoverCandidates(@Nullable GridNode localNode, @Nullable GridTaskRouter router) {
         GridNode[] slaves = catalog.getSlaves(taskMasterNode, DistributionCatalog.defaultDistributionKey);
+        router.resolve(slaves);
         return Arrays.asList(slaves);
     }
 
+    /**
+     * Get slaves for this task master. Note that IP may change since last distribution in Dynamic IP settings.
+     */
     @Nonnull
-    public GridNode[] listFailoverCandidates() {
-        GridNode[] slaves = catalog.getSlaves(taskMasterNode, DistributionCatalog.defaultDistributionKey);
-        return slaves;
+    GridNode[] getRegisteredSlaves() {
+        return catalog.getSlaves(taskMasterNode, DistributionCatalog.defaultDistributionKey);
     }
 
     @Override

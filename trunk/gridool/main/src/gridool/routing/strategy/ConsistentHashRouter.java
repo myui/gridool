@@ -28,7 +28,9 @@ import gridool.routing.GridTaskRouter;
 import gridool.util.ConsistentHash;
 import gridool.util.HashFunction;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -158,6 +160,26 @@ public final class ConsistentHashRouter implements GridTaskRouter {
             this.gridSize = 0;
         } finally {
             wlock.unlock();
+        }
+    }
+
+    public void resolve(final GridNode[] nodes) {
+        if(nodes.length == 0) {
+            return;
+        }
+        final GridNode[] curNodes = getAllNodes();
+        final Map<String, GridNode> map = new HashMap<String, GridNode>(curNodes.length);
+        for(final GridNode node : curNodes) {
+            map.put(node.getKey(), node);
+        }
+        final int numNodes = nodes.length;
+        for(int i = 0; i < numNodes; i++) {
+            GridNode n = nodes[i];
+            String nodeid = n.getKey();
+            GridNode curNode = map.get(nodeid);
+            if(curNode != null) {
+                nodes[i] = curNode;
+            }
         }
     }
 

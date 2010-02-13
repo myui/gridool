@@ -506,6 +506,11 @@ public final class DistributionCatalog {
             return false;
         }
 
+        @Override
+        public String toString() {
+            return node.toString() + " (" + state + ')';
+        }
+
     }
 
     private NodeWithState internNodeState(final String nodeInfo, final int stateNo) {

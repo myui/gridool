@@ -129,6 +129,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final SQLTranslator translator = new SQLTranslator(catalog);
         final String mapQuery = translator.translateQuery(jobConf.mapQuery);
         final GridNode[] masters = catalog.getMasters(DistributionCatalog.defaultDistributionKey);
+        router.resolve(masters);
         final int numNodes = masters.length;
         if(numNodes == 0) {
             return Collections.emptyMap();
@@ -419,7 +420,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final List<GridTask> tasksToRun = new ArrayList<GridTask>(remainingTasks.size());
         for(final ParallelSQLMapTask task : remainingTasks.values()) {
             boolean hasCandicate = false;
-            final GridNode[] candidates = task.listFailoverCandidates();
+            final GridNode[] candidates = task.getRegisteredSlaves();
             for(final GridNode candidate : candidates) {
                 if(finishedNodes.contains(candidate)) {
                     hasCandicate = true;
