@@ -61,6 +61,9 @@ public final class SQLTranslator {
         this.catalog = catalog;
     }
 
+    /**
+     * @link http://www.asciitable.com/
+     */
     @Nonnull
     public String translateQuery(@Nonnull final String query) throws GridException {
         final String trimedQuery = query.trim();
@@ -76,6 +79,7 @@ public final class SQLTranslator {
         tokenizer.wordChars('.', '.'); // digit
         //tokenizer.wordChars('-', '-'); // digit
         tokenizer.wordChars('_', '_');
+        tokenizer.wordChars('*', '*');
         tokenizer.whitespaceChars(0, ' ');
         //tokenizer.whitespaceChars(' ', ' ');
         tokenizer.whitespaceChars('\t', '\t');
@@ -199,11 +203,11 @@ public final class SQLTranslator {
             tokenizer.pushBack();
         }
 
-        queryBuf.append('(');
+        queryBuf.append("(\"");
         queryBuf.append(tableName);
-        queryBuf.append('.');
+        queryBuf.append("\".\"");
         queryBuf.append(DistributionCatalog.hiddenFieldName);
-        queryBuf.append(" & ");
+        queryBuf.append("\" & ");
         queryBuf.append(bitset);
         queryBuf.append(") = ");
         queryBuf.append(bitset);
