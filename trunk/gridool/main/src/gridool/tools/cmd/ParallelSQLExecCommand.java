@@ -97,8 +97,8 @@ public final class ParallelSQLExecCommand extends CommandBase {
         } catch (RemoteException e) {
             throw new CommandException(e);
         }
-        System.out.println("ParallelSQLExecJob [outputTable=" + actualOuputTable + "] finished in "
-                + sw);
+        System.out.println("ParallelSQLExecJob [outputName=" + actualOuputTable + ", outputType="
+                + outputMethod + "] finished in " + sw);
         return true;
     }
 

@@ -169,6 +169,11 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         this.thresholdForSpeculativeTask = Math.max(1, (int) (numNodes * jobConf.getInvokeSpeculativeTasksFactor()));
         this.recvExecs = startFileReciever(xferServer);
         this.copyintoExecs = ExecutorFactory.newFixedThreadPool(jobConf.getCopyIntoTableConcurrency(), "CopyIntoTableThread", true);
+
+        if(LOG.isInfoEnabled()) {
+            LOG.info("\n[Map query]\n" + mapQuery + "\n[Reduce query]\n" + reduceQuery);
+        }
+
         return map;
     }
 

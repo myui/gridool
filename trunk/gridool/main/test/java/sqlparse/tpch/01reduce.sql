@@ -8,7 +8,7 @@ select
 	sum(C7)/cast(sum(C10) as double) as avg_qty,
 	sum(C8)/cast(sum(C10) as double) as avg_price,
 	sum(C9)/cast(sum(C10) as double) as avg_disc,
-	count(C10) as count_order
+	sum(C10) as count_order
 from
 	<src>
 group by

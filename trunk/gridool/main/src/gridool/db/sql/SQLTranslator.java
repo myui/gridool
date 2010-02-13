@@ -168,8 +168,10 @@ public final class SQLTranslator {
         }
         String fieldName = tokenizer.sval;
         int bitset = 0;
+        boolean onlyPrimary = false;
         if("primarykey".equalsIgnoreCase(fieldName)) {
             bitset = 1;
+            onlyPrimary = true;
             if(tokenizer.nextToken() != TT_RPAR) {
                 throw new IllegalStateException("Syntax error: " + tokenizer.toString());
             }
@@ -199,14 +201,22 @@ public final class SQLTranslator {
             tokenizer.pushBack();
         }
 
-        queryBuf.append('(');
-        queryBuf.append(tableName);
-        queryBuf.append('.');
-        queryBuf.append(DistributionCatalog.hiddenFieldName);
-        queryBuf.append(" & ");
-        queryBuf.append(bitset);
-        queryBuf.append(") = ");
-        queryBuf.append(bitset);
+        if(onlyPrimary) {
+            queryBuf.append(tableName);
+            queryBuf.append("\".\"");
+            queryBuf.append(DistributionCatalog.hiddenFieldName);
+            queryBuf.append("\" = ");
+            queryBuf.append(bitset);
+        } else {
+            queryBuf.append("(\"");
+            queryBuf.append(tableName);
+            queryBuf.append("\".\"");
+            queryBuf.append(DistributionCatalog.hiddenFieldName);
+            queryBuf.append("\" & ");
+            queryBuf.append(bitset);
+            queryBuf.append(") = ");
+            queryBuf.append(bitset);
+        }
     }
 
 }
