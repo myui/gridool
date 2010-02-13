@@ -276,7 +276,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     private static TransferServer createTransferServer(@Nonnegative int concurrency) {
         DbCollection rootCol = DbCollection.getRootCollection();
         File colDir = rootCol.getDirectory();
-        TransferRequestListener listener = new RecievedFileWriter(colDir);
+        TransferRequestListener listener = new RecievedFileWriter(colDir, true);
         return new TransferServer(concurrency, listener);
     }
 

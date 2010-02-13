@@ -142,7 +142,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         // #2 send file
         final String sentFileName = tmpFile.getName();
         try {
-            TransferUtils.sendfile(tmpFile, dstAddr, dstPort);
+            TransferUtils.sendfile(tmpFile, dstAddr, dstPort, true);
         } catch (IOException e) {
             throw new GridException("failed to sending a file", e);
         } finally {
