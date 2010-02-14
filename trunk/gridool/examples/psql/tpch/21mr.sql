@@ -25,7 +25,7 @@ where
 			and l2.l_orderkey = l1.l_orderkey
 			and l2.l_suppkey <> l1.l_suppkey
 	)
-	and not exists ( -- Outer table is already partitioned by l_orderkey
+	and not exists ( -- Outer table is already partitioned by l_orderkey (Self-Join)
 		select
 			*
 		from

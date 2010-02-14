@@ -304,7 +304,7 @@ public final class DistributionCatalog {
                 partitionKeyMappping.put(tableName, fieldPartitionMap);
                 final Connection conn = dbAccessor.getPrimaryDbConnection();
                 try {
-                    inquirePartitioningKeyPositions(tableName, conn, fieldPartitionMap, true);
+                    inquirePartitioningKeyPositions(conn, tableName, fieldPartitionMap, true);
                 } finally {
                     JDBCUtils.closeQuietly(conn);
                 }
@@ -322,7 +322,7 @@ public final class DistributionCatalog {
      * @return Column positions of primary key and foreign keys.
      */
     @Nonnull
-    public Pair<int[], int[]> getPartitioningKeyPositions(@Nonnull final String templateTableName, @Nonnull final String actualTableName)
+    public Pair<int[], int[]> bindPartitioningKeyPositions(@Nonnull final String templateTableName, @Nonnull final String actualTableName)
             throws SQLException {
         final Pair<int[], int[]> keys;
         synchronized(partitionKeyMappping) {
@@ -346,12 +346,13 @@ public final class DistributionCatalog {
                 partitionKeyMappping.put(actualTableName, fieldPartitionMap);
                 final Connection conn = dbAccessor.getPrimaryDbConnection();
                 try {
-                    keys = inquirePartitioningKeyPositions(templateTableName, conn, fieldPartitionMap, false);
+                    // inquire PK/FK relationship on database catalog
+                    keys = inquirePartitioningKeyPositions(conn, templateTableName, fieldPartitionMap, false);
+                    // store partitioning information into database.                
+                    storePartitioningInformation(conn, actualTableName, fieldPartitionMap);
                 } finally {
                     JDBCUtils.closeQuietly(conn);
                 }
-                // TODO store partitioning information into database.                
-                
             }
         }
         return keys;
@@ -385,7 +386,7 @@ public final class DistributionCatalog {
 
     }
 
-    private static Pair<int[], int[]> inquirePartitioningKeyPositions(@Nonnull final String tableName, @Nonnull final Connection conn, @Nonnull final Map<String, PartitionKey> fieldPartitionMap, final boolean returnNull)
+    private static Pair<int[], int[]> inquirePartitioningKeyPositions(@Nonnull final Connection conn, @Nonnull final String tableName, @Nonnull final Map<String, PartitionKey> fieldPartitionMap, final boolean returnNull)
             throws SQLException {
         final List<String> keys = new ArrayList<String>();
         final DatabaseMetaData meta = conn.getMetaData();
@@ -479,6 +480,10 @@ public final class DistributionCatalog {
             }
         }
         return returnNull ? null : new Pair<int[], int[]>(pkeyIdxs, fkeyIdxs);
+    }
+
+    private static void storePartitioningInformation(@Nonnull final Connection conn, @Nonnull final String tableName, @Nonnull final Map<String, PartitionKey> fieldPartitionMap) {
+
     }
 
     private static final class NodeWithState {

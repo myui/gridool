@@ -7,7 +7,7 @@ from
 	partsupp,
 	part
 where
-	partsupp partitioned by (ps_partkey, ps_suppkey) -- [TRICK] adding ps_suppkey for partitioning key
+	partsupp partitioned by (ps_partkey)
 	and part partitioned by (p_partkey)
 	and p_partkey = ps_partkey
 	and p_brand <> 'Brand#45'

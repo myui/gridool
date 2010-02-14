@@ -1,6 +1,6 @@
 select
 	s_name,
-	count(C2) as numwait
+	sum(C2) as numwait
 from
 	<src>
 group by

@@ -88,7 +88,7 @@ public final class CsvHashPartitioningJob extends
         final String actualTableName = jobConf.getTableName();
         final Pair<int[], int[]> partitioningKeys;
         try {
-            partitioningKeys = catalog.getPartitioningKeyPositions(baseTableName, actualTableName);
+            partitioningKeys = catalog.bindPartitioningKeyPositions(baseTableName, actualTableName);
         } catch (SQLException e) {
             throw new GridException("failed to get partitioning keys for table: " + baseTableName, e);
         }
