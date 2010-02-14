@@ -350,21 +350,40 @@ public final class DistributionCatalog {
 
     /**
      * @return Column positions of primary key and foreign keys.
+     * @throws GridException 
      */
     @Nonnull
     public Pair<int[], int[]> bindPartitioningKeyPositions(@Nonnull final String templateTableName, @Nonnull final String actualTableName)
-            throws SQLException {
+            throws GridException {
         final Pair<int[], int[]> keys;
         final Map<String, PartitionKey> fieldPartitionMap = new HashMap<String, PartitionKey>(12);
         synchronized(partitionKeyMappping) {
             partitionKeyMappping.put(templateTableName, fieldPartitionMap);
-            partitionKeyMappping.put(actualTableName, fieldPartitionMap);
-            final Connection conn = dbAccessor.getPrimaryDbConnection();
+            boolean issueCommit = true;
+            if(partitionKeyMappping.put(actualTableName, fieldPartitionMap) != null) {
+                issueCommit = false;
+            }
+            boolean autocommit = !issueCommit;
+            final Connection conn = DBAccessor.getPrimaryDbConnection(dbAccessor, autocommit);
             try {
                 // inquire PK/FK relationship on database catalog
                 keys = inquirePartitioningKeyPositions(conn, templateTableName, fieldPartitionMap, false);
-                // store partitioning information into database.                
-                storePartitioningInformation(conn, actualTableName, fieldPartitionMap);
+                // store partitioning information into database.       
+                if(issueCommit) {
+                    storePartitioningInformation(conn, actualTableName, fieldPartitionMap);
+                    conn.commit();
+                }
+            } catch (SQLException e) {
+                String errmsg = "failed to get partitioning keys for table: " + templateTableName;
+                LOG.error(errmsg, e);
+                if(issueCommit) {
+                    try {
+                        conn.rollback();
+                    } catch (SQLException rbe) {
+                        LOG.warn("rollback failed", rbe);
+                    }
+                }
+                throw new GridException(errmsg, e);
             } finally {
                 JDBCUtils.closeQuietly(conn);
             }
@@ -480,8 +499,22 @@ public final class DistributionCatalog {
         return returnNull ? null : new Pair<int[], int[]>(pkeyIdxs, fkeyIdxs);
     }
 
-    private static void storePartitioningInformation(@Nonnull final Connection conn, @Nonnull final String tableName, @Nonnull final Map<String, PartitionKey> fieldPartitionMap) {
-
+    private static void storePartitioningInformation(@Nonnull final Connection conn, @Nonnull final String tableName, @Nonnull final Map<String, PartitionKey> fieldPartitionMap)
+            throws SQLException {
+        final int numPartitionKeys = fieldPartitionMap.size();
+        if(numPartitionKeys == 0) {
+            return;
+        }
+        final String sql = "INSERT INTO \"" + partitioningKeyTableName + "\" VALUES(?, ?, ?, ?)";
+        final Object[][] params = new Object[numPartitionKeys][];
+        int i = 0;
+        for(final Map.Entry<String, PartitionKey> e : fieldPartitionMap.entrySet()) {
+            String columnName = e.getKey();
+            PartitionKey key = e.getValue();
+            params[i] = new Object[] { columnName, key, key.isPrimary, key.partitionNo };
+            i++;
+        }
+        JDBCUtils.batch(conn, sql, params);
     }
 
     private static final class NodeWithState {

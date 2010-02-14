@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.charset.Charset;
-import java.sql.SQLException;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -86,12 +85,7 @@ public final class CsvHashPartitioningJob extends
         final DBPartitioningJobConf jobConf = ops.getJobConf();
         final String baseTableName = jobConf.getBaseTableName();
         final String actualTableName = jobConf.getTableName();
-        final Pair<int[], int[]> partitioningKeys;
-        try {
-            partitioningKeys = catalog.bindPartitioningKeyPositions(baseTableName, actualTableName);
-        } catch (SQLException e) {
-            throw new GridException("failed to get partitioning keys for table: " + baseTableName, e);
-        }
+        final Pair<int[], int[]> partitioningKeys = catalog.bindPartitioningKeyPositions(baseTableName, actualTableName);
 
         final int[] pkeyIndicies = partitioningKeys.getFirst();
         final int[] fkeyIndicies = partitioningKeys.getSecond();
