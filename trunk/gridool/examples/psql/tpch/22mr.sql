@@ -10,10 +10,10 @@ from
 		from
 			customer
 		where
-			customer partitioned by (c_custkey)
+			customer partitioned by (c_custkey)	-- Invliad filtering?
 			and substring(c_phone from 1 for 2) in
 				('13', '31', '23', '29', '30', '18', '17')
-			and c_acctbal > (
+			and c_acctbal > ( -- requires parallel aggregation
 				select
 					avg(c_acctbal)
 				from

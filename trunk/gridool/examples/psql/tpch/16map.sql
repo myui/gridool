@@ -7,7 +7,7 @@ from
 	partsupp,
 	part
 where
-	partsupp partitioned by (ps_partkey)
+	partsupp partitioned by (ps_partkey, ps_suppkey)
 	and part partitioned by (p_partkey)
 	and p_partkey = ps_partkey
 	and p_brand <> 'Brand#45'
@@ -19,14 +19,10 @@ where
 		from
 			supplier
 		where
-			s_comment like '%Customer%Complaints%'
+			supplier partitioned by (s_suppkey)
+			and s_comment like '%Customer%Complaints%'
 	)
 group by
 	p_brand,
 	p_type,
 	p_size
-order by
-	supplier_cnt desc,
-	p_brand,
-	p_type,
-	p_size;
