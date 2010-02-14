@@ -84,12 +84,13 @@ public final class CsvHashPartitioningJob extends
         final String csvFileName = ops.getFileName();
         final boolean append = !ops.isFirst();
         final DBPartitioningJobConf jobConf = ops.getJobConf();
-        final String tableName = jobConf.getBaseTableName();
+        final String baseTableName = jobConf.getBaseTableName();
+        final String actualTableName = jobConf.getTableName();
         final Pair<int[], int[]> partitioningKeys;
         try {
-            partitioningKeys = catalog.getPartitioningKeyPositions(tableName);
+            partitioningKeys = catalog.getPartitioningKeyPositions(baseTableName, actualTableName);
         } catch (SQLException e) {
-            throw new GridException("failed to get partitioning keys for table: " + tableName, e);
+            throw new GridException("failed to get partitioning keys for table: " + baseTableName, e);
         }
 
         final int[] pkeyIndicies = partitioningKeys.getFirst();

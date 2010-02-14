@@ -80,6 +80,9 @@ public final class DistributionCatalog {
     @GuardedBy("lock")
     private final Map<String, NodeWithState> nodeStateMap;
 
+    /**
+     * TableName => [ColumnName => PartitionKey]
+     */
     @GuardedBy("partitionKeyMappping")
     private final Map<String, Map<String, PartitionKey>> partitionKeyMappping;
 
@@ -293,6 +296,7 @@ public final class DistributionCatalog {
 
     public int getPartitioningKey(@Nonnull final String tableName, @Nonnull final String fieldName)
             throws SQLException {
+        final PartitionKey key;
         synchronized(partitionKeyMappping) {
             Map<String, PartitionKey> fieldPartitionMap = partitionKeyMappping.get(tableName);
             if(fieldPartitionMap == null) {
@@ -300,22 +304,29 @@ public final class DistributionCatalog {
                 partitionKeyMappping.put(tableName, fieldPartitionMap);
                 final Connection conn = dbAccessor.getPrimaryDbConnection();
                 try {
-                    getPartitioningKeyPositions(tableName, conn, fieldPartitionMap, true);
+                    inquirePartitioningKeyPositions(tableName, conn, fieldPartitionMap, true);
                 } finally {
                     JDBCUtils.closeQuietly(conn);
                 }
             }
-            PartitionKey key = fieldPartitionMap.get(fieldName);
-            return key.partitionNo;
+            key = fieldPartitionMap.get(fieldName);
         }
+        if(key == null) {
+            throw new IllegalArgumentException("Partitioning key is not registered for "
+                    + tableName + '.' + fieldName);
+        }
+        return key.partitionNo;
     }
 
+    /**
+     * @return Column positions of primary key and foreign keys.
+     */
     @Nonnull
-    public Pair<int[], int[]> getPartitioningKeyPositions(@Nonnull final String tableName)
+    public Pair<int[], int[]> getPartitioningKeyPositions(@Nonnull final String templateTableName, @Nonnull final String actualTableName)
             throws SQLException {
         final Pair<int[], int[]> keys;
         synchronized(partitionKeyMappping) {
-            Map<String, PartitionKey> fieldPartitionMap = partitionKeyMappping.get(tableName);
+            Map<String, PartitionKey> fieldPartitionMap = partitionKeyMappping.get(templateTableName);
             if(fieldPartitionMap != null) {
                 int[] pkey = null;
                 final IntArrayList fkeyList = new IntArrayList(12);
@@ -331,13 +342,16 @@ public final class DistributionCatalog {
                 keys = new Pair<int[], int[]>(pkey, fkeys);
             } else {
                 fieldPartitionMap = new HashMap<String, PartitionKey>(12);
-                partitionKeyMappping.put(tableName, fieldPartitionMap);
+                partitionKeyMappping.put(templateTableName, fieldPartitionMap);
+                partitionKeyMappping.put(actualTableName, fieldPartitionMap);
                 final Connection conn = dbAccessor.getPrimaryDbConnection();
                 try {
-                    keys = getPartitioningKeyPositions(tableName, conn, fieldPartitionMap, false);
+                    keys = inquirePartitioningKeyPositions(templateTableName, conn, fieldPartitionMap, false);
                 } finally {
                     JDBCUtils.closeQuietly(conn);
                 }
+                // TODO store partitioning information into database.                
+                
             }
         }
         return keys;
@@ -371,7 +385,7 @@ public final class DistributionCatalog {
 
     }
 
-    private static Pair<int[], int[]> getPartitioningKeyPositions(@Nonnull final String tableName, @Nonnull final Connection conn, @Nonnull final Map<String, PartitionKey> fieldPartitionMap, final boolean returnNull)
+    private static Pair<int[], int[]> inquirePartitioningKeyPositions(@Nonnull final String tableName, @Nonnull final Connection conn, @Nonnull final Map<String, PartitionKey> fieldPartitionMap, final boolean returnNull)
             throws SQLException {
         final List<String> keys = new ArrayList<String>();
         final DatabaseMetaData meta = conn.getMetaData();
@@ -448,9 +462,12 @@ public final class DistributionCatalog {
 
         int shift = 0;
         if(pkeyIdxs != null) {
-            PartitionKey pkeyForPrimary = new PartitionKey(pkeyIdxs, true, 1 << shift);
+            PartitionKey pkeyForPrimary = new PartitionKey(pkeyIdxs, true, 1);
             shift++;
             fieldPartitionMap.put(DummyFieldNameForPrimaryKey, pkeyForPrimary);
+            if(pkeyColumns == 1) {
+                fieldPartitionMap.put(pkColumnName, pkeyForPrimary);
+            }
         }
         if(fkeyIdxs != null) {
             for(int i = 0; i < fkeyIdxs.length; i++) {
