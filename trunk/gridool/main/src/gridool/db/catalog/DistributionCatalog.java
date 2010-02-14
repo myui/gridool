@@ -401,6 +401,11 @@ public final class DistributionCatalog {
             this.partitionNo = partitionNo;
         }
 
+        @Override
+        public String toString() {
+            return (isPrimary ? "PK" : "FK") + " partition #" + partitionNo;
+        }
+
     }
 
     private static Pair<int[], int[]> inquirePartitioningKeyPositions(@Nonnull final Connection conn, @Nonnull final String tableName, @Nonnull final Map<String, PartitionKey> fieldPartitionMap, final boolean returnNull)
@@ -511,7 +516,7 @@ public final class DistributionCatalog {
         for(final Map.Entry<String, PartitionKey> e : fieldPartitionMap.entrySet()) {
             String columnName = e.getKey();
             PartitionKey key = e.getValue();
-            params[i] = new Object[] { columnName, key, key.isPrimary, key.partitionNo };
+            params[i] = new Object[] { tableName, columnName, key.isPrimary, key.partitionNo };
             i++;
         }
         JDBCUtils.batch(conn, sql, params);

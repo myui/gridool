@@ -172,7 +172,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         } finally {
             JDBCUtils.closeQuietly(dbConn);
             if(!tmpFile.delete()) {
-                LOG.warn("deletint a temp file failed: " + tmpFile.getAbsolutePath());
+                LOG.warn("Failed to delete a temp file: " + tmpFile.getAbsolutePath());
             }
         }
 
@@ -205,8 +205,8 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         String copyIntoQuery = "COPY (" + formedQuery + ") INTO '" + filepath
                 + "' USING DELIMITERS '|','\n','\"'";
 
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("Executing a SQL: " + copyIntoQuery);
+        if(LOG.isInfoEnabled()) {
+            LOG.info("Executing a Map SQL query: \n" + copyIntoQuery);
         }
         return JDBCUtils.update(conn, copyIntoQuery);
     }

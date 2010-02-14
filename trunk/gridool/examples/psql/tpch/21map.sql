@@ -3,12 +3,12 @@ select
 	count(*) as C2
 from
 	supplier,
-	lineitem,
+	lineitem l1,
 	orders,
 	nation
 where
 	supplier partitioned by (s_suppkey, s_nationkey)
-	and lineitem l1 partitioned by (l_suppkey, l_orderkey)
+	and lineitem partitioned by (l_suppkey, l_orderkey) alias l1
 	and orders partitioned by (o_orderkey)
 	and nation partitioned by (n_nationkey)
 	and s_suppkey = l1.l_suppkey
