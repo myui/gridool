@@ -338,18 +338,21 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         GridNode taskMaster = taskResult.getMasterNode();
         finishedNodes.add(taskMaster);
 
-        // # 3 invoke COPY INTO table
-        final DBAccessor dba = registry.getDbAccessor();
-        copyintoExecs.execute(new Runnable() {
-            public void run() {
-                try {
-                    invokeCopyIntoTable(taskResult, outputName, dba);
-                } catch (GridException e) {
-                    LOG.error(e);
-                    throw new IllegalStateException("Copy Into table failed: " + outputName, e);
+        // # 3 invoke COPY INTO table if needed
+        final int numFetchedRows = taskResult.getNumRows();
+        if(numFetchedRows > 0) {
+            final DBAccessor dba = registry.getDbAccessor();
+            copyintoExecs.execute(new Runnable() {
+                public void run() {
+                    try {
+                        invokeCopyIntoTable(taskResult, outputName, dba);
+                    } catch (GridException e) {
+                        LOG.error(e);
+                        throw new IllegalStateException("Copy Into table failed: " + outputName, e);
+                    }
                 }
-            }
-        });
+            });
+        }
 
         // TODO invoke speculative tasks if needed 
         if(waitForStartSpeculativeTask > 0 && !remainingTasks.isEmpty()) {
@@ -398,6 +401,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
     private static File getImportingFile(final ParallelSQLMapTaskResult result, final String outputName) {
         String fileName = result.getFileName();
+        if(fileName == null) {
+            throw new IllegalStateException();
+        }
         DbCollection rootCol = DbCollection.getRootCollection();
         File colDir = rootCol.getDirectory();
         File file = new File(colDir, fileName);

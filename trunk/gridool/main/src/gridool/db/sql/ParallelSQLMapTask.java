@@ -141,19 +141,19 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             throw new IllegalStateException();
         }
 
-        final int rows;
+        int fetchedRows = -1;
         final Connection dbConn = getDbConnection(taskMasterNode, registry);
         try {
             if(singleStatement) {
                 dbConn.setAutoCommit(true);
                 // #1 invoke COPY INTO file
-                rows = executeCopyIntoQuery(dbConn, selectQuery, tmpFile);
+                fetchedRows = executeCopyIntoQuery(dbConn, selectQuery, tmpFile);
             } else {
                 dbConn.setAutoCommit(false);
                 // #1-1 DDL before map SELECT queries (e.g., create view)
                 issueDDLBeforeSelect(dbConn, queries);
                 // #1-2 invoke COPY INTO file
-                rows = executeCopyIntoQuery(dbConn, selectQuery, tmpFile);
+                fetchedRows = executeCopyIntoQuery(dbConn, selectQuery, tmpFile);
                 // #1-3 DDL after map SELECT queries (e.g., drop view)
                 issueDDLAfterSelect(dbConn, queries);
                 dbConn.commit();
@@ -168,27 +168,30 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
                     LOG.warn("Rollback failed", rbe);
                 }
             }
-            throw new GridException(errmsg, e);
-        } finally {
-            JDBCUtils.closeQuietly(dbConn);
             if(!tmpFile.delete()) {
                 LOG.warn("Failed to delete a temp file: " + tmpFile.getAbsolutePath());
             }
-        }
-
-        // #2 send file
-        final String sentFileName = tmpFile.getName();
-        try {
-            TransferUtils.sendfile(tmpFile, dstAddr, dstPort, true);
-        } catch (IOException e) {
-            throw new GridException("failed to sending a file", e);
+            throw new GridException(errmsg, e);
         } finally {
-            if(!tmpFile.delete()) {
-                LOG.warn("deletint a temp file failed: " + tmpFile.getAbsolutePath());
+            JDBCUtils.closeQuietly(dbConn);
+        }
+        assert (fetchedRows != -1);
+
+        String sentFileName = null;
+        if(fetchedRows > 0) {
+            // #2 send file
+            try {
+                TransferUtils.sendfile(tmpFile, dstAddr, dstPort, true);
+                sentFileName = tmpFile.getName();
+            } catch (IOException e) {
+                throw new GridException("failed to sending a file", e);
+            } finally {
+                if(!tmpFile.delete()) {
+                    LOG.warn("Failed to delete a temp file: " + tmpFile.getAbsolutePath());
+                }
             }
         }
-
-        return new ParallelSQLMapTaskResult(taskMasterNode, sentFileName, taskNumber, rows);
+        return new ParallelSQLMapTaskResult(taskMasterNode, sentFileName, taskNumber, fetchedRows);
     }
 
     private static int executeCopyIntoQuery(final Connection conn, final String mapQuery, final File outFile)
@@ -292,14 +295,17 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
 
     static final class ParallelSQLMapTaskResult implements Externalizable {
 
+        @Nonnull
         private/* final */GridNode masterNode;
+        @Nullable
         private/* final */String fileName;
         private/* final */int taskNumber;
         private/* final */int numRows;
 
         public ParallelSQLMapTaskResult() {}//Externalizable
 
-        ParallelSQLMapTaskResult(GridNode masterNode, String fileName, int taskNumber, int numRows) {
+        ParallelSQLMapTaskResult(@Nonnull GridNode masterNode, @Nullable String fileName, int taskNumber, int numRows) {
+            assert (numRows >= 0) : numRows;
             this.masterNode = masterNode;
             this.fileName = fileName;
             this.taskNumber = taskNumber;
@@ -311,7 +317,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             return masterNode;
         }
 
-        @Nonnull
+        @Nullable
         public String getFileName() {
             return fileName;
         }
