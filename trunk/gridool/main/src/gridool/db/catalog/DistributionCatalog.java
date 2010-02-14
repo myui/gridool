@@ -46,7 +46,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import xbird.config.Settings;
-import xbird.util.collections.ints.IntArrayList;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.jdbc.ResultSetHandler;
 import xbird.util.lang.ArrayUtils;
@@ -66,9 +65,11 @@ public final class DistributionCatalog {
     public static final String DummyFieldNameForPrimaryKey = "";
     public static final String hiddenFieldName;
     private static final String distributionTableName;
+    private static final String partitioningKeyTableName;
     static {
         hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
-        distributionTableName = Settings.get("gridool.db.partitioning.catalog_tbl", "_distribution");
+        distributionTableName = Settings.get("gridool.db.partitioning.distribution_tbl", "_distribution");
+        partitioningKeyTableName = Settings.get("gridool.db.partitioning.partitionkey_tbl", "_partitioning");
     }
 
     @Nonnull
@@ -97,6 +98,22 @@ public final class DistributionCatalog {
     }
 
     public void start() throws GridException {
+
+        final Connection conn = DBAccessor.getPrimaryDbConnection(dbAccessor, true);
+        try {
+            if(!prepareTables(conn, distributionTableName, true)) {
+                inquireDistributionTable(conn);
+                inquirePartitioningKeyTable(conn);
+            }
+        } catch (SQLException e) {
+            LOG.fatal("Failed to setup DistributionCatalog", e);
+            throw new GridException("Failed to setup DistributionCatalog", e);
+        } finally {
+            JDBCUtils.closeQuietly(conn);
+        }
+    }
+
+    private void inquireDistributionTable(final Connection conn) throws SQLException {
         final String sql = "SELECT distkey, node, masternode, state FROM \""
                 + distributionTableName + "\" ORDER BY masternode ASC"; // NULLs last (for MonetDB)
         final ResultSetHandler rsh = new ResultSetHandler() {
@@ -132,18 +149,31 @@ public final class DistributionCatalog {
                 return null;
             }
         };
-        final Connection conn = DBAccessor.getPrimaryDbConnection(dbAccessor, true);
-        try {
-            if(!prepareDistributionTable(conn, distributionTableName, true)) {
-                JDBCUtils.query(conn, sql, rsh);
+        JDBCUtils.query(conn, sql, rsh);
+    }
+
+    private void inquirePartitioningKeyTable(final Connection conn) throws SQLException {
+        final String sql = "SELECT tablename, columnname, primarykey, partitionid FROM \""
+                + partitioningKeyTableName + '"';
+        final ResultSetHandler rsh = new ResultSetHandler() {
+            public Object handle(ResultSet rs) throws SQLException {
+                while(rs.next()) {
+                    String tableName = rs.getString(1);
+                    String columnName = rs.getString(2);
+                    boolean isPrimaryKey = rs.getBoolean(3);
+                    int partitionId = rs.getInt(4);
+                    Map<String, PartitionKey> columnMapping = partitionKeyMappping.get(tableName);
+                    if(columnMapping == null) {
+                        columnMapping = new HashMap<String, PartitionKey>(12);
+                        partitionKeyMappping.put(tableName, columnMapping);
+                    }
+                    PartitionKey key = new PartitionKey(isPrimaryKey, partitionId);
+                    columnMapping.put(columnName, key);
+                }
+                return null;
             }
-        } catch (SQLException e) {
-            String errmsg = "Failed to execute a query: " + sql;
-            LOG.fatal(errmsg, e);
-            throw new GridException(errmsg, e);
-        } finally {
-            JDBCUtils.closeQuietly(conn);
-        }
+        };
+        JDBCUtils.query(conn, sql, rsh);
     }
 
     public void stop() throws GridException {}
@@ -325,34 +355,18 @@ public final class DistributionCatalog {
     public Pair<int[], int[]> bindPartitioningKeyPositions(@Nonnull final String templateTableName, @Nonnull final String actualTableName)
             throws SQLException {
         final Pair<int[], int[]> keys;
+        final Map<String, PartitionKey> fieldPartitionMap = new HashMap<String, PartitionKey>(12);
         synchronized(partitionKeyMappping) {
-            Map<String, PartitionKey> fieldPartitionMap = partitionKeyMappping.get(templateTableName);
-            if(fieldPartitionMap != null) {
-                int[] pkey = null;
-                final IntArrayList fkeyList = new IntArrayList(12);
-                for(final PartitionKey key : fieldPartitionMap.values()) {
-                    if(key.isPrimary) {
-                        pkey = key.columnsPos;
-                    } else {
-                        int pos = key.getColumnPos(0);
-                        fkeyList.add(pos);
-                    }
-                }
-                int[] fkeys = fkeyList.isEmpty() ? null : fkeyList.toArray();
-                keys = new Pair<int[], int[]>(pkey, fkeys);
-            } else {
-                fieldPartitionMap = new HashMap<String, PartitionKey>(12);
-                partitionKeyMappping.put(templateTableName, fieldPartitionMap);
-                partitionKeyMappping.put(actualTableName, fieldPartitionMap);
-                final Connection conn = dbAccessor.getPrimaryDbConnection();
-                try {
-                    // inquire PK/FK relationship on database catalog
-                    keys = inquirePartitioningKeyPositions(conn, templateTableName, fieldPartitionMap, false);
-                    // store partitioning information into database.                
-                    storePartitioningInformation(conn, actualTableName, fieldPartitionMap);
-                } finally {
-                    JDBCUtils.closeQuietly(conn);
-                }
+            partitionKeyMappping.put(templateTableName, fieldPartitionMap);
+            partitionKeyMappping.put(actualTableName, fieldPartitionMap);
+            final Connection conn = dbAccessor.getPrimaryDbConnection();
+            try {
+                // inquire PK/FK relationship on database catalog
+                keys = inquirePartitioningKeyPositions(conn, templateTableName, fieldPartitionMap, false);
+                // store partitioning information into database.                
+                storePartitioningInformation(conn, actualTableName, fieldPartitionMap);
+            } finally {
+                JDBCUtils.closeQuietly(conn);
             }
         }
         return keys;
@@ -361,27 +375,11 @@ public final class DistributionCatalog {
     private static final class PartitionKey {
 
         private final boolean isPrimary;
-        private final int[] columnsPos;
         private final int partitionNo;
 
-        PartitionKey(int[] columnsPos, boolean isPrimary, int partitionNo) {
-            if(columnsPos == null) {
-                throw new IllegalArgumentException();
-            }
-            if(columnsPos.length == 0) {
-                throw new IllegalArgumentException();
-            }
-            this.columnsPos = columnsPos;
+        PartitionKey(boolean isPrimary, int partitionNo) {
             this.isPrimary = isPrimary;
             this.partitionNo = partitionNo;
-        }
-
-        int getColumnPos(int index) {
-            if(index != 0 && index >= columnsPos.length) {
-                throw new IndexOutOfBoundsException("Index: " + index + ", Size: "
-                        + columnsPos.length);
-            }
-            return columnsPos[index];
         }
 
     }
@@ -463,7 +461,7 @@ public final class DistributionCatalog {
 
         int shift = 0;
         if(pkeyIdxs != null) {
-            PartitionKey pkeyForPrimary = new PartitionKey(pkeyIdxs, true, 1);
+            PartitionKey pkeyForPrimary = new PartitionKey(true, 1);
             shift++;
             fieldPartitionMap.put(DummyFieldNameForPrimaryKey, pkeyForPrimary);
             if(pkeyColumns == 1) {
@@ -474,7 +472,7 @@ public final class DistributionCatalog {
             for(int i = 0; i < fkeyIdxs.length; i++) {
                 int fkey = fkeyIdxs[i];
                 String columnName = columnPosNameMapping.get(fkey);
-                PartitionKey pkey = new PartitionKey(pkeyIdxs, false, 1 << shift);
+                PartitionKey pkey = new PartitionKey(false, 1 << shift);
                 shift++;
                 fieldPartitionMap.put(columnName, pkey);
             }
@@ -603,10 +601,13 @@ public final class DistributionCatalog {
         return list;
     }
 
-    private static boolean prepareDistributionTable(@Nonnull final Connection conn, final String distributionTableName, final boolean autoCommit) {
+    private static boolean prepareTables(@Nonnull final Connection conn, final String distributionTableName, final boolean autoCommit) {
         final String ddl = "CREATE TABLE \""
                 + distributionTableName
-                + "\"(distkey varchar(50) NOT NULL, node varchar(50) NOT NULL, masternode varchar(50), state TINYINT NOT NULL)";
+                + "\"(distkey varchar(50) NOT NULL, node varchar(50) NOT NULL, masternode varchar(50), state TINYINT NOT NULL);\n"
+                + "CREATE TABLE \""
+                + partitioningKeyTableName
+                + "\"(tablename varchar(30) NOT NULL, columnname varchar(30) NOT NULL, primarykey boolean NOT NULL, partitionid int NOT NULL)";
         try {
             JDBCUtils.update(conn, ddl);
             if(!autoCommit) {
