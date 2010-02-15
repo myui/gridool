@@ -20,12 +20,14 @@
  */
 package gridool.db.sql;
 
+import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.GridNode;
 import gridool.GridResourceRegistry;
 import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
+import gridool.annotation.GridConfigResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridJobBase;
 import gridool.db.catalog.DistributionCatalog;
@@ -94,6 +96,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     // remote resources    
     @GridRegistryResource
     private transient GridResourceRegistry registry;
+    @GridConfigResource
+    private transient GridConfiguration config;
 
     // --------------------------------------------
     // local only resources    
@@ -136,8 +140,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             return Collections.emptyMap();
         }
         DBAccessor dba = registry.getDbAccessor();
+        GridNode localNode = config.getLocalNode();
         final String outputName = jobConf.getOutputName();
-        runPreparation(dba, mapQuery, masters, outputName);
+        runPreparation(dba, mapQuery, masters, localNode, outputName);
 
         // run file receiver
         final InetSocketAddress sockAddr;
@@ -180,9 +185,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return map;
     }
 
-    private static void runPreparation(final DBAccessor dba, final String mapQuery, final GridNode[] masters, final String outputName)
+    private static void runPreparation(@Nonnull final DBAccessor dba, @Nonnull final String mapQuery, @Nonnull final GridNode[] masters, @Nonnull final GridNode localNode, @Nonnull final String outputName)
             throws GridException {
-        final String prepareQuery = constructTaskResultTablesDDL(mapQuery, masters, outputName);
+        final String prepareQuery = constructTaskResultTablesDDL(mapQuery, masters, localNode, outputName);
         final Connection conn;
         try {
             conn = dba.getPrimaryDbConnection();
@@ -208,7 +213,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     }
 
     @Nonnull
-    private static String constructTaskResultTablesDDL(final String mapQuery, final GridNode[] masters, final String outputName) {
+    private static String constructTaskResultTablesDDL(final String mapQuery, final GridNode[] masters, final GridNode localNode, final String outputName) {
         if(masters.length == 0) {
             throw new IllegalArgumentException();
         }
@@ -222,13 +227,16 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         buf.append("\n);\n");
         final int numTasks = masters.length;
         for(int i = 0; i < numTasks; i++) {
-            buf.append("CREATE TABLE \"");
-            buf.append(unionViewName);
-            buf.append("task");
-            buf.append(i);
-            buf.append("\" (LIKE \"");
-            buf.append(mockViewName);
-            buf.append("\");");
+            GridNode node = masters[i];
+            if(!node.equals(localNode)) {
+                buf.append("CREATE TABLE \"");
+                buf.append(unionViewName);
+                buf.append("task");
+                buf.append(i);
+                buf.append("\" (LIKE \"");
+                buf.append(mockViewName);
+                buf.append("\");");
+            }
         }
         return buf.toString();
     }
