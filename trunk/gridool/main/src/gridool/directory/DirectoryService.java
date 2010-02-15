@@ -26,7 +26,6 @@ import gridool.GridResourceRegistry;
 import gridool.GridService;
 import gridool.directory.ILocalDirectory.DirectoryIndexType;
 import gridool.locking.LockManager;
-import gridool.locking.LockManagerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -50,7 +49,7 @@ public final class DirectoryService implements GridService {
     private final ILocalDirectory directory;
 
     public DirectoryService(@Nonnull GridConfiguration config, @Nonnull GridResourceRegistry registry) {
-        final LockManager lockManager = LockManagerFactory.createLockManager(config);
+        LockManager lockManager = registry.getLockManager();
         this.directory = createLocalDirectory(lockManager, config);
         registry.setDirectory(directory);
     }

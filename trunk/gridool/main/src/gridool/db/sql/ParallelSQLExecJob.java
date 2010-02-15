@@ -34,6 +34,7 @@ import gridool.db.catalog.DistributionCatalog;
 import gridool.db.catalog.NodeState;
 import gridool.db.helpers.DBAccessor;
 import gridool.db.sql.ParallelSQLMapTask.ParallelSQLMapTaskResult;
+import gridool.locking.LockManager;
 import gridool.routing.GridTaskRouter;
 import gridool.util.GridUtils;
 
@@ -55,6 +56,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnegative;
@@ -139,10 +142,13 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         if(numNodes == 0) {
             return Collections.emptyMap();
         }
+
         DBAccessor dba = registry.getDbAccessor();
+        LockManager lockMgr = registry.getLockManager();
         GridNode localNode = config.getLocalNode();
+        ReadWriteLock rwlock = lockMgr.obtainLock(localNode);
         final String outputName = jobConf.getOutputName();
-        runPreparation(dba, mapQuery, masters, localNode, outputName);
+        runPreparation(dba, mapQuery, masters, localNode, rwlock, outputName);
 
         // run file receiver
         final InetSocketAddress sockAddr;
@@ -185,7 +191,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return map;
     }
 
-    private static void runPreparation(@Nonnull final DBAccessor dba, @Nonnull final String mapQuery, @Nonnull final GridNode[] masters, @Nonnull final GridNode localNode, @Nonnull final String outputName)
+    private static void runPreparation(@Nonnull final DBAccessor dba, @Nonnull final String mapQuery, @Nonnull final GridNode[] masters, @Nonnull final GridNode localNode, @Nonnull final ReadWriteLock rwlock, @Nonnull final String outputName)
             throws GridException {
         final String prepareQuery = constructTaskResultTablesDDL(mapQuery, masters, localNode, outputName);
         final Connection conn;
@@ -196,7 +202,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             LOG.error("An error caused in the preparation phase", e);
             throw new GridException(e);
         }
+        final Lock wlock = rwlock.writeLock();
         try {
+            wlock.lock();
             JDBCUtils.update(conn, prepareQuery);
             conn.commit();
         } catch (SQLException e) {
@@ -208,6 +216,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             }
             throw new GridException(e);
         } finally {
+            wlock.unlock();
             JDBCUtils.closeQuietly(conn);
         }
     }
@@ -494,12 +503,16 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         // cancel remaining tasks (for speculative execution)  
         recvExecs.shutdownNow();
 
+        LockManager lockMgr = registry.getLockManager();
+        GridNode lockNode = config.getLocalNode();
+        final ReadWriteLock rwlock = lockMgr.obtainLock(lockNode);
+
         // #1 Invoke final aggregation query
         final String res;
         final DBAccessor dba = registry.getDbAccessor();
         final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true); /* autocommit=true*/
         try {
-            createMergeView(conn, createMergeViewDDL);
+            createMergeView(conn, createMergeViewDDL, rwlock);
             res = invokeReduceQuery(conn, reduceQuery, outputName, outputMethod);
         } finally {
             JDBCUtils.closeQuietly(conn);
@@ -510,12 +523,14 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return res;
     }
 
-    private static void createMergeView(final Connection conn, final String ddl)
+    private static void createMergeView(@Nonnull final Connection conn, @Nonnull final String ddl, @Nonnull final ReadWriteLock rwlock)
             throws GridException {
         if(LOG.isDebugEnabled()) {
             LOG.debug("Create a merge view: \n" + ddl);
         }
+        final Lock wlock = rwlock.writeLock();
         try {
+            wlock.lock();
             JDBCUtils.update(conn, ddl);
         } catch (SQLException e) {
             String errmsg = "failed running a reduce query: " + ddl;
@@ -526,10 +541,12 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                 LOG.warn("Rollback failed", rbe);
             }
             throw new GridException(errmsg, e);
+        } finally {
+            wlock.unlock();
         }
     }
 
-    private static String invokeReduceQuery(final Connection conn, @Nonnull final String reduceQuery, @Nonnull final String outputName, final OutputMethod outputMethod)
+    private static String invokeReduceQuery(@Nonnull final Connection conn, @Nonnull final String reduceQuery, @Nonnull final String outputName, final OutputMethod outputMethod)
             throws GridException {
         if(outputMethod.isDDL()) {
             return invokeReduceDDL(conn, reduceQuery, outputName, outputMethod);

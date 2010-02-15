@@ -35,14 +35,13 @@ import xbird.config.Settings;
  */
 public final class LockManagerFactory {
 
-    private static final String mgrType = Settings.get("gridool.lockmgr", "vacuum");
-
     private LockManagerFactory() {}
 
     public static LockManager createLockManager(@Nonnull GridConfiguration config) {
-        if("softkey".equals(mgrType)) {
+        final String mgrType = Settings.get("gridool.lockmgr", "vacuum");
+        if("softkey".equalsIgnoreCase(mgrType)) {
             return new SoftKeyLockManager();
-        } else if("vacuum".equals(mgrType)) {
+        } else if("vacuum".equalsIgnoreCase(mgrType)) {
             return new VacuumingLockManager();
         }
         throw new IllegalStateException("Unexpected LockManager: " + mgrType);

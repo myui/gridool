@@ -31,6 +31,7 @@ import gridool.construct.GridTaskAdapter;
 import gridool.db.catalog.DistributionCatalog;
 import gridool.db.helpers.DBAccessor;
 import gridool.db.sql.SQLTranslator.QueryString;
+import gridool.locking.LockManager;
 import gridool.replication.ReplicationManager;
 import gridool.routing.GridTaskRouter;
 
@@ -45,6 +46,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -164,15 +167,25 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             if(singleStatement) {
                 dbConn.setAutoCommit(true);
                 // #1 invoke COPY INTO file
-                fetchedRows = useCreateTableAS ? executeCreateTableAs(dbConn, selectQuery, taskTableName)
-                        : executeCopyIntoFile(dbConn, selectQuery, tmpFile);
+                if(useCreateTableAS) {
+                    LockManager lockMgr = registry.getLockManager();
+                    ReadWriteLock rwlock = lockMgr.obtainLock(localNode);
+                    fetchedRows = executeCreateTableAs(dbConn, selectQuery, taskTableName, rwlock);
+                } else {
+                    fetchedRows = executeCopyIntoFile(dbConn, selectQuery, tmpFile);
+                }
             } else {
                 dbConn.setAutoCommit(false);
                 // #1-1 DDL before map SELECT queries (e.g., create view)
                 issueDDLBeforeSelect(dbConn, queries);
                 // #1-2 invoke COPY INTO file
-                fetchedRows = useCreateTableAS ? executeCreateTableAs(dbConn, selectQuery, taskTableName)
-                        : executeCopyIntoFile(dbConn, selectQuery, tmpFile);
+                if(useCreateTableAS) {
+                    LockManager lockMgr = registry.getLockManager();
+                    ReadWriteLock rwlock = lockMgr.obtainLock(localNode);
+                    fetchedRows = executeCreateTableAs(dbConn, selectQuery, taskTableName, rwlock);
+                } else {
+                    fetchedRows = executeCopyIntoFile(dbConn, selectQuery, tmpFile);
+                }
                 // #1-3 DDL after map SELECT queries (e.g., drop view)
                 issueDDLAfterSelect(dbConn, queries);
                 dbConn.commit();
@@ -229,14 +242,20 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         return JDBCUtils.update(conn, copyIntoQuery);
     }
 
-    private static int executeCreateTableAs(@Nonnull final Connection conn, @Nonnull final String mapQuery, @Nonnull final String taskTableName)
+    private static int executeCreateTableAs(@Nonnull final Connection conn, @Nonnull final String mapQuery, @Nonnull final String taskTableName, @Nonnull final ReadWriteLock rwlock)
             throws SQLException {
         assert (mapQuery.indexOf(';') == -1) : mapQuery;
         String ddl = "CREATE TABLE \"" + taskTableName + "\" AS (" + mapQuery + ") WITH DATA";
         if(LOG.isInfoEnabled()) {
             LOG.info("Executing a Map SQL query: \n" + ddl);
         }
-        JDBCUtils.update(conn, ddl);
+        final Lock lock = rwlock.writeLock();
+        try {
+            lock.lock();
+            JDBCUtils.update(conn, ddl);
+        } finally {
+            lock.unlock();
+        }
         return -1;
     }
 

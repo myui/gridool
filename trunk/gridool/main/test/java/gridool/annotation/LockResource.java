@@ -32,6 +32,7 @@ import java.lang.annotation.Target;
  * <DIV lang="ja"></DIV>
  * 
  * @author Makoto YUI (yuin405@gmail.com)
+ * @see gridool.locking.LockManager
  */
 @Documented
 @Target(ElementType.FIELD)

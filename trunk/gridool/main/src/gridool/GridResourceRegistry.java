@@ -28,6 +28,8 @@ import gridool.db.helpers.DBAccessorFactory;
 import gridool.deployment.GridPerNodeClassLoader;
 import gridool.directory.ILocalDirectory;
 import gridool.discovery.GridDiscoveryService;
+import gridool.locking.LockManager;
+import gridool.locking.LockManagerFactory;
 import gridool.marshaller.GridMarshaller;
 import gridool.marshaller.GridMarshallerFactory;
 import gridool.metrics.GridNodeMetricsService;
@@ -62,6 +64,7 @@ public final class GridResourceRegistry {
     private final GridMarshaller<GridTask> marshaller;
     private final ConcurrentMap<GridNode, GridPerNodeClassLoader> ldrMap;
     private final AtomicReference<GridTaskMetricsCounter> taskMetricsCounter;
+    private final LockManager lockManager;
 
     private GridNodeMetricsService metricsService;
     private GridNodeMetrics localNodeMetrics;
@@ -85,6 +88,7 @@ public final class GridResourceRegistry {
         this.ldrMap = new ConcurrentHashMap<GridNode, GridPerNodeClassLoader>();
         GridTaskMetricsCounter counter = new GridTaskMetricsCounter();
         this.taskMetricsCounter = new AtomicReference<GridTaskMetricsCounter>(counter);
+        this.lockManager = LockManagerFactory.createLockManager(config);
         this.dbAccessor = DBAccessorFactory.createDBAccessor();
         this.replicationManager = new ReplicationManager(kernel, dbAccessor, config);
         this.distributionCatalog = new DistributionCatalog(dbAccessor);
@@ -226,6 +230,11 @@ public final class GridResourceRegistry {
 
     public void setExecutionMonitor(GridExecutionMonitor executionMonitor) {
         this.executionMonitor = executionMonitor;
+    }
+
+    @Nonnull
+    public LockManager getLockManager() {
+        return lockManager;
     }
 
     @Nonnull
