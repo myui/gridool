@@ -171,10 +171,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         this.recvExecs = startFileReciever(xferServer);
         this.copyintoExecs = ExecutorFactory.newFixedThreadPool(jobConf.getCopyIntoTableConcurrency(), "CopyIntoTableThread", true);
 
-        if(LOG.isInfoEnabled()) {
-            LOG.info("\n[Map query]\n" + mapQuery + "\n[Reduce query]\n" + reduceQuery);
+        if(LOG.isDebugEnabled()) {
+            LOG.debug("\n[Map query]\n" + mapQuery + "\n[Reduce query]\n" + reduceQuery);
         }
-
         return map;
     }
 
@@ -344,14 +343,22 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             final DBAccessor dba = registry.getDbAccessor();
             copyintoExecs.execute(new Runnable() {
                 public void run() {
+                    final int inserted;
                     try {
-                        invokeCopyIntoTable(taskResult, outputName, dba);
+                        inserted = invokeCopyIntoTable(taskResult, outputName, dba);
                     } catch (GridException e) {
                         LOG.error(e);
                         throw new IllegalStateException("Copy Into table failed: " + outputName, e);
                     }
+                    if(LOG.isInfoEnabled()) {
+                        LOG.info("Merged " + inserted + " records from " + result.getExecutedNode());
+                    }
                 }
             });
+        } else {
+            if(LOG.isInfoEnabled()) {
+                LOG.info("No result found on a node: " + result.getExecutedNode());
+            }
         }
 
         // TODO invoke speculative tasks if needed 
@@ -369,15 +376,15 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return GridTaskResultPolicy.CONTINUE;
     }
 
-    private static void invokeCopyIntoTable(@Nonnull final ParallelSQLMapTaskResult result, @Nonnull final String outputName, @Nonnull final DBAccessor dba)
+    private static int invokeCopyIntoTable(@Nonnull final ParallelSQLMapTaskResult result, @Nonnull final String outputName, @Nonnull final DBAccessor dba)
             throws GridException {
         final File file = getImportingFile(result, outputName);
         final String sql = constructCopyIntoQuery(file, result, outputName);
-        final Connection conn = DBAccessor.getPrimaryDbConnection(dba, false);
+        final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true);
         final int affected;
         try {
             affected = JDBCUtils.update(conn, sql);
-            conn.commit();
+            //conn.commit();
         } catch (SQLException e) {
             LOG.error(e);
             throw new GridException("failed to execute a query: " + sql, e);
@@ -394,9 +401,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             LOG.warn(warnmsg);
             throw new GridException(warnmsg);
         }
-        if(LOG.isDebugEnabled()) {
-            LOG.debug(affected + " records processed: " + sql);
-        }
+        return affected;
     }
 
     private static File getImportingFile(final ParallelSQLMapTaskResult result, final String outputName) {
@@ -495,7 +500,11 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                 return null;
             }
         };
+
         final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true);
+        if(LOG.isInfoEnabled()) {
+            LOG.info("Executing a Reduce SQL query: \n" + reduceQuery);
+        }
         try {
             conn.setReadOnly(true);
             JDBCUtils.query(conn, reduceQuery, rsh);
@@ -519,13 +528,16 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             throws GridException {
         final String query;
         if(outputMethod == OutputMethod.view) {
-            query = "CREATE VIEW \"" + outputTableName + "\" AS (" + reduceQuery + ')';
+            query = "CREATE VIEW \"" + outputTableName + "\" AS (\n" + reduceQuery + ')';
         } else if(outputMethod == OutputMethod.table) {
-            query = "CREATE TABLE \"" + outputTableName + "\" AS (" + reduceQuery + ") WITH DATA";
+            query = "CREATE TABLE \"" + outputTableName + "\" AS (\n" + reduceQuery + ") WITH DATA";
         } else {
             throw new IllegalStateException("Unexpected OutputMethod: " + outputMethod);
         }
         final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true);
+        if(LOG.isInfoEnabled()) {
+            LOG.info("Executing a Reduce SQL query: \n" + query);
+        }
         try {
             JDBCUtils.update(conn, query);
         } catch (SQLException e) {

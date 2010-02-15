@@ -53,6 +53,7 @@ import org.apache.commons.logging.LogFactory;
 
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
+import xbird.util.net.NetUtils;
 import xbird.util.xfer.TransferUtils;
 
 /**
@@ -121,7 +122,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
 
         final File tmpFile;
         try {
-            tmpFile = File.createTempFile("ParallelSQLMapTask" + taskNumber + "_", ".csv");
+            tmpFile = File.createTempFile("PSQLMap" + taskNumber + '_', '_' + NetUtils.getLocalHostAddress());
         } catch (IOException e) {
             throw new GridException(e);
         }
