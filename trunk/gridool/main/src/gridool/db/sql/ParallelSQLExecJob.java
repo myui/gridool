@@ -504,6 +504,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
     private static void createMergeView(final Connection conn, final String ddl)
             throws GridException {
+        if(LOG.isDebugEnabled()) {
+            LOG.debug("Create a merge view: \n" + ddl);
+        }
         try {
             JDBCUtils.update(conn, ddl);
         } catch (SQLException e) {
