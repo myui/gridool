@@ -630,7 +630,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                 conn.commit();
             } catch (SQLException e) {
                 String errmsg = "failed running a destroy query: " + destroyQuery;
-                LOG.error(errmsg, e);
+                LOG.warn(errmsg, e);
             } finally {
                 JDBCUtils.closeQuietly(conn);
             }
