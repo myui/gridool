@@ -102,6 +102,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     private transient Set<GridNode> finishedNodes;
 
     private transient String outputName;
+    private transient String createMergeViewDDL;
     private transient String reduceQuery;
     private transient OutputMethod outputMethod;
     private transient String destroyQuery;
@@ -124,7 +125,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
     public Map<GridTask, GridNode> map(final GridTaskRouter router, final JobConf jobConf)
             throws GridException {
-        // phase #1 preparation
+        // phase #1 preparation (prepare tables)
         DistributionCatalog catalog = registry.getDistributionCatalog();
         final SQLTranslator translator = new SQLTranslator(catalog);
         final String mapQuery = translator.translateQuery(jobConf.mapQuery);
@@ -152,7 +153,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final Map<String, ParallelSQLMapTask> reverseMap = new HashMap<String, ParallelSQLMapTask>(numNodes);
         for(int tasknum = 0; tasknum < numNodes; tasknum++) {
             GridNode node = masters[tasknum];
-            ParallelSQLMapTask task = new ParallelSQLMapTask(this, node, tasknum, mapQuery, sockAddr, catalog);
+            String taskTableName = getTaskResultTableName(outputName, tasknum);
+            ParallelSQLMapTask task = new ParallelSQLMapTask(this, node, tasknum, mapQuery, taskTableName, sockAddr, catalog);
             map.put(task, node);
             String taskId = task.getTaskId();
             reverseMap.put(taskId, task);
@@ -161,6 +163,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         this.remainingTasks = reverseMap;
         this.finishedNodes = new HashSet<GridNode>(numNodes);
         this.outputName = outputName;
+        this.createMergeViewDDL = constructMergeViewDDL(masters, outputName);
         this.reduceQuery = getReduceQuery(jobConf.reduceQuery, outputName, translator);
         this.outputMethod = jobConf.getOutputMethod();
         this.destroyQuery = constructDestroyQuery(masters, outputName, outputMethod);
@@ -179,7 +182,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
     private static void runPreparation(final DBAccessor dba, final String mapQuery, final GridNode[] masters, final String outputName)
             throws GridException {
-        final String prepareQuery = constructInitQuery(mapQuery, masters, outputName);
+        final String prepareQuery = constructTaskResultTablesDDL(mapQuery, masters, outputName);
         final Connection conn;
         try {
             conn = dba.getPrimaryDbConnection();
@@ -205,14 +208,14 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     }
 
     @Nonnull
-    private static String constructInitQuery(final String mapQuery, final GridNode[] masters, final String outputName) {
+    private static String constructTaskResultTablesDDL(final String mapQuery, final GridNode[] masters, final String outputName) {
         if(masters.length == 0) {
             throw new IllegalArgumentException();
         }
-        final String unionViewName = getUnionViewName(outputName);
+        final String unionViewName = getMergeViewName(outputName);
         final StringBuilder buf = new StringBuilder(512);
         buf.append("CREATE VIEW \"");
-        final String mockViewName = MOCK_TABLE_NAME_PREFIX + outputName;
+        final String mockViewName = getMockTableName(outputName);
         buf.append(mockViewName);
         buf.append("\" AS (\n");
         buf.append(mapQuery);
@@ -225,12 +228,22 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             buf.append(i);
             buf.append("\" (LIKE \"");
             buf.append(mockViewName);
-            buf.append("\");\n");
+            buf.append("\");");
         }
+        return buf.toString();
+    }
+
+    @Nonnull
+    private static String constructMergeViewDDL(final GridNode[] masters, final String outputName) {
+        if(masters.length == 0) {
+            throw new IllegalArgumentException();
+        }
+        final String unionViewName = getMergeViewName(outputName);
+        final StringBuilder buf = new StringBuilder(512);
         buf.append("CREATE VIEW \"");
         buf.append(unionViewName);
         buf.append("\" AS (\n");
-        final int lastTask = numTasks - 1;
+        final int lastTask = masters.length - 1;
         for(int i = 0; i < lastTask; i++) {
             buf.append("SELECT * FROM \"");
             buf.append(unionViewName);
@@ -242,7 +255,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         buf.append(unionViewName);
         buf.append("task");
         buf.append(lastTask);
-        buf.append("\"\n);");
+        buf.append("\"\n)");
         return buf.toString();
     }
 
@@ -253,10 +266,10 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         }
         final StringBuilder buf = new StringBuilder(512);
         // #1 drop mock view
-        final String mockViewName = MOCK_TABLE_NAME_PREFIX + outputName;
+        final String mockViewName = getMockTableName(outputName);
         buf.append("DROP VIEW \"" + mockViewName + "\";\n");
         if(outputMethod != OutputMethod.view) {
-            final String unionViewName = getUnionViewName(outputName);
+            final String unionViewName = getMergeViewName(outputName);
             // #2 drop union view
             buf.append("DROP VIEW \"");
             buf.append(unionViewName);
@@ -274,8 +287,16 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return buf.toString();
     }
 
-    private static String getUnionViewName(String outputName) {
+    private static String getMockTableName(@Nonnull final String outputName) {
+        return MOCK_TABLE_NAME_PREFIX + outputName;
+    }
+
+    private static String getMergeViewName(@Nonnull final String outputName) {
         return TMP_TABLE_NAME_PREFIX + outputName;
+    }
+
+    private static String getTaskResultTableName(@Nonnull final String retTableName, final int taskNumber) {
+        return TMP_TABLE_NAME_PREFIX + retTableName + "task" + taskNumber;
     }
 
     private static TransferServer createTransferServer(@Nonnegative int concurrency) {
@@ -294,7 +315,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     private static String getReduceQuery(@Nonnull String queryTemplate, @Nonnull String outputName, @Nonnull SQLTranslator translator)
             throws GridException {
         String translated = translator.translateQuery(queryTemplate);
-        final String inputViewName = getUnionViewName(outputName);
+        final String inputViewName = getMergeViewName(outputName);
         return translated.replace("<src>", '"' + inputViewName + '"');
     }
 
@@ -351,13 +372,21 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                         throw new IllegalStateException("Copy Into table failed: " + outputName, e);
                     }
                     if(LOG.isInfoEnabled()) {
-                        LOG.info("Merged " + inserted + " records from " + result.getExecutedNode());
+                        LOG.info("Merged " + inserted + " records for '" + outputName + "' from "
+                                + result.getExecutedNode());
                     }
                 }
             });
         } else {
-            if(LOG.isInfoEnabled()) {
-                LOG.info("No result found on a node: " + result.getExecutedNode());
+            if(numFetchedRows == 0) {
+                if(LOG.isInfoEnabled()) {
+                    LOG.info("No result found on a node: " + result.getExecutedNode());
+                }
+            } else {
+                assert (numFetchedRows == -1);
+                if(LOG.isDebugEnabled()) {
+                    LOG.debug("TaskResultTable is directly created: " + task.getTaskTableName());
+                }
             }
         }
 
@@ -421,14 +450,10 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     private static String constructCopyIntoQuery(final File file, final ParallelSQLMapTaskResult result, final String outputName) {
         final int records = result.getNumRows();
         int taskNum = result.getTaskNumber();
-        final String tableName = getTemporaryTaskTableName(outputName, taskNum);
+        final String tableName = getTaskResultTableName(outputName, taskNum);
         final String filePath = file.getAbsolutePath();
         return "COPY " + records + " RECORDS INTO \"" + tableName + "\" FROM '" + filePath
                 + "' USING DELIMITERS '|','\n','\"'";
-    }
-
-    private static String getTemporaryTaskTableName(String retTableName, int taskNumber) {
-        return TMP_TABLE_NAME_PREFIX + retTableName + "task" + taskNumber;
     }
 
     private static void setSpeculativeTasks(@Nonnull final GridTaskResult result, @Nonnull final Map<String, ParallelSQLMapTask> remainingTasks, @Nonnull final Set<GridNode> finishedNodes) {
@@ -461,30 +486,48 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         // cancel remaining tasks (for speculative execution)  
         recvExecs.shutdownNow();
 
-        // Invoke final aggregation query
+        // #1 Invoke final aggregation query
+        final String res;
         final DBAccessor dba = registry.getDbAccessor();
-        String res = invokeReduceQuery(reduceQuery, outputName, dba, outputMethod);
-        // TODO clear up tmp resources in other thread
-
-        // Invoke garbage collection in other thread (remove tmp tables/views)
-        GarbageTableDestroyer destroyer = new GarbageTableDestroyer(destroyQuery, dba);
-        Thread destroyThread = new Thread(destroyer, "GarbageTableDestroyer");
-        destroyThread.setDaemon(true);
-        destroyThread.start();
+        final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true); /* autocommit=true*/
+        try {
+            createMergeView(conn, createMergeViewDDL);
+            res = invokeReduceQuery(conn, reduceQuery, outputName, outputMethod);
+        } finally {
+            JDBCUtils.closeQuietly(conn);
+            // #2 Invoke garbage collection in other thread (remove tmp tables/views)
+            invokeGarbageDestroyer(dba, destroyQuery);
+        }
 
         return res;
     }
 
-    private static String invokeReduceQuery(@Nonnull final String reduceQuery, @Nonnull final String outputName, @Nonnull final DBAccessor dba, final OutputMethod outputMethod)
+    private static void createMergeView(final Connection conn, final String ddl)
             throws GridException {
-        if(outputMethod.isDDL()) {
-            return invokeReduceDDL(dba, reduceQuery, outputName, outputMethod);
-        } else {
-            return invokeReduceDML(dba, reduceQuery, outputName, outputMethod);
+        try {
+            JDBCUtils.update(conn, ddl);
+        } catch (SQLException e) {
+            String errmsg = "failed running a reduce query: " + ddl;
+            LOG.error(errmsg, e);
+            try {
+                conn.rollback();
+            } catch (SQLException rbe) {
+                LOG.warn("Rollback failed", rbe);
+            }
+            throw new GridException(errmsg, e);
         }
     }
 
-    private static String invokeReduceDML(final DBAccessor dba, final String reduceQuery, final String outputTableName, final OutputMethod outputMethod)
+    private static String invokeReduceQuery(final Connection conn, @Nonnull final String reduceQuery, @Nonnull final String outputName, final OutputMethod outputMethod)
+            throws GridException {
+        if(outputMethod.isDDL()) {
+            return invokeReduceDDL(conn, reduceQuery, outputName, outputMethod);
+        } else {
+            return invokeReduceDML(conn, reduceQuery, outputName, outputMethod);
+        }
+    }
+
+    private static String invokeReduceDML(final Connection conn, final String reduceQuery, final String outputTableName, final OutputMethod outputMethod)
             throws GridException {
         if(outputMethod != OutputMethod.csvFile) {
             throw new IllegalArgumentException("Unexpected OutputMethod: " + outputMethod);
@@ -501,7 +544,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             }
         };
 
-        final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true);
         if(LOG.isInfoEnabled()) {
             LOG.info("Executing a Reduce SQL query: \n" + reduceQuery);
         }
@@ -511,9 +553,13 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         } catch (SQLException e) {
             String errmsg = "failed running a reduce query: " + reduceQuery;
             LOG.error(errmsg, e);
+            try {
+                conn.rollback();
+            } catch (SQLException rbe) {
+                LOG.warn("Rollback failed", rbe);
+            }
             throw new GridException(errmsg, e);
         } finally {
-            JDBCUtils.closeQuietly(conn);
             writer.close();
         }
 
@@ -524,7 +570,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return outFile.getAbsolutePath();
     }
 
-    private static String invokeReduceDDL(final DBAccessor dba, final String reduceQuery, final String outputTableName, final OutputMethod outputMethod)
+    private static String invokeReduceDDL(final Connection conn, final String reduceQuery, final String outputTableName, final OutputMethod outputMethod)
             throws GridException {
         final String query;
         if(outputMethod == OutputMethod.view) {
@@ -534,7 +580,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         } else {
             throw new IllegalStateException("Unexpected OutputMethod: " + outputMethod);
         }
-        final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true);
         if(LOG.isInfoEnabled()) {
             LOG.info("Executing a Reduce SQL query: \n" + query);
         }
@@ -543,11 +588,21 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         } catch (SQLException e) {
             String errmsg = "failed running a reduce query: " + query;
             LOG.error(errmsg, e);
+            try {
+                conn.rollback();
+            } catch (SQLException rbe) {
+                LOG.warn("Rollback failed", rbe);
+            }
             throw new GridException(errmsg, e);
-        } finally {
-            JDBCUtils.closeQuietly(conn);
         }
         return outputTableName;
+    }
+
+    private static void invokeGarbageDestroyer(final DBAccessor dba, final String destroyQuery) {
+        GarbageTableDestroyer destroyer = new GarbageTableDestroyer(destroyQuery, dba);
+        Thread destroyThread = new Thread(destroyer, "GarbageTableDestroyer");
+        destroyThread.setDaemon(true);
+        destroyThread.start();
     }
 
     private static final class GarbageTableDestroyer implements Runnable {

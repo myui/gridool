@@ -20,10 +20,12 @@
  */
 package gridool.db.sql;
 
+import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.GridJob;
 import gridool.GridNode;
 import gridool.GridResourceRegistry;
+import gridool.annotation.GridConfigResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridTaskAdapter;
 import gridool.db.catalog.DistributionCatalog;
@@ -70,22 +72,26 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
     private final GridNode taskMasterNode;
     private final int taskNumber;
     private final String query;
+    private final String taskTableName;
     private final InetAddress dstAddr;
     private final int dstPort;
 
     // remote only
     @GridRegistryResource
     private transient GridResourceRegistry registry;
+    @GridConfigResource
+    private transient GridConfiguration config;
 
     // local only
     private transient DistributionCatalog catalog;
 
     @SuppressWarnings("unchecked")
-    public ParallelSQLMapTask(GridJob job, GridNode masterNode, int taskNumber, String query, InetSocketAddress retSockAddr, DistributionCatalog catalog) {
+    public ParallelSQLMapTask(@Nonnull GridJob job, @Nonnull GridNode masterNode, int taskNumber, @Nonnull String query, @Nonnull String taskTableName, @Nonnull InetSocketAddress retSockAddr, @Nonnull DistributionCatalog catalog) {
         super(job, true);
         this.taskMasterNode = masterNode;
         this.taskNumber = taskNumber;
         this.query = query;
+        this.taskTableName = taskTableName;
         this.dstAddr = retSockAddr.getAddress();
         this.dstPort = retSockAddr.getPort();
         this.catalog = catalog;
@@ -116,6 +122,11 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         return taskMasterNode;
     }
 
+    @Nonnull
+    public String getTaskTableName() {
+        return taskTableName;
+    }
+
     @Override
     protected ParallelSQLMapTaskResult execute() throws GridException {
         assert (registry != null);
@@ -142,19 +153,26 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             throw new IllegalStateException();
         }
 
-        int fetchedRows = -1;
+        GridNode localNode = config.getLocalNode();
+        GridNode senderNode = getSenderNode();
+        assert (senderNode != null);
+        final boolean useCreateTableAS = senderNode.equals(localNode);
+
+        final int fetchedRows;
         final Connection dbConn = getDbConnection(taskMasterNode, registry);
         try {
             if(singleStatement) {
                 dbConn.setAutoCommit(true);
                 // #1 invoke COPY INTO file
-                fetchedRows = executeCopyIntoQuery(dbConn, selectQuery, tmpFile);
+                fetchedRows = useCreateTableAS ? executeCreateTableAs(dbConn, selectQuery, taskTableName)
+                        : executeCopyIntoFile(dbConn, selectQuery, tmpFile);
             } else {
                 dbConn.setAutoCommit(false);
                 // #1-1 DDL before map SELECT queries (e.g., create view)
                 issueDDLBeforeSelect(dbConn, queries);
                 // #1-2 invoke COPY INTO file
-                fetchedRows = executeCopyIntoQuery(dbConn, selectQuery, tmpFile);
+                fetchedRows = useCreateTableAS ? executeCreateTableAs(dbConn, selectQuery, taskTableName)
+                        : executeCopyIntoFile(dbConn, selectQuery, tmpFile);
                 // #1-3 DDL after map SELECT queries (e.g., drop view)
                 issueDDLAfterSelect(dbConn, queries);
                 dbConn.commit();
@@ -195,24 +213,31 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         return new ParallelSQLMapTaskResult(taskMasterNode, sentFileName, taskNumber, fetchedRows);
     }
 
-    private static int executeCopyIntoQuery(final Connection conn, final String mapQuery, final File outFile)
+    private static int executeCopyIntoFile(@Nonnull final Connection conn, @Nonnull final String mapQuery, @Nonnull final File outFile)
             throws SQLException {
         if(!outFile.canWrite()) {// sanity check
             throw new IllegalStateException("File is not writable: " + outFile.getAbsolutePath());
         }
-        String formedQuery = mapQuery.trim();
-        if(formedQuery.endsWith(";")) {
-            int endIndex = formedQuery.lastIndexOf(';');
-            formedQuery = formedQuery.substring(0, endIndex - 1);
-        }
+        assert (mapQuery.indexOf(';') == -1) : mapQuery;
         String filepath = outFile.getAbsolutePath();
-        String copyIntoQuery = "COPY (" + formedQuery + ") INTO '" + filepath
+        String copyIntoQuery = "COPY (" + mapQuery + ") INTO '" + filepath
                 + "' USING DELIMITERS '|','\n','\"'";
 
         if(LOG.isInfoEnabled()) {
             LOG.info("Executing a Map SQL query: \n" + copyIntoQuery);
         }
         return JDBCUtils.update(conn, copyIntoQuery);
+    }
+
+    private static int executeCreateTableAs(@Nonnull final Connection conn, @Nonnull final String mapQuery, @Nonnull final String taskTableName)
+            throws SQLException {
+        assert (mapQuery.indexOf(';') == -1) : mapQuery;
+        String ddl = "CREATE TABLE \"" + taskTableName + "\" AS (" + mapQuery + ") WITH DATA";
+        if(LOG.isInfoEnabled()) {
+            LOG.info("Executing a Map SQL query: \n" + ddl);
+        }
+        JDBCUtils.update(conn, ddl);
+        return -1;
     }
 
     private static void issueDDLBeforeSelect(@Nonnull final Connection conn, @Nonnull final QueryString[] queries)
