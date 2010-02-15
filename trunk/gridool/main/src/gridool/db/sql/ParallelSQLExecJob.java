@@ -375,6 +375,10 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         GridNode taskMaster = taskResult.getMasterNode();
         finishedNodes.add(taskMaster);
 
+        LockManager lockMgr = registry.getLockManager();
+        GridNode localNode = config.getLocalNode();
+        final ReadWriteLock rwlock = lockMgr.obtainLock(localNode);
+
         // # 3 invoke COPY INTO table if needed
         final int numFetchedRows = taskResult.getNumRows();
         if(numFetchedRows > 0) {
@@ -383,7 +387,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                 public void run() {
                     final int inserted;
                     try {
-                        inserted = invokeCopyIntoTable(taskResult, outputName, dba);
+                        inserted = invokeCopyIntoTable(taskResult, outputName, dba, rwlock);
                     } catch (GridException e) {
                         LOG.error(e);
                         throw new IllegalStateException("Copy Into table failed: " + outputName, e);
@@ -422,19 +426,23 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return GridTaskResultPolicy.CONTINUE;
     }
 
-    private static int invokeCopyIntoTable(@Nonnull final ParallelSQLMapTaskResult result, @Nonnull final String outputName, @Nonnull final DBAccessor dba)
+    private static int invokeCopyIntoTable(@Nonnull final ParallelSQLMapTaskResult result, @Nonnull final String outputName, @Nonnull final DBAccessor dba, @Nonnull final ReadWriteLock rwlock)
             throws GridException {
         final File file = getImportingFile(result, outputName);
         final String sql = constructCopyIntoQuery(file, result, outputName);
+
+        final Lock rlock = rwlock.readLock(); // [Trick] read lock for system tables
         final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true);
         final int affected;
         try {
+            rlock.lock();
             affected = JDBCUtils.update(conn, sql);
             //conn.commit();
         } catch (SQLException e) {
             LOG.error(e);
             throw new GridException("failed to execute a query: " + sql, e);
         } finally {
+            rlock.unlock();
             if(!file.delete()) {
                 LOG.warn("Could not delete a file: " + file.getAbsolutePath());
             }
@@ -525,8 +533,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
     private static void createMergeView(@Nonnull final Connection conn, @Nonnull final String ddl, @Nonnull final ReadWriteLock rwlock)
             throws GridException {
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("Create a merge view: \n" + ddl);
+        if(LOG.isInfoEnabled()) {
+            LOG.info("Create a merge view: \n" + ddl);
         }
         final Lock wlock = rwlock.writeLock();
         try {
