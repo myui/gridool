@@ -37,6 +37,7 @@ import javax.annotation.Nonnull;
  * <DIV lang="ja"></DIV>
  * 
  * @author Makoto YUI (yuin405@gmail.com)
+ * @deprecated
  */
 public final class VacuumingLockManager implements LockManager {
 
@@ -62,30 +63,27 @@ public final class VacuumingLockManager implements LockManager {
 
     private static final class ThrowawayReadWriteLock implements ReadWriteLock {
 
-        private final Lock readLock;
-        private final Lock writeLock;
+        private final ReadWriteLock delegate;
         private final Object key;
 
         private final ConcurrentMap<Object, ThrowawayReadWriteLock> holder;
         private final AtomicInteger lockAcquired;
 
         public ThrowawayReadWriteLock(Object key, ConcurrentMap<Object, ThrowawayReadWriteLock> holder) {
-            ReadWriteLock delegate = new ReentrantReadWriteLock();
-            Lock rlock = delegate.readLock();
-            this.readLock = new ThrowawayLockAdapter(rlock, this);
-            Lock wlock = delegate.writeLock();
-            this.writeLock = new ThrowawayLockAdapter(wlock, this);
+            this.delegate = new ReentrantReadWriteLock();
             this.key = key;
             this.holder = holder;
             this.lockAcquired = new AtomicInteger(0);
         }
 
         public Lock readLock() {
-            return readLock;
+            Lock lock = delegate.readLock();
+            return new ThrowawayLockAdapter(lock, this);
         }
 
         public Lock writeLock() {
-            return writeLock;
+            Lock lock = delegate.writeLock();
+            return new ThrowawayLockAdapter(lock, this);
         }
 
     }

@@ -38,7 +38,7 @@ public final class LockManagerFactory {
     private LockManagerFactory() {}
 
     public static LockManager createLockManager(@Nonnull GridConfiguration config) {
-        final String mgrType = Settings.get("gridool.lockmgr", "vacuum");
+        final String mgrType = Settings.get("gridool.lockmgr", "softkey");
         if("softkey".equalsIgnoreCase(mgrType)) {
             return new SoftKeyLockManager();
         } else if("vacuum".equalsIgnoreCase(mgrType)) {
