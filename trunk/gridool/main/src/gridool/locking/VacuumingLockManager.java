@@ -62,27 +62,30 @@ public final class VacuumingLockManager implements LockManager {
 
     private static final class ThrowawayReadWriteLock implements ReadWriteLock {
 
-        private final ReadWriteLock delegate;
+        private final Lock readLock;
+        private final Lock writeLock;
         private final Object key;
 
         private final ConcurrentMap<Object, ThrowawayReadWriteLock> holder;
         private final AtomicInteger lockAcquired;
 
         public ThrowawayReadWriteLock(Object key, ConcurrentMap<Object, ThrowawayReadWriteLock> holder) {
-            this.delegate = new ReentrantReadWriteLock();
+            ReadWriteLock delegate = new ReentrantReadWriteLock();
+            Lock rlock = delegate.readLock();
+            this.readLock = new ThrowawayLockAdapter(rlock, this);
+            Lock wlock = delegate.writeLock();
+            this.writeLock = new ThrowawayLockAdapter(wlock, this);
             this.key = key;
             this.holder = holder;
             this.lockAcquired = new AtomicInteger(0);
         }
 
         public Lock readLock() {
-            Lock lock = delegate.readLock();
-            return new ThrowawayLockAdapter(lock, this);
+            return readLock;
         }
 
         public Lock writeLock() {
-            Lock lock = delegate.writeLock();
-            return new ThrowawayLockAdapter(lock, this);
+            return writeLock;
         }
 
     }

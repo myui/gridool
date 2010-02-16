@@ -521,11 +521,11 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true); /* autocommit=true*/
         try {
             createMergeView(conn, createMergeViewDDL, rwlock);
-            res = invokeReduceQuery(conn, reduceQuery, outputName, outputMethod);
+            res = invokeReduceQuery(conn, reduceQuery, outputName, outputMethod, rwlock);
         } finally {
             JDBCUtils.closeQuietly(conn);
             // #2 Invoke garbage collection in other thread (remove tmp tables/views)
-            invokeGarbageDestroyer(dba, destroyQuery);
+            invokeGarbageDestroyer(dba, destroyQuery, rwlock);
         }
 
         return res;
@@ -554,16 +554,16 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         }
     }
 
-    private static String invokeReduceQuery(@Nonnull final Connection conn, @Nonnull final String reduceQuery, @Nonnull final String outputName, final OutputMethod outputMethod)
+    private static String invokeReduceQuery(@Nonnull final Connection conn, @Nonnull final String reduceQuery, @Nonnull final String outputName, @Nonnull final OutputMethod outputMethod, @Nonnull final ReadWriteLock rwlock)
             throws GridException {
         if(outputMethod.isDDL()) {
-            return invokeReduceDDL(conn, reduceQuery, outputName, outputMethod);
+            return invokeReduceDDL(conn, reduceQuery, outputName, outputMethod, rwlock);
         } else {
-            return invokeReduceDML(conn, reduceQuery, outputName, outputMethod);
+            return invokeReduceDML(conn, reduceQuery, outputName, outputMethod, rwlock);
         }
     }
 
-    private static String invokeReduceDML(final Connection conn, final String reduceQuery, final String outputTableName, final OutputMethod outputMethod)
+    private static String invokeReduceDML(final Connection conn, final String reduceQuery, final String outputTableName, final OutputMethod outputMethod, final ReadWriteLock rwlock)
             throws GridException {
         if(outputMethod != OutputMethod.csvFile) {
             throw new IllegalArgumentException("Unexpected OutputMethod: " + outputMethod);
@@ -583,7 +583,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         if(LOG.isInfoEnabled()) {
             LOG.info("Executing a Reduce SQL query: \n" + reduceQuery);
         }
+        final Lock rlock = rwlock.readLock();
         try {
+            rlock.lock();
             conn.setReadOnly(true);
             JDBCUtils.query(conn, reduceQuery, rsh);
         } catch (SQLException e) {
@@ -596,6 +598,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             }
             throw new GridException(errmsg, e);
         } finally {
+            rlock.unlock();
             writer.close();
         }
 
@@ -606,7 +609,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return outFile.getAbsolutePath();
     }
 
-    private static String invokeReduceDDL(final Connection conn, final String reduceQuery, final String outputTableName, final OutputMethod outputMethod)
+    private static String invokeReduceDDL(final Connection conn, final String reduceQuery, final String outputTableName, final OutputMethod outputMethod, final ReadWriteLock rwlock)
             throws GridException {
         final String query;
         if(outputMethod == OutputMethod.view) {
@@ -619,7 +622,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         if(LOG.isInfoEnabled()) {
             LOG.info("Executing a Reduce SQL query: \n" + query);
         }
+        final Lock wlock = rwlock.writeLock();
         try {
+            wlock.lock();
             JDBCUtils.update(conn, query);
         } catch (SQLException e) {
             String errmsg = "failed running a reduce query: " + query;
@@ -630,12 +635,14 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                 LOG.warn("Rollback failed", rbe);
             }
             throw new GridException(errmsg, e);
+        } finally {
+            wlock.unlock();
         }
         return outputTableName;
     }
 
-    private static void invokeGarbageDestroyer(final DBAccessor dba, final String destroyQuery) {
-        GarbageTableDestroyer destroyer = new GarbageTableDestroyer(destroyQuery, dba);
+    private static void invokeGarbageDestroyer(@Nonnull final DBAccessor dba, @Nonnull final String destroyQuery, @Nonnull final ReadWriteLock rwlock) {
+        GarbageTableDestroyer destroyer = new GarbageTableDestroyer(destroyQuery, dba, rwlock);
         Thread destroyThread = new Thread(destroyer, "GarbageTableDestroyer");
         destroyThread.setDaemon(true);
         destroyThread.start();
@@ -645,26 +652,31 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
         private final String destroyQuery;
         private final DBAccessor dba;
+        private final ReadWriteLock rwlock;
 
-        GarbageTableDestroyer(@CheckForNull String destroyQuery, @Nonnull DBAccessor dba) {
+        GarbageTableDestroyer(@CheckForNull String destroyQuery, @Nonnull DBAccessor dba, @Nonnull ReadWriteLock rwlock) {
             if(destroyQuery == null) {
                 throw new IllegalArgumentException();
             }
             this.destroyQuery = destroyQuery;
             this.dba = dba;
+            this.rwlock = rwlock;
         }
 
         public void run() {
             Connection conn = null;
+            final Lock wlock = rwlock.writeLock();
             try {
                 conn = dba.getPrimaryDbConnection();
                 conn.setAutoCommit(false);
+                wlock.lock();
                 JDBCUtils.update(conn, destroyQuery);
                 conn.commit();
             } catch (SQLException e) {
                 String errmsg = "failed running a destroy query: " + destroyQuery;
                 LOG.warn(errmsg, e);
             } finally {
+                wlock.unlock();
                 JDBCUtils.closeQuietly(conn);
             }
         }
