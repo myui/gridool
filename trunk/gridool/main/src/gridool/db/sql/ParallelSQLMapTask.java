@@ -167,14 +167,16 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         final Connection dbConn = getDbConnection(taskMasterNode, registry);
         try {
             if(singleStatement) {
-                dbConn.setAutoCommit(true);
                 // #1 invoke COPY INTO file
                 if(useCreateTableAS) {
+                    dbConn.setAutoCommit(true);
                     LockManager lockMgr = registry.getLockManager();
                     ReadWriteLock rwlock = lockMgr.obtainLock(localNode);
                     fetchedRows = executeCreateTableAs(dbConn, selectQuery, taskTableName, rwlock);
                 } else {
+                    dbConn.setAutoCommit(false);
                     fetchedRows = executeCopyIntoFile(dbConn, selectQuery, taskTableName, tmpFile);
+                    dbConn.commit();
                 }
             } else {
                 dbConn.setAutoCommit(false);
@@ -240,10 +242,9 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             String tmpTableName = "copy_" + taskTableName;
             String createTmpTableQuery = "CREATE LOCAL TEMPORARY TABLE \"" + tmpTableName
                     + "\" AS (" + mapQuery + ") WITH DATA";
-            int rows = JDBCUtils.update(conn, createTmpTableQuery);
+            int ret = JDBCUtils.update(conn, createTmpTableQuery);
             if(LOG.isInfoEnabled()) {
-                LOG.info("Create a LOCAL TEMPORARY TABLE containing " + rows + " records: \n"
-                        + createTmpTableQuery);
+                LOG.info("Create a LOCAL TEMPORARY TABLE: " + ret + '\n' + createTmpTableQuery);
             }
             copyIntoQuery = "COPY (SELECT * FROM \"" + tmpTableName + "\") INTO '" + filepath
                     + "' USING DELIMITERS '|','\n','\"'";
