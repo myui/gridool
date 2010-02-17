@@ -240,11 +240,11 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             String tmpTableName = "copy_" + taskTableName;
             String createTmpTableQuery = "CREATE LOCAL TEMPORARY TABLE \"" + tmpTableName
                     + "\" AS (" + mapQuery + ") WITH DATA";
+            int rows = JDBCUtils.update(conn, createTmpTableQuery);
             if(LOG.isInfoEnabled()) {
-                LOG.info("Create a LOCAL TEMPORARY TABLE for COPY INTO file: \n"
+                LOG.info("Create a LOCAL TEMPORARY TABLE containing " + rows + " records: \n"
                         + createTmpTableQuery);
             }
-            JDBCUtils.update(conn, createTmpTableQuery);
             copyIntoQuery = "COPY (SELECT * FROM \"" + tmpTableName + "\") INTO '" + filepath
                     + "' USING DELIMITERS '|','\n','\"'";
         } else {
