@@ -56,6 +56,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import xbird.config.Settings;
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.net.NetUtils;
@@ -70,6 +71,7 @@ import xbird.util.xfer.TransferUtils;
  */
 public final class ParallelSQLMapTask extends GridTaskAdapter {
     private static final long serialVersionUID = 2478800827882047565L;
+    private static final boolean DO_WORKAROUND_FOR_COPYINTOFILE = Boolean.parseBoolean(Settings.getThroughSystemProperty("gridool.db.monetdb.create_tmptbl_for_copyintofile_bug"));
     private static final Log LOG = LogFactory.getLog(ParallelSQLMapTask.class);
 
     private final GridNode taskMasterNode;
@@ -172,7 +174,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
                     ReadWriteLock rwlock = lockMgr.obtainLock(localNode);
                     fetchedRows = executeCreateTableAs(dbConn, selectQuery, taskTableName, rwlock);
                 } else {
-                    fetchedRows = executeCopyIntoFile(dbConn, selectQuery, tmpFile);
+                    fetchedRows = executeCopyIntoFile(dbConn, selectQuery, taskTableName, tmpFile);
                 }
             } else {
                 dbConn.setAutoCommit(false);
@@ -184,7 +186,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
                     ReadWriteLock rwlock = lockMgr.obtainLock(localNode);
                     fetchedRows = executeCreateTableAs(dbConn, selectQuery, taskTableName, rwlock);
                 } else {
-                    fetchedRows = executeCopyIntoFile(dbConn, selectQuery, tmpFile);
+                    fetchedRows = executeCopyIntoFile(dbConn, selectQuery, taskTableName, tmpFile);
                 }
                 // #1-3 DDL after map SELECT queries (e.g., drop view)
                 issueDDLAfterSelect(dbConn, queries);
@@ -226,16 +228,23 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         return new ParallelSQLMapTaskResult(taskMasterNode, sentFileName, taskNumber, fetchedRows);
     }
 
-    private static int executeCopyIntoFile(@Nonnull final Connection conn, @Nonnull final String mapQuery, @Nonnull final File outFile)
+    private static int executeCopyIntoFile(@Nonnull final Connection conn, @Nonnull final String mapQuery, @Nonnull final String taskTableName, @Nonnull final File outFile)
             throws SQLException {
         if(!outFile.canWrite()) {// sanity check
             throw new IllegalStateException("File is not writable: " + outFile.getAbsolutePath());
         }
         assert (mapQuery.indexOf(';') == -1) : mapQuery;
         String filepath = outFile.getAbsolutePath();
-        String copyIntoQuery = "COPY (" + mapQuery + ") INTO '" + filepath
-                + "' USING DELIMITERS '|','\n','\"'";
-
+        final String copyIntoQuery;
+        if(DO_WORKAROUND_FOR_COPYINTOFILE) {
+            String tmpTableName = "copy_" + taskTableName;
+            copyIntoQuery = "CREATE LOCAL TEMPORARY TABLE \"" + tmpTableName + "\" AS (" + mapQuery
+                    + ") WITH DATA; COPY (SELECT * FROM \"" + tmpTableName + "\") INTO '"
+                    + filepath + "' USING DELIMITERS '|','\n','\"'";
+        } else {
+            copyIntoQuery = "COPY (" + mapQuery + ") INTO '" + filepath
+                    + "' USING DELIMITERS '|','\n','\"'";
+        }
         if(LOG.isInfoEnabled()) {
             LOG.info("Executing a Map SQL query: \n" + copyIntoQuery);
         }
