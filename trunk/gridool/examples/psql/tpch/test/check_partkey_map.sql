@@ -2,7 +2,8 @@ select
     count(*) as C1
 from
     part,
-    partsupp
+    partsupp,
+    lineitem
 where
 	part partitioned by (p_partkey)
 	and partsupp partitioned by (ps_partkey)

@@ -3,7 +3,7 @@ select
 from
     nation,
     supplier,
-    costomer
+    customer
 where
-    ps_suppkey = s_suppkey
+	n_nationkey = s_nationkey
     and n_nationkey = c_nationkey
