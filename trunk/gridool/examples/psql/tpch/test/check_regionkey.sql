@@ -5,4 +5,3 @@ from
     nation
 where
     r_regionkey = n_regionkey
-

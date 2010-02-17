@@ -5,5 +5,3 @@ from
     lineitem
 where
     o_orderkey = l_orderkey
-
-
