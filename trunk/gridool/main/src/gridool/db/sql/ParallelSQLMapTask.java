@@ -251,10 +251,17 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             copyIntoQuery = "COPY (" + mapQuery + ") INTO '" + filepath
                     + "' USING DELIMITERS '|','\n','\"'";
         }
-        if(LOG.isInfoEnabled()) {
-            LOG.info("Executing a Map SQL query: \n" + copyIntoQuery);
+        int affectedRows = JDBCUtils.update(conn, copyIntoQuery);
+        if(affectedRows < 0) {
+            LOG.warn("Failed to execute a Map SQL query? [Affected rows=" + affectedRows + "]: \n"
+                    + copyIntoQuery);
+        } else {
+            if(LOG.isInfoEnabled()) {
+                LOG.info("Executing a Map SQL query [Affected rows=" + affectedRows + "]: \n"
+                        + copyIntoQuery);
+            }
         }
-        return JDBCUtils.update(conn, copyIntoQuery);
+        return affectedRows;
     }
 
     private static int executeCreateTableAs(@Nonnull final Connection conn, @Nonnull final String mapQuery, @Nonnull final String taskTableName, @Nonnull final ReadWriteLock rwlock)
