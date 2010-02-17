@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import xbird.config.Settings;
 import xbird.storage.DbCollection;
 import xbird.util.datetime.StopWatch;
 import xbird.util.io.IOUtils;
@@ -53,7 +54,7 @@ import xbird.util.jdbc.JDBCUtils;
 public final class MonetDBParallelLoadOperation extends DBOperation {
     private static final long serialVersionUID = 2815346044185945907L;
     private static final Log LOG = LogFactory.getLog(MonetDBParallelLoadOperation.class);
-    private static final boolean DEBUG_NO_ALTER_ADD_HIDDEN = System.getProperty("gridool.debug.no_alter_hidden") != null;
+    private static final boolean DEBUG_NO_ALTER_ADD_HIDDEN = Settings.getThroughSystemProperty("gridool.debug.no_alter_hidden") != null;
     private static final String driverClassName = "nl.cwi.monetdb.jdbc.MonetDriver";
 
     @Nonnull
