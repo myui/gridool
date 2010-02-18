@@ -28,6 +28,7 @@ import gridool.GridNode;
 import gridool.GridTask;
 import gridool.communication.payload.GridNodeInfo;
 import gridool.db.helpers.DBAccessor;
+import gridool.db.helpers.GridDbUtils;
 import gridool.processors.task.GridTaskProcessor;
 import gridool.replication.jobs.ReplicateTaskJob;
 
@@ -126,7 +127,7 @@ public final class ReplicationManager {
                 return null;
             }
         };
-        final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true);
+        final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, true);
         try {
             if(!prepareReplicaTable(conn, replicaTableName, true)) {
                 JDBCUtils.query(conn, sql, rsh);

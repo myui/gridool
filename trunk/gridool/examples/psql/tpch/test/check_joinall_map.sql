@@ -1,5 +1,5 @@
 select 
-    count(*) as C1
+    count(1) as C1
 from
     part,
     partsupp,

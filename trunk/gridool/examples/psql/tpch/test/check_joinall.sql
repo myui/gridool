@@ -1,5 +1,5 @@
 select 
-    count(*)
+    count(1)
 from
     part,
     partsupp,

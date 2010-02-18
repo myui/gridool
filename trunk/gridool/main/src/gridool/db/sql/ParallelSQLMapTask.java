@@ -30,6 +30,7 @@ import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridTaskAdapter;
 import gridool.db.catalog.DistributionCatalog;
 import gridool.db.helpers.DBAccessor;
+import gridool.db.helpers.GridDbUtils;
 import gridool.db.sql.SQLTranslator.QueryString;
 import gridool.locking.LockManager;
 import gridool.replication.ReplicationManager;
@@ -345,9 +346,9 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         final Connection dbConn;
         GridNode localMaster = replMgr.getLocalMasterNode();
         if(taskMasterNode.equals(localMaster)) {
-            dbConn = DBAccessor.getPrimaryDbConnection(dba, false);
+            dbConn = GridDbUtils.getPrimaryDbConnection(dba, false);
         } else {
-            final Connection primaryConn = DBAccessor.getPrimaryDbConnection(dba, false);
+            final Connection primaryConn = GridDbUtils.getPrimaryDbConnection(dba, false);
             try {
                 String replicaDbName = replMgr.getReplicaDatabaseName(primaryConn, taskMasterNode);
                 dbConn = dba.getConnection(replicaDbName);

@@ -20,7 +20,6 @@
  */
 package gridool.db.helpers;
 
-import gridool.GridException;
 import gridool.util.GridUtils;
 
 import java.sql.Connection;
@@ -115,23 +114,6 @@ public class DBAccessor {
 
     protected String extractDbName(@Nonnull String dburl) {
         return GridUtils.extractDbName(dburl);
-    }
-
-    @Nonnull
-    public static Connection getPrimaryDbConnection(final DBAccessor dba, boolean autoCommit)
-            throws GridException {
-        final Connection conn;
-        try {
-            conn = dba.getPrimaryDbConnection();
-            if(conn.getAutoCommit() != autoCommit) {
-                conn.setAutoCommit(autoCommit);
-            }
-        } catch (SQLException e) {
-            LOG.error(e);
-            throw new GridException("failed connecting to the primary database: "
-                    + dba.getPrimaryDbName());
-        }
-        return conn;
     }
 
 }

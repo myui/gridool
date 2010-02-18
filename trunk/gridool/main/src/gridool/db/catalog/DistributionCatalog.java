@@ -23,6 +23,7 @@ package gridool.db.catalog;
 import gridool.GridException;
 import gridool.GridNode;
 import gridool.db.helpers.DBAccessor;
+import gridool.db.helpers.GridDbUtils;
 import gridool.util.GridUtils;
 
 import java.sql.Connection;
@@ -99,7 +100,7 @@ public final class DistributionCatalog {
 
     public void start() throws GridException {
 
-        final Connection conn = DBAccessor.getPrimaryDbConnection(dbAccessor, true);
+        final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, true);
         try {
             if(!prepareTables(conn, distributionTableName, true)) {
                 inquireDistributionTable(conn);
@@ -214,7 +215,7 @@ public final class DistributionCatalog {
             final String insertQuery = "INSERT INTO \"" + distributionTableName
                     + "\" VALUES(?, ?, ?, ?)";
             final Object[][] params = toNewParams(distKey, master, slaves);
-            final Connection conn = DBAccessor.getPrimaryDbConnection(dbAccessor, false);
+            final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, false);
             try {
                 JDBCUtils.batch(conn, insertQuery, params);
                 conn.commit();
@@ -310,7 +311,7 @@ public final class DistributionCatalog {
             int nodeState = newState.getStateNumber();
             String nodeRaw = GridUtils.toNodeInfo(node);
             final Object[] params = new Object[] { nodeState, nodeRaw };
-            final Connection conn = DBAccessor.getPrimaryDbConnection(dbAccessor, true);
+            final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, true);
             try {
                 JDBCUtils.update(conn, sql, params);
             } catch (SQLException e) {
@@ -364,7 +365,7 @@ public final class DistributionCatalog {
                 issueCommit = false;
             }
             boolean autocommit = !issueCommit;
-            final Connection conn = DBAccessor.getPrimaryDbConnection(dbAccessor, autocommit);
+            final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, autocommit);
             try {
                 // inquire PK/FK relationship on database catalog
                 keys = inquirePartitioningKeyPositions(conn, templateTableName, fieldPartitionMap, false);

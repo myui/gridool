@@ -33,6 +33,7 @@ import gridool.construct.GridJobBase;
 import gridool.db.catalog.DistributionCatalog;
 import gridool.db.catalog.NodeState;
 import gridool.db.helpers.DBAccessor;
+import gridool.db.helpers.GridDbUtils;
 import gridool.db.sql.ParallelSQLMapTask.ParallelSQLMapTaskResult;
 import gridool.locking.LockManager;
 import gridool.routing.GridTaskRouter;
@@ -432,7 +433,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final String sql = constructCopyIntoQuery(file, result, outputName);
 
         final Lock rlock = rwlock.readLock(); // [Trick] read lock for system tables
-        final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true);
+        final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, true);
         final int affected;
         try {
             rlock.lock();
@@ -518,7 +519,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         // #1 Invoke final aggregation query
         final String res;
         final DBAccessor dba = registry.getDbAccessor();
-        final Connection conn = DBAccessor.getPrimaryDbConnection(dba, true); /* autocommit=true*/
+        final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, true); /* autocommit=true*/
         try {
             createMergeView(conn, createMergeViewDDL, rwlock);
             res = invokeReduceQuery(conn, reduceQuery, outputName, outputMethod, rwlock);

@@ -20,7 +20,9 @@
  */
 package gridool.util;
 
+import gridool.GridException;
 import gridool.GridJob;
+import gridool.GridJobFuture;
 import gridool.GridNode;
 import gridool.GridResourceRegistry;
 import gridool.GridTask;
@@ -35,6 +37,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -359,6 +362,18 @@ public final class GridUtils {
             return dburl.substring(dburl.lastIndexOf('/') + 1);
         } catch (StringIndexOutOfBoundsException e) {
             throw new IllegalArgumentException("Invalid DB url: " + dburl);
+        }
+    }
+
+    public static <T> T invokeGet(@Nonnull final GridJobFuture<T> future) throws GridException {
+        try {
+            return future.get();
+        } catch (InterruptedException ie) {
+            throw new GridException(ie);
+        } catch (ExecutionException ee) {
+            throw new GridException(ee);
+        } catch (Throwable e) {
+            throw new GridException(e);
         }
     }
 
