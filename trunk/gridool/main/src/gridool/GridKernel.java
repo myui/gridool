@@ -25,6 +25,7 @@ import gridool.communication.GridCommunicationManager;
 import gridool.communication.GridCommunicationService;
 import gridool.db.GridDatabaseService;
 import gridool.deployment.GridDeploymentJob;
+import gridool.dfs.GridDFSService;
 import gridool.directory.DirectoryService;
 import gridool.discovery.DiscoveryServiceProvider;
 import gridool.discovery.GridDiscoveryService;
@@ -107,8 +108,9 @@ public final class GridKernel {
 
         GridTaskProcessorService taskProcServ = GridProcessorProvider.createTaskProcessorService(communicationMgr, monitor, resourceRegistry, config);
         DirectoryService dirServ = new DirectoryService(config, resourceRegistry);
+        GridDFSService dfsServ = new GridDFSService(config);
 
-        registerServices(metricsServ, discoveryServ, communicationServ, taskProcServ, dirServ);
+        registerServices(metricsServ, discoveryServ, communicationServ, taskProcServ, dirServ, dfsServ);
 
         // DB services
         if(config.isDbFeatureEnabled()) {
