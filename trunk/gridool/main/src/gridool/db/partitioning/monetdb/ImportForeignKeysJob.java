@@ -141,7 +141,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         return Boolean.TRUE;
     }
 
-    static final class CreateMissingImportedKeyViewJob extends GridJobBase<JobConf, Boolean> {
+    public static final class CreateMissingImportedKeyViewJob extends GridJobBase<JobConf, Boolean> {
         private static final long serialVersionUID = -7341912223637268324L;
 
         public CreateMissingImportedKeyViewJob() {
@@ -328,7 +328,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
     }
 
-    static final class RetrieveMissingForeignKeysJob extends GridJobBase<JobConf, Boolean> {
+    public static final class RetrieveMissingForeignKeysJob extends GridJobBase<JobConf, Boolean> {
         private static final long serialVersionUID = -1419333559953426203L;
 
         @GridConfigResource

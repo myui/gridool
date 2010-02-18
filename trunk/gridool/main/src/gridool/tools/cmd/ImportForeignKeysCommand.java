@@ -53,10 +53,10 @@ public final class ImportForeignKeysCommand extends CommandBase {
         if(!"import".equalsIgnoreCase(args[0])) {
             return false;
         }
-        if("foreign".equalsIgnoreCase(args[1])) {
+        if(!"foreign".equalsIgnoreCase(args[1])) {
             return false;
         }
-        if("keys".equalsIgnoreCase(args[2])) {
+        if(!"keys".equalsIgnoreCase(args[2])) {
             return false;
         }
         return true;
