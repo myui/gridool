@@ -170,6 +170,9 @@ public final class DistributionCatalog {
                     }
                     PartitionKey key = new PartitionKey(isPrimaryKey, partitionId);
                     columnMapping.put(columnName, key);
+                    if(isPrimaryKey) {
+                        columnMapping.put(DummyFieldNameForPrimaryKey, key);
+                    }
                 }
                 return null;
             }
@@ -485,13 +488,13 @@ public final class DistributionCatalog {
         }
 
         int shift = 0;
-        if(pkeyIdxs != null) {
+        if(pkeyIdxs != null && pkeyColumns == 1) {// FIXME workaround for avoiding multiple keys for partitioning key
             PartitionKey pkeyForPrimary = new PartitionKey(true, 1);
             shift++;
             fieldPartitionMap.put(DummyFieldNameForPrimaryKey, pkeyForPrimary);
-            if(pkeyColumns == 1) {
-                fieldPartitionMap.put(pkColumnName, pkeyForPrimary);
-            }
+            //if(pkeyColumns == 1) {
+            fieldPartitionMap.put(pkColumnName, pkeyForPrimary);
+            //}
         }
         if(fkeyIdxs != null) {
             for(int i = 0; i < fkeyIdxs.length; i++) {
@@ -512,14 +515,17 @@ public final class DistributionCatalog {
             return;
         }
         final String sql = "INSERT INTO \"" + partitioningKeyTableName + "\" VALUES(?, ?, ?, ?)";
-        final Object[][] params = new Object[numPartitionKeys][];
-        int i = 0;
+        final List<Object[]> paramsList = new ArrayList<Object[]>(fieldPartitionMap.size());
         for(final Map.Entry<String, PartitionKey> e : fieldPartitionMap.entrySet()) {
             String columnName = e.getKey();
             PartitionKey key = e.getValue();
-            params[i] = new Object[] { tableName, columnName, key.isPrimary, key.partitionNo };
-            i++;
+            if(key.isPrimary && DummyFieldNameForPrimaryKey.equals(columnName)) {
+                continue;
+            }
+            Object[] o = new Object[] { tableName, columnName, key.isPrimary, key.partitionNo };
+            paramsList.add(o);
         }
+        Object[][] params = ArrayUtils.toArray(paramsList, Object[][].class);
         JDBCUtils.batch(conn, sql, params);
     }
 
