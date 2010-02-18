@@ -102,7 +102,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         GridJobFuture<Boolean> future1 = kernel.execute(CreateMissingImportedKeyViewJob.class, jobConf);
         GridUtils.invokeGet(future1);
 
-        // #2 ship missing foreign keys and retrieve data
+        // #2 ship missing foreign keys and retrieve referrencing data
         GridJobFuture<Boolean> future2 = kernel.execute(RetrieveMissingForeignKeysJob.class, jobConf);
         GridUtils.invokeGet(future2);
 
