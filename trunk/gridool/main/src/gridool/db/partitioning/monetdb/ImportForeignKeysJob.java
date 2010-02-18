@@ -78,10 +78,10 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
     private static final long serialVersionUID = -1580857354649767246L;
 
     @GridKernelResource
-    private GridKernel kernel;
+    private transient GridKernel kernel;
 
     @GridRegistryResource
-    private GridResourceRegistry registry;
+    private transient GridResourceRegistry registry;
 
     public ImportForeignKeysJob() {
         super();
@@ -254,7 +254,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 buf.append("\" r ON ");
                 final List<String> pkColumns = fk.getPkColumnNames();
                 final int numPkColumns = pkColumns.size();
-                if(numFkColumns == numPkColumns) {
+                if(numFkColumns != numPkColumns) {
                     throw new IllegalStateException("numFkColumns(" + numFkColumns
                             + ") != numPkColumns(" + numPkColumns + ')');
                 }
