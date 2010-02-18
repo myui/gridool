@@ -18,7 +18,7 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.mapred;
+package gridool.tools;
 
 import gridool.GridClient;
 import gridool.db.partitioning.DBPartitioningJob;
