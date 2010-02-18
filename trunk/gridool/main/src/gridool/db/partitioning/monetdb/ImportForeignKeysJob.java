@@ -134,11 +134,11 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
     }
 
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
-        return null;
+        return GridTaskResultPolicy.CONTINUE;
     }
 
     public Boolean reduce() throws GridException {
-        return null;
+        return Boolean.TRUE;
     }
 
     static final class CreateMissingImportedKeyViewJob extends GridJobBase<JobConf, Boolean> {
