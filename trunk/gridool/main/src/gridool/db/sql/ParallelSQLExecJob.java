@@ -44,7 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.net.InetSocketAddress;
+import java.net.InetAddress;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -75,9 +75,7 @@ import xbird.util.csv.CsvWriter;
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.jdbc.ResultSetHandler;
-import xbird.util.xfer.RecievedFileWriter;
-import xbird.util.xfer.TransferRequestListener;
-import xbird.util.xfer.TransferServer;
+import xbird.util.net.NetUtils;
 
 /**
  * 
@@ -90,7 +88,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     private static final long serialVersionUID = -3258710936720234846L;
     private static final Log LOG = LogFactory.getLog(ParallelSQLExecJob.class);
 
-    private static final int DEFAULT_RECVFILE_WRITER_CONCURRENCY = 3;
     private static final int DEFAULT_COPYINTO_TABLE_CONCURRENCY = 2;
     private static final float DEFAULT_INVOKE_SPECULATIVE_TASKS_FACTOR = 0.75f;
     private static final String TMP_TABLE_NAME_PREFIX = "_tmp";
@@ -117,7 +114,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     private transient long mapStarted;
     private transient long waitForStartSpeculativeTask;
     private transient int thresholdForSpeculativeTask;
-    private transient ExecutorService recvExecs;
+    //private transient ExecutorService recvExecs;
     private transient ExecutorService copyintoExecs;
 
     // --------------------------------------------
@@ -151,22 +148,15 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final String outputName = jobConf.getOutputName();
         runPreparation(dba, mapQuery, masters, localNode, rwlock, outputName);
 
-        // run file receiver
-        final InetSocketAddress sockAddr;
-        final TransferServer xferServer = createTransferServer(jobConf.getRecvFileConcurrency());
-        try {
-            sockAddr = xferServer.setup();
-        } catch (IOException e) {
-            throw new GridException("failed to setup TransferServer", e);
-        }
-
         // phase #2 map tasks
+        final InetAddress localHostAddr = NetUtils.getLocalHost();
+        final int port = config.getFileReceiverPort();
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
         final Map<String, ParallelSQLMapTask> reverseMap = new HashMap<String, ParallelSQLMapTask>(numNodes);
         for(int tasknum = 0; tasknum < numNodes; tasknum++) {
             GridNode node = masters[tasknum];
             String taskTableName = getTaskResultTableName(outputName, tasknum);
-            ParallelSQLMapTask task = new ParallelSQLMapTask(this, node, tasknum, mapQuery, taskTableName, sockAddr, catalog);
+            ParallelSQLMapTask task = new ParallelSQLMapTask(this, node, tasknum, mapQuery, taskTableName, localHostAddr, port, catalog);
             map.put(task, node);
             String taskId = task.getTaskId();
             reverseMap.put(taskId, task);
@@ -183,7 +173,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         this.waitForStartSpeculativeTask = (numNodes <= 1) ? -1L
                 : jobConf.getWaitForStartSpeculativeTask();
         this.thresholdForSpeculativeTask = Math.max(1, (int) (numNodes * jobConf.getInvokeSpeculativeTasksFactor()));
-        this.recvExecs = startFileReciever(xferServer);
         this.copyintoExecs = ExecutorFactory.newFixedThreadPool(jobConf.getCopyIntoTableConcurrency(), "CopyIntoTableThread", true);
 
         if(LOG.isDebugEnabled()) {
@@ -315,19 +304,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
     private static String getTaskResultTableName(@Nonnull final String retTableName, final int taskNumber) {
         return TMP_TABLE_NAME_PREFIX + retTableName + "task" + taskNumber;
-    }
-
-    private static TransferServer createTransferServer(@Nonnegative int concurrency) {
-        DbCollection rootCol = DbCollection.getRootCollection();
-        File colDir = rootCol.getDirectory();
-        TransferRequestListener listener = new RecievedFileWriter(colDir, true);
-        return new TransferServer(concurrency, listener);
-    }
-
-    private static ExecutorService startFileReciever(TransferServer server) {
-        ExecutorService execServ = ExecutorFactory.newSingleThreadExecutor("FileReceiver", true);
-        execServ.submit(server);
-        return execServ;
     }
 
     private static String getReduceQuery(@Nonnull String queryTemplate, @Nonnull String outputName, @Nonnull SQLTranslator translator)
@@ -509,8 +485,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
     public String reduce() throws GridException {
         // wait for all 'COPY INTO table' queries finish
         ExecutorUtils.shutdownAndAwaitTermination(copyintoExecs);
-        // cancel remaining tasks (for speculative execution)  
-        recvExecs.shutdownNow();
 
         LockManager lockMgr = registry.getLockManager();
         GridNode lockNode = config.getLocalNode();
@@ -696,7 +670,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
         private long waitForStartSpeculativeTask;
         private float invokeSpeculativeTasksFactor = DEFAULT_INVOKE_SPECULATIVE_TASKS_FACTOR;
-        private int recvFileConcurrency = DEFAULT_RECVFILE_WRITER_CONCURRENCY;
         private int copyIntoTableConcurrency = DEFAULT_COPYINTO_TABLE_CONCURRENCY;
 
         public JobConf() {}//Externalizable
@@ -756,14 +729,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             this.invokeSpeculativeTasksFactor = factor;
         }
 
-        public int getRecvFileConcurrency() {
-            return recvFileConcurrency;
-        }
-
-        public void setRecvFileConcurrency(int recvFileConcurrency) {
-            this.recvFileConcurrency = recvFileConcurrency;
-        }
-
         public int getCopyIntoTableConcurrency() {
             return copyIntoTableConcurrency;
         }
@@ -778,7 +743,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             this.reduceQuery = IOUtils.readString(in);
             this.outputMethod = OutputMethod.resolve(in.readByte());
             this.waitForStartSpeculativeTask = in.readLong();
-            this.recvFileConcurrency = in.readInt();
             this.copyIntoTableConcurrency = in.readInt();
         }
 
@@ -788,7 +752,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             IOUtils.writeString(reduceQuery, out);
             out.writeByte(outputMethod.id);
             out.writeLong(waitForStartSpeculativeTask);
-            out.writeInt(recvFileConcurrency);
             out.writeInt(copyIntoTableConcurrency);
         }
     }

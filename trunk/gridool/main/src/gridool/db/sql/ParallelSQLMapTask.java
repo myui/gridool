@@ -42,7 +42,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -92,14 +91,14 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
     private transient DistributionCatalog catalog;
 
     @SuppressWarnings("unchecked")
-    public ParallelSQLMapTask(@Nonnull GridJob job, @Nonnull GridNode masterNode, int taskNumber, @Nonnull String query, @Nonnull String taskTableName, @Nonnull InetSocketAddress retSockAddr, @Nonnull DistributionCatalog catalog) {
+    public ParallelSQLMapTask(@Nonnull GridJob job, @Nonnull GridNode masterNode, int taskNumber, @Nonnull String query, @Nonnull String taskTableName, @Nonnull InetAddress dstAddr, int dstPort, @Nonnull DistributionCatalog catalog) {
         super(job, true);
         this.taskMasterNode = masterNode;
         this.taskNumber = taskNumber;
         this.query = query;
         this.taskTableName = taskTableName;
-        this.dstAddr = retSockAddr.getAddress();
-        this.dstPort = retSockAddr.getPort();
+        this.dstAddr = dstAddr;
+        this.dstPort = dstPort;
         this.catalog = catalog;
     }
 
@@ -218,7 +217,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         if(fetchedRows > 0) {
             // #2 send file
             try {
-                TransferUtils.sendfile(tmpFile, dstAddr, dstPort, true);
+                TransferUtils.sendfile(tmpFile, dstAddr, dstPort, false, true);
                 sentFileName = tmpFile.getName();
             } catch (IOException e) {
                 throw new GridException("failed to sending a file", e);

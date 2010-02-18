@@ -86,4 +86,8 @@ public final class GridDbUtils {
         return mapping.values();
     }
 
+    public static String getCopyIntoFileQuery(String subquery, String filePath) {
+        return "COPY (" + subquery + ") INTO '" + filePath + "' USING DELIMITERS '|','\n','\"'";
+    }
+
 }

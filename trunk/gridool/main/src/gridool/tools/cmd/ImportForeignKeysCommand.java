@@ -22,6 +22,7 @@ package gridool.tools.cmd;
 
 import gridool.Grid;
 import gridool.GridClient;
+import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.GridJob;
 import gridool.GridJobFuture;
@@ -31,6 +32,7 @@ import gridool.GridResourceRegistry;
 import gridool.GridTask;
 import gridool.GridTaskResult;
 import gridool.GridTaskResultPolicy;
+import gridool.annotation.GridConfigResource;
 import gridool.annotation.GridKernelResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridJobBase;
@@ -41,21 +43,31 @@ import gridool.db.helpers.GridDbUtils;
 import gridool.routing.GridTaskRouter;
 import gridool.util.GridUtils;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+
 import xbird.util.cmdline.CommandBase;
 import xbird.util.cmdline.CommandException;
 import xbird.util.cmdline.Option.StringOption;
+import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.lang.ArrayUtils;
-import xbird.util.struct.Pair;
 
 /**
  * -templateDb <dbname> import foreign keys
@@ -122,6 +134,21 @@ public final class ImportForeignKeysCommand extends CommandBase {
 
         public Map<GridTask, GridNode> map(GridTaskRouter router, String templateDbName)
                 throws GridException {
+            final JobConf jobConf = makeJobConf(templateDbName, router);
+
+            // #1 create view for missing foreign keys
+            GridJobFuture<Boolean> future1 = kernel.execute(CreateMissingImportedKeyViewJob.class, jobConf);
+            GridUtils.invokeGet(future1);
+
+            // #2 ship missing foreign keys and retrieve data
+            GridJobFuture<Boolean> future2 = kernel.execute(RetrieveMissingForeignKeysJob.class, jobConf);
+            GridUtils.invokeGet(future2);
+
+            return null;
+        }
+
+        private JobConf makeJobConf(String templateDbName, GridTaskRouter router)
+                throws GridException {
             final DBAccessor dba = registry.getDbAccessor();
             final Connection conn;
             try {
@@ -137,17 +164,11 @@ public final class ImportForeignKeysCommand extends CommandBase {
             } finally {
                 JDBCUtils.closeQuietly(conn);
             }
-
+            String viewNamePrefix = Integer.toHexString(System.identityHashCode(this))
+                    + System.nanoTime();
             ForeignKey[] fkeyArray = ArrayUtils.toArray(fkeys, ForeignKey[].class);
             final GridNode[] nodes = router.getAllNodes();
-            
-            // #1 create view for missing foreign keys
-            GridJobFuture<String> future = kernel.execute(CreateMissingImportedKeyViewJob.class, new Pair<ForeignKey[], GridNode[]>(fkeyArray, nodes));
-            String viewNamePrefix = GridUtils.invokeGet(future);
-            
-            // #2             
-            
-            return null;
+            return new JobConf(viewNamePrefix, fkeyArray, nodes);
         }
 
         public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
@@ -160,27 +181,20 @@ public final class ImportForeignKeysCommand extends CommandBase {
 
     }
 
-    static final class CreateMissingImportedKeyViewJob extends
-            GridJobBase<Pair<ForeignKey[], GridNode[]>, String> {
+    static final class CreateMissingImportedKeyViewJob extends GridJobBase<JobConf, Boolean> {
         private static final long serialVersionUID = -7341912223637268324L;
-
-        private String viewNamePrefix;
 
         public CreateMissingImportedKeyViewJob() {
             super();
         }
 
-        public Map<GridTask, GridNode> map(GridTaskRouter router, Pair<ForeignKey[], GridNode[]> args)
+        public Map<GridTask, GridNode> map(GridTaskRouter router, JobConf jobConf)
                 throws GridException {
-            final long startTime = System.nanoTime();
-            this.viewNamePrefix = Integer.toHexString(System.identityHashCode(this)) + '_'
-                    + startTime;
-            final ForeignKey[] fkeys = args.getFirst();
-            final GridNode[] nodes = args.getSecond();
+            final GridNode[] nodes = jobConf.getNodes();
             final int numNodes = nodes.length;
             final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
             for(final GridNode node : nodes) {
-                GridTask task = new CreateMissingImportedKeyViewTask(this, viewNamePrefix, fkeys);
+                GridTask task = new CreateMissingImportedKeyViewTask(this, jobConf);
                 map.put(task, node);
             }
             return map;
@@ -194,8 +208,8 @@ public final class ImportForeignKeysCommand extends CommandBase {
             return GridTaskResultPolicy.CONTINUE;
         }
 
-        public String reduce() throws GridException {
-            return viewNamePrefix;
+        public Boolean reduce() throws GridException {
+            return Boolean.TRUE;
         }
 
     }
@@ -203,23 +217,17 @@ public final class ImportForeignKeysCommand extends CommandBase {
     private static final class CreateMissingImportedKeyViewTask extends GridTaskAdapter {
         private static final long serialVersionUID = 1012236314682018854L;
 
-        private final String viewNamePrefix;
         private final ForeignKey[] fkeys;
+        private final String viewNamePrefix;
 
         @GridRegistryResource
         private GridResourceRegistry registry;
 
         @SuppressWarnings("unchecked")
-        protected CreateMissingImportedKeyViewTask(GridJob job, String viewNamePrefix, ForeignKey[] fkeys) {
+        protected CreateMissingImportedKeyViewTask(@Nonnull GridJob job, @Nonnull JobConf jobConf) {
             super(job, false);
-            if(viewNamePrefix == null) {
-                throw new IllegalArgumentException();
-            }
-            if(fkeys.length == 0) {
-                throw new IllegalArgumentException();
-            }
-            this.viewNamePrefix = viewNamePrefix;
-            this.fkeys = fkeys;
+            this.fkeys = jobConf.getForeignKeys();
+            this.viewNamePrefix = jobConf.getViewNamePrefix();
         }
 
         @Override
@@ -231,6 +239,7 @@ public final class ImportForeignKeysCommand extends CommandBase {
         protected Serializable execute() throws GridException {
             final String query = getCreateViewQuery(fkeys, viewNamePrefix);
 
+            // create view for missing foreign keys
             DBAccessor dba = registry.getDbAccessor();
             final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, true);
             try {
@@ -296,6 +305,140 @@ public final class ImportForeignKeysCommand extends CommandBase {
                 buf.append("\n)");
             }
             return buf.toString();
+        }
+
+    }
+
+    static final class RetrieveMissingForeignKeysJob extends GridJobBase<JobConf, Boolean> {
+        private static final long serialVersionUID = -1419333559953426203L;
+
+        @GridConfigResource
+        private transient GridConfiguration config;
+
+        public RetrieveMissingForeignKeysJob() {
+            super();
+        }
+
+        @Override
+        public boolean injectResources() {
+            return true;
+        }
+
+        public Map<GridTask, GridNode> map(GridTaskRouter router, JobConf jobConf)
+                throws GridException {
+            GridNode localNode = config.getLocalNode();
+            final String nodeid = GridUtils.getNodeIdentityNumber(localNode);
+
+            final GridNode[] nodes = jobConf.getNodes();
+            final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(nodes.length);
+            for(GridNode node : nodes) {
+                
+            }
+            return map;
+        }
+
+        public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
+            return GridTaskResultPolicy.CONTINUE;
+        }
+
+        public Boolean reduce() throws GridException {
+            return Boolean.TRUE;
+        }
+
+    }
+
+    private static final class RetrieveMissingForeignKeysTask extends GridTaskAdapter {
+        private static final long serialVersionUID = 1263155385842261227L;
+
+        private final JobConf jobConf;
+        private final InetAddress dstAddr;
+        private final int dstPort;
+
+        @SuppressWarnings("unchecked")
+        protected RetrieveMissingForeignKeysTask(GridJob job, JobConf jobConf, @Nonnull InetSocketAddress retSockAddr) {
+            super(job, false);
+            this.jobConf = jobConf;
+            this.dstAddr = retSockAddr.getAddress();
+            this.dstPort = retSockAddr.getPort();
+        }
+
+        @Override
+        protected Serializable execute() throws GridException {
+            final ForeignKey[] fkeys = jobConf.getForeignKeys();
+
+            return null;
+        }
+
+    }
+
+    static final class JobConf implements Externalizable {
+
+        @Nonnull
+        private/* final */String viewNamePrefix;
+        @Nonnull
+        private/* final */ForeignKey[] fkeys;
+        @Nonnull
+        private/* final */GridNode[] nodes;
+
+        public JobConf() {} // Externalizable
+
+        JobConf(@CheckForNull String viewNamePrefix, @CheckForNull ForeignKey[] fkeys, @CheckForNull GridNode[] nodes) {
+            if(viewNamePrefix == null) {
+                throw new IllegalArgumentException();
+            }
+            if(fkeys == null || fkeys.length == 0) {
+                throw new IllegalArgumentException("ForeignKeys are required: "
+                        + Arrays.toString(fkeys));
+            }
+            if(nodes == null || nodes.length == 0) {
+                throw new IllegalArgumentException("Nodes are required: " + Arrays.toString(nodes));
+            }
+            this.viewNamePrefix = viewNamePrefix;
+            this.fkeys = fkeys;
+            this.nodes = nodes;
+        }
+
+        @Nonnull
+        public String getViewNamePrefix() {
+            return viewNamePrefix;
+        }
+
+        @Nonnull
+        public ForeignKey[] getForeignKeys() {
+            return fkeys;
+        }
+
+        @Nonnull
+        public GridNode[] getNodes() {
+            return nodes;
+        }
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            this.viewNamePrefix = IOUtils.readString(in);
+            final int numFkeys = in.readInt();
+            final ForeignKey[] l_fkeys = new ForeignKey[numFkeys];
+            for(int i = 0; i < numFkeys; i++) {
+                l_fkeys[i] = (ForeignKey) in.readObject();
+            }
+            this.fkeys = l_fkeys;
+            final int numNodes = in.readInt();
+            final GridNode[] l_nodes = new GridNode[numNodes];
+            for(int i = 0; i < numNodes; i++) {
+                l_nodes[i] = (GridNode) in.readObject();
+            }
+            this.nodes = l_nodes;
+        }
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            IOUtils.writeString(viewNamePrefix, out);
+            out.writeInt(fkeys.length);
+            for(int i = 0; i < fkeys.length; i++) {
+                out.writeObject(fkeys[i]);
+            }
+            out.writeInt(nodes.length);
+            for(int i = 0; i < nodes.length; i++) {
+                out.writeObject(nodes[i]);
+            }
         }
 
     }

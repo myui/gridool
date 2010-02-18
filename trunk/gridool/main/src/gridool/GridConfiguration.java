@@ -37,6 +37,7 @@ import javax.annotation.Nonnull;
 
 import xbird.config.Settings;
 import xbird.util.lang.ObjectUtils;
+import xbird.util.net.NetUtils;
 import xbird.util.primitive.Primitives;
 
 /**
@@ -65,6 +66,7 @@ public final class GridConfiguration implements GridConfigurationMBean {
     private final int transportServerPort;
     private final int transportChannelSweepInterval;
     private final int transportChannelTTL;
+    private final int fileReceiverPort;
     private final int socketReceiveBufferSize;
     private final int selectorReadThreadsCount;
     private final int readThreadsGrowThreshold;
@@ -88,6 +90,7 @@ public final class GridConfiguration implements GridConfigurationMBean {
         this.transportServerPort = Primitives.parseInt(Settings.get("gridool.transport.port"), CommunicationServiceBase.DEFAULT_PORT);
         this.transportChannelSweepInterval = Primitives.parseInt(Settings.get("gridool.transport.channel.sweep_interval"), GridTransportClient.DEFAULT_SWEEP_INTERVAL);
         this.transportChannelTTL = Primitives.parseInt(Settings.get("gridool.transport.channel.ttl"), GridTransportClient.DEFAULT_TTL);
+        this.fileReceiverPort = Primitives.parseInt(Settings.get("gridool.dfs.file_receiver.port"), NetUtils.getAvailablePort());
         this.socketReceiveBufferSize = Primitives.parseInt(Settings.get("gridool.transport.channel.rcvbufsz"), GridTransportClient.DEFAULT_RCVBUFSZ);
         this.selectorReadThreadsCount = Primitives.parseInt(Settings.get("gridool.transport.readThreads"), 6);
         this.readThreadsGrowThreshold = Primitives.parseInt(Settings.get("gridool.transport.readThreads.growThreshold"), GridMasterSlaveWorkerServer.READER_POOL_GROW_THRESHOLD);
@@ -223,6 +226,10 @@ public final class GridConfiguration implements GridConfigurationMBean {
 
     public int getTransportSocketReceiveBufferSize() {
         return socketReceiveBufferSize;
+    }
+
+    public int getFileReceiverPort() {
+        return fileReceiverPort;
     }
 
     public int getSelectorReadThreadsCount() {

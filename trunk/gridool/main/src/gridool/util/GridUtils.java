@@ -89,13 +89,13 @@ public final class GridUtils {
     }
 
     @Nonnull
-    public static String generateTaskId(@Nonnull String jobId, @Nonnull GridTask task) {
+    public static String generateTaskId(@Nonnull final String jobId, @Nonnull final GridTask task) {
         final long time = System.nanoTime();
         final int hashcode = System.identityHashCode(task);
         return jobId + '#' + Long.toString(time) + '/' + Integer.toString(hashcode);
     }
 
-    public static String getNodeIdentifier(@Nonnull byte[] mac, int port) {
+    public static String getNodeIdentifier(@Nonnull final byte[] mac, final int port) {
         return NetUtils.encodeMacAddress(mac) + ':' + port;
     }
 
@@ -106,7 +106,7 @@ public final class GridUtils {
     /**
      * @return 08-00-27-DC-4A-9E/255.255.255.255:77777 (about 39 characters)
      */
-    public static String toNodeInfo(@Nonnull GridNode node) {
+    public static String toNodeInfo(@Nonnull final GridNode node) {
         byte[] macAddr = node.getMacAdress();
         String macAddrStr = NetUtils.encodeMacAddress(macAddr);
         String ipAddr = node.getPhysicalAdress().getHostAddress();
@@ -114,7 +114,7 @@ public final class GridUtils {
         return macAddrStr + '/' + ipAddr + ':' + port;
     }
 
-    public static GridNode fromNodeInfo(@Nonnull String nodeInfo) {
+    public static GridNode fromNodeInfo(@Nonnull final String nodeInfo) {
         int slashPos = nodeInfo.indexOf('/');
         if(slashPos < 1) {
             throw new IllegalArgumentException("Invalid NodeInfo format: " + nodeInfo);
@@ -133,8 +133,15 @@ public final class GridUtils {
         return new GridNodeInfo(ipAddr, port, macAddr, false);
     }
 
+    public static String getNodeIdentityNumber(@Nonnull final GridNode node) {
+        String ipAddr = node.getPhysicalAdress().getHostAddress();
+        String ipnums = ipAddr.replace(":", "");
+        int port = node.getPort();
+        return ipnums + port;
+    }
+
     @Nonnull
-    public static String extractJobIdFromTaskId(@Nonnull String taskId) {
+    public static String extractJobIdFromTaskId(@Nonnull final String taskId) {
         final int endIndex = taskId.lastIndexOf('#');
         if(endIndex == -1) {
             throw new IllegalArgumentException("Illegal taskId format: " + taskId);

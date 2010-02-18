@@ -96,6 +96,9 @@ public interface GridConfigurationMBean extends Serializable {
     int getTransportSocketReceiveBufferSize();
 
     @Nonnegative
+    int getFileReceiverPort();
+
+    @Nonnegative
     int getSelectorReadThreadsCount();
 
     @Nonnegative
