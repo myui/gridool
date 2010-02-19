@@ -290,7 +290,8 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             DbCollection rootCol = DbCollection.getRootCollection();
             File colDir = rootCol.getDirectory();
             final String dirPath = colDir.getAbsolutePath();
-            String nodeid = GridUtils.getNodeIdentityNumber(localNode);
+            String nodeid = localNode.getPhysicalAdress().getHostAddress() + '_'
+                    + localNode.getPort();
 
             final int numFkeys = fkeys.length;
             final String[] files = new String[numFkeys];

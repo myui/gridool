@@ -133,13 +133,6 @@ public final class GridUtils {
         return new GridNodeInfo(ipAddr, port, macAddr, false);
     }
 
-    public static String getNodeIdentityNumber(@Nonnull final GridNode node) {
-        String ipAddr = node.getPhysicalAdress().getHostAddress();
-        String ipnums = ipAddr.replace(":", "");
-        int port = node.getPort();
-        return ipnums + port;
-    }
-
     @Nonnull
     public static String extractJobIdFromTaskId(@Nonnull final String taskId) {
         final int endIndex = taskId.lastIndexOf('#');
