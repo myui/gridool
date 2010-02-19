@@ -250,6 +250,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                     if(i != 0) {
                         buf.append(',');
                     }
+                    buf.append("l.");
                     String fkColumn = fkColumns.get(i);
                     buf.append(fkColumn);
                 }
@@ -527,7 +528,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                     queryBuf.append(',');
                 }
                 String column = pkColumns.get(i);
-                queryBuf.append(column);                
+                queryBuf.append(column);
             }
             queryBuf.append(")");
             queryBuf.append(" alias l");
