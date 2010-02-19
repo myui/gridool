@@ -59,6 +59,9 @@ import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import xbird.storage.DbCollection;
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
@@ -76,6 +79,7 @@ import xbird.util.xfer.TransferUtils;
  */
 public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean>, Boolean> {
     private static final long serialVersionUID = -1580857354649767246L;
+    private static final Log LOG = LogFactory.getLog(ImportForeignKeysJob.class);
 
     @GridKernelResource
     private transient GridKernel kernel;
@@ -286,7 +290,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         }
 
         private static Pair<String[], int[]> dumpViewsIntoFiles(final Connection conn, final ForeignKey[] fkeys, final String viewNamePrefix, final GridNode localNode, final boolean gzip)
-                throws SQLException {
+                throws SQLException, GridException {
             DbCollection rootCol = DbCollection.getRootCollection();
             File colDir = rootCol.getDirectory();
             final String dirPath = colDir.getAbsolutePath();
@@ -303,6 +307,24 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 String viewName = viewNamePrefix + fkName;
                 String filePath = dirPath + File.separatorChar + fkName + ".dump."
                         + (gzip ? (nodeid + ".gz") : nodeid);
+                File file = new File(filePath);
+                if(file.exists()) {
+                    LOG.warn("File already exists: " + file.getAbsolutePath());
+                } else {
+                    final boolean created;
+                    try {
+                        created = file.createNewFile();
+                    } catch (IOException e) {
+                        String errmsg = "Cannot create a file: " + file.getAbsolutePath();
+                        LOG.error(errmsg, e);
+                        throw new GridException(errmsg, e);
+                    }
+                    if(!created) {
+                        String errmsg = "Cannot create a file: " + file.getAbsolutePath();
+                        LOG.error(errmsg);
+                        throw new GridException(errmsg);
+                    }
+                }
                 String subquery = "SELECT * FROM \"" + viewName + '"';
                 String query = GridDbUtils.getCopyIntoFileQuery(subquery, filePath);
                 int ret = JDBCUtils.update(conn, query);
