@@ -502,7 +502,10 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             String query = "CREATE TABLE \"" + tableName + "\" (LIKE \"" + viewName + "\");\n"
                     + "COPY INTO \"" + tableName + "\" FROM '" + inFilePath
                     + "' USING DELIMITERS '|','\n','\"'";
-            JDBCUtils.update(conn, query);
+            int ret = JDBCUtils.update(conn, query);
+            if(ret <= 0) {
+                LOG.warn("updated ret=" + ret);
+            }
             return tableName;
         }
 
