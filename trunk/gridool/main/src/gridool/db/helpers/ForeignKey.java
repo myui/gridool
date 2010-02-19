@@ -161,6 +161,7 @@ public final class ForeignKey implements Externalizable {
         }
         IOUtils.writeString(pkTableName, out);
         final int numPkColumns = pkColumnNames.size();
+        out.writeInt(numPkColumns);
         for(int i = 0; i < numPkColumns; i++) {
             String s = pkColumnNames.get(i);
             IOUtils.writeString(s, out);
