@@ -35,9 +35,11 @@ import gridool.annotation.GridKernelResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridJobBase;
 import gridool.construct.GridTaskAdapter;
+import gridool.db.catalog.DistributionCatalog;
 import gridool.db.helpers.DBAccessor;
 import gridool.db.helpers.ForeignKey;
 import gridool.db.helpers.GridDbUtils;
+import gridool.db.sql.SQLTranslator;
 import gridool.routing.GridTaskRouter;
 import gridool.util.GridUtils;
 
@@ -227,7 +229,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             // #3 scatter dumped file
             int port = config.getFileReceiverPort();
             try {
-                scatterDumpedFiles(dumpList.getFirst(), port, dstNodes, localNode);
+                scatterDumpedViewFiles(dumpList.getFirst(), port, dstNodes, localNode);
             } catch (IOException e) {
                 throw new GridException(e);
             }
@@ -334,7 +336,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             return list;
         }
 
-        private static void scatterDumpedFiles(final String[] dumpedFiles, final int dstPort, final GridNode[] dstNodes, final GridNode localNode)
+        private static void scatterDumpedViewFiles(final String[] dumpedFiles, final int dstPort, final GridNode[] dstNodes, final GridNode localNode)
                 throws IOException {
             for(String fp : dumpedFiles) {
                 for(GridNode node : dstNodes) {
@@ -354,9 +356,6 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
     public static final class RetrieveMissingForeignKeysJob extends GridJobBase<JobConf, Boolean> {
         private static final long serialVersionUID = -1419333559953426203L;
-
-        @GridConfigResource
-        private transient GridConfiguration config;
 
         public RetrieveMissingForeignKeysJob() {
             super();
@@ -393,6 +392,8 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
         private final JobConf jobConf;
 
+        @GridRegistryResource
+        private transient GridResourceRegistry registry;
         @GridConfigResource
         private transient GridConfiguration config;
 
@@ -404,9 +405,132 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
         @Override
         protected Serializable execute() throws GridException {
-            final ForeignKey[] fkeys = jobConf.getForeignKeys();
+            DbCollection rootCol = DbCollection.getRootCollection();
+            File colDir = rootCol.getDirectory();
+            final String dirPath = colDir.getAbsolutePath();
+            final boolean gzip = jobConf.isUseGzip();
+            final String viewNamePrefix = jobConf.getViewNamePrefix();
+            final GridNode localNode = config.getLocalNode();
+            final String localNodeId = localNode.getPhysicalAdress().getHostAddress() + '_'
+                    + localNode.getPort();
 
+            GridNode dstNode = getSenderNode();
+            final InetAddress dstAddr = dstNode.getPhysicalAdress();
+            final int dstPort = config.getFileReceiverPort();
+
+            final ForeignKey[] fkeys = jobConf.getForeignKeys();
+            final GridNode[] nodes = jobConf.getNodes();
+            for(final ForeignKey fk : fkeys) {
+                for(final GridNode node : nodes) {
+                    if(!node.equals(localNode)) {
+                        String nodeId = node.getPhysicalAdress().getHostAddress() + '_'
+                                + node.getPort();
+                        String inputFilePath = getInputFilePath(fk, nodeId, dirPath, gzip);
+                        if(inputFilePath == null) {
+                            continue;
+                        }
+                        File outputFile = prepareOutputFile(fk, localNodeId, dirPath, gzip);
+                        String outFilePath = outputFile.getAbsolutePath();
+                        performQuery(outFilePath, fk, nodeId, viewNamePrefix, registry);
+                        try {
+                            TransferUtils.sendfile(outputFile, dstAddr, dstPort, false, true);
+                        } catch (IOException e) {
+                            throw new GridException(e);
+                        }
+                    }
+                }
+            }
             return null;
+        }
+
+        private static String getInputFilePath(final ForeignKey fk, final String nodeid, final String dirPath, final boolean gzip) {
+            String inFilePath = dirPath + File.separatorChar + fk.getFkName() + ".dump."
+                    + (gzip ? (nodeid + ".gz") : nodeid);
+            File inFile = new File(inFilePath);
+            if(!inFile.exists()) {
+                LOG.warn("File not found: " + inFile.getAbsolutePath());
+                return null;
+            }
+            return inFilePath;
+        }
+
+        private static File prepareOutputFile(final ForeignKey fk, final String nodeid, final String dirPath, final boolean gzip)
+                throws GridException {
+            String outFilePath = dirPath + File.separatorChar + fk.getPkTableName() + ".dump."
+                    + (gzip ? (nodeid + ".gz") : nodeid);
+            File outFile = new File(outFilePath);
+            if(!outFile.exists()) {
+                try {
+                    if(!outFile.createNewFile()) {
+                        throw new GridException("Cannot create a file: "
+                                + outFile.getAbsolutePath());
+                    }
+                } catch (IOException e) {
+                    throw new GridException(e);
+                }
+            }
+            return outFile;
+        }
+
+        private static void performQuery(final String outFilePath, final ForeignKey fk, final String nodeid, final String viewNamePrefix, final GridResourceRegistry registry)
+                throws GridException {
+            DistributionCatalog catalog = registry.getDistributionCatalog();
+            final SQLTranslator trans = new SQLTranslator(catalog);
+            final DBAccessor dba = registry.getDbAccessor();
+            final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, false);
+            try {
+                String tblName = prepareTempolaryTable(conn, viewNamePrefix, fk, nodeid);
+                int ret = dumpMissingForeignKeys(conn, fk, tblName, outFilePath, trans);
+                assert (ret > 0);
+            } catch (SQLException e) {
+                throw new GridException(e);
+            } finally {
+                JDBCUtils.closeQuietly(conn);
+            }
+        }
+
+        private static String prepareTempolaryTable(final Connection conn, final String viewNamePrefix, final ForeignKey fk, final String nodeid)
+                throws SQLException {
+            String fkName = fk.getFkName();
+            String tableName = fkName + '_' + nodeid;
+            String pkTableName = fk.getPkTableName();
+            String viewName = viewNamePrefix + pkTableName;
+            String createTableQuery = "CREATE TABLE \"" + tableName + "\" (LIKE \"" + viewName
+                    + "\")";
+            JDBCUtils.update(conn, createTableQuery);
+            return tableName;
+        }
+
+        private static int dumpMissingForeignKeys(final Connection conn, final ForeignKey fk, final String rhsTableName, final String outFilePath, final SQLTranslator trans)
+                throws GridException, SQLException {
+            String lhsTableName = fk.getPkTableName();
+            final StringBuilder queryBuf = new StringBuilder(256);
+            queryBuf.append("SELECT l.* FROM \"");
+            queryBuf.append(lhsTableName);
+            queryBuf.append("\" l, \"");
+            queryBuf.append(rhsTableName);
+            queryBuf.append("\" r WHERE partitioned by (");
+            final List<String> pkColumns = fk.getPkColumnNames();
+            final int numPkColumns = pkColumns.size();
+            for(int i = 0; i < numPkColumns; i++) {
+                if(i != 0) {
+                    queryBuf.append(',');
+                }
+                String column = pkColumns.get(i);
+                queryBuf.append(column);
+            }
+            queryBuf.append(")");
+            for(int i = 0; i < numPkColumns; i++) {
+                queryBuf.append(" AND l.\"");
+                String column = pkColumns.get(i);
+                queryBuf.append(column);
+                queryBuf.append("\" = r.\"");
+                queryBuf.append(column);
+                queryBuf.append('"');
+            }
+            String subquery = trans.translateQuery(queryBuf.toString());
+            String sql = GridDbUtils.getCopyIntoFileQuery(subquery, outFilePath);
+            return JDBCUtils.update(conn, sql);
         }
 
     }
