@@ -298,8 +298,9 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             final Pair<String[], int[]> list = new Pair<String[], int[]>(files, rows);
             for(int i = 0; i < numFkeys; i++) {
                 ForeignKey fk = fkeys[i];
-                String viewName = viewNamePrefix + fk.getFkName();
-                String filePath = dirPath + File.separatorChar + viewName + ".dump"
+                String fkName = fk.getFkName();
+                String viewName = viewNamePrefix + fkName;
+                String filePath = dirPath + File.separatorChar + fkName + ".dump."
                         + (gzip ? (nodeid + ".gz") : nodeid);
                 String subquery = "SELECT * FROM \"" + viewName + '"';
                 String query = GridDbUtils.getCopyIntoFileQuery(subquery, filePath);
