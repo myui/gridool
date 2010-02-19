@@ -498,8 +498,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 throws SQLException {
             String fkName = fk.getFkName();
             String tableName = fkName + '_' + nodeid;
-            String pkTableName = fk.getPkTableName();
-            String viewName = viewNamePrefix + pkTableName;
+            String viewName = viewNamePrefix + fkName;
             String query = "CREATE TABLE \"" + tableName + "\" (LIKE \"" + viewName + "\");\n"
                     + "COPY INTO \"" + tableName + "\" FROM '" + inFilePath
                     + "' USING DELIMITERS '|','\n','\"'";
