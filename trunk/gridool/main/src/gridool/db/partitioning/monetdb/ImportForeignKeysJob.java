@@ -514,7 +514,9 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             queryBuf.append(lhsTableName);
             queryBuf.append("\" l, \"");
             queryBuf.append(rhsTableName);
-            queryBuf.append("\" r WHERE partitioned by (");
+            queryBuf.append("\" r WHERE ");
+            queryBuf.append(lhsTableName);
+            queryBuf.append("partitioned by (");
             final List<String> pkColumns = fk.getPkColumnNames();
             final int numPkColumns = pkColumns.size();
             for(int i = 0; i < numPkColumns; i++) {
