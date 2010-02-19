@@ -527,9 +527,10 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                     queryBuf.append(',');
                 }
                 String column = pkColumns.get(i);
-                queryBuf.append(column);
+                queryBuf.append(column);                
             }
             queryBuf.append(")");
+            queryBuf.append(" alias l");
             for(int i = 0; i < numPkColumns; i++) {
                 queryBuf.append(" AND l.\"");
                 String column = pkColumns.get(i);
