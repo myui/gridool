@@ -108,7 +108,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         GridJobFuture<Boolean> future1 = kernel.execute(CreateMissingImportedKeyViewJob.class, jobConf);
         GridUtils.invokeGet(future1);
 
-        // #2 ship missing foreign keys and retrieve referrencing data
+        // #2 ship missing foreign keys and retrieve referencing data
         GridJobFuture<Boolean> future2 = kernel.execute(RetrieveMissingForeignKeysJob.class, jobConf);
         GridUtils.invokeGet(future2);
 
@@ -167,10 +167,10 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         }
 
         public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
-            if(result.getResult() != Boolean.TRUE) {
-                GridException err = result.getException();
-                throw new GridException(err);
-            }
+            //if(result.getResult() != Boolean.TRUE) {
+            //    GridException err = result.getException();
+            //    throw new GridException(err);
+            //}
             return GridTaskResultPolicy.CONTINUE;
         }
 
@@ -431,7 +431,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                         }
                         File outputFile = prepareOutputFile(fk, localNodeId, dirPath, gzip);
                         String outFilePath = outputFile.getAbsolutePath();
-                        performQuery(outFilePath, fk, nodeId, viewNamePrefix, registry);
+                        performQuery(inputFilePath, outFilePath, fk, nodeId, viewNamePrefix, registry);
                         try {
                             TransferUtils.sendfile(outputFile, dstAddr, dstPort, false, true);
                         } catch (IOException e) {
@@ -472,14 +472,14 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             return outFile;
         }
 
-        private static void performQuery(final String outFilePath, final ForeignKey fk, final String nodeid, final String viewNamePrefix, final GridResourceRegistry registry)
+        private static void performQuery(final String inFilePath, final String outFilePath, final ForeignKey fk, final String nodeid, final String viewNamePrefix, final GridResourceRegistry registry)
                 throws GridException {
             DistributionCatalog catalog = registry.getDistributionCatalog();
             final SQLTranslator trans = new SQLTranslator(catalog);
             final DBAccessor dba = registry.getDbAccessor();
             final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, false);
             try {
-                String tblName = prepareTempolaryTable(conn, viewNamePrefix, fk, nodeid);
+                String tblName = prepareTempolaryTable(conn, viewNamePrefix, fk, nodeid, inFilePath);
                 int ret = dumpMissingForeignKeys(conn, fk, tblName, outFilePath, trans);
                 assert (ret > 0);
             } catch (SQLException e) {
@@ -489,15 +489,16 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             }
         }
 
-        private static String prepareTempolaryTable(final Connection conn, final String viewNamePrefix, final ForeignKey fk, final String nodeid)
+        private static String prepareTempolaryTable(final Connection conn, final String viewNamePrefix, final ForeignKey fk, final String nodeid, final String inFilePath)
                 throws SQLException {
             String fkName = fk.getFkName();
             String tableName = fkName + '_' + nodeid;
             String pkTableName = fk.getPkTableName();
             String viewName = viewNamePrefix + pkTableName;
-            String createTableQuery = "CREATE TABLE \"" + tableName + "\" (LIKE \"" + viewName
-                    + "\")";
-            JDBCUtils.update(conn, createTableQuery);
+            String query = "CREATE TABLE \"" + tableName + "\" (LIKE \"" + viewName + "\");\n"
+                    + "COPY INTO \"" + tableName + "\" FROM '" + inFilePath
+                    + "' USING DELIMITERS '|','\n','\"'";
+            JDBCUtils.update(conn, query);
             return tableName;
         }
 
