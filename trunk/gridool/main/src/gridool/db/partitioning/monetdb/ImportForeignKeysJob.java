@@ -279,7 +279,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                     if(i != 0) {
                         buf.append(" AND ");
                     }
-                    buf.append("l.\"");
+                    buf.append("r.\"");
                     String fkc = pkColumns.get(i);
                     buf.append(fkc);
                     buf.append("\" IS NULL");
