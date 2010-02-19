@@ -102,7 +102,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             throws GridException {
         String templateDbName = params.getFirst();
         boolean useGzip = params.getSecond();
-        final JobConf jobConf = makeJobConf(templateDbName, useGzip, router);
+        final CreateMissingImportedKeyJobConf jobConf = makeJobConf(templateDbName, useGzip, router);
 
         // #1 create view for missing foreign keys
         GridJobFuture<Boolean> future1 = kernel.execute(CreateMissingImportedKeyViewJob.class, jobConf);
@@ -115,7 +115,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         return null;
     }
 
-    private JobConf makeJobConf(String templateDbName, boolean useGzip, GridTaskRouter router)
+    private CreateMissingImportedKeyJobConf makeJobConf(String templateDbName, boolean useGzip, GridTaskRouter router)
             throws GridException {
         final DBAccessor dba = registry.getDbAccessor();
         final Connection conn;
@@ -136,7 +136,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 + System.nanoTime();
         ForeignKey[] fkeyArray = ArrayUtils.toArray(fkeys, ForeignKey[].class);
         final GridNode[] nodes = router.getAllNodes();
-        return new JobConf(viewNamePrefix, fkeyArray, useGzip, nodes);
+        return new CreateMissingImportedKeyJobConf(viewNamePrefix, fkeyArray, useGzip, nodes);
     }
 
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
@@ -147,14 +147,15 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         return Boolean.TRUE;
     }
 
-    public static final class CreateMissingImportedKeyViewJob extends GridJobBase<JobConf, Boolean> {
+    public static final class CreateMissingImportedKeyViewJob extends
+            GridJobBase<CreateMissingImportedKeyJobConf, Boolean> {
         private static final long serialVersionUID = -7341912223637268324L;
 
         public CreateMissingImportedKeyViewJob() {
             super();
         }
 
-        public Map<GridTask, GridNode> map(GridTaskRouter router, JobConf jobConf)
+        public Map<GridTask, GridNode> map(GridTaskRouter router, CreateMissingImportedKeyJobConf jobConf)
                 throws GridException {
             final GridNode[] nodes = jobConf.getNodes();
             final int numNodes = nodes.length;
@@ -194,7 +195,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         private transient GridResourceRegistry registry;
 
         @SuppressWarnings("unchecked")
-        CreateMissingImportedKeyViewTask(@Nonnull GridJob job, @Nonnull JobConf jobConf) {
+        CreateMissingImportedKeyViewTask(@Nonnull GridJob job, @Nonnull CreateMissingImportedKeyJobConf jobConf) {
             super(job, false);
             this.fkeys = jobConf.getForeignKeys();
             this.viewNamePrefix = jobConf.getViewNamePrefix();
@@ -303,7 +304,6 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             final int numFkeys = fkeys.length;
             final String[] files = new String[numFkeys];
             final int[] rows = new int[numFkeys];
-            final Pair<String[], int[]> list = new Pair<String[], int[]>(files, rows);
             for(int i = 0; i < numFkeys; i++) {
                 ForeignKey fk = fkeys[i];
                 String fkName = fk.getFkName();
@@ -334,15 +334,15 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 files[i] = filePath;
                 rows[i] = ret;
             }
-            return list;
+            return new Pair<String[], int[]>(files, rows);
         }
 
         private static void scatterDumpedViewFiles(final String[] dumpedFiles, final int dstPort, final GridNode[] dstNodes, final GridNode localNode)
                 throws IOException {
-            for(String fp : dumpedFiles) {
+            for(String filePath : dumpedFiles) {
                 for(GridNode node : dstNodes) {
                     if(!node.equals(localNode)) {
-                        File file = new File(fp);
+                        File file = new File(filePath);
                         if(!file.exists()) {
                             continue;
                         }
@@ -355,19 +355,95 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
     }
 
-    public static final class RetrieveMissingForeignKeysJob extends GridJobBase<JobConf, Boolean> {
+    static final class CreateMissingImportedKeyJobConf implements Externalizable {
+
+        @Nonnull
+        private/* final */String viewNamePrefix;
+        @Nonnull
+        private/* final */ForeignKey[] fkeys;
+        private/* final */boolean useGzip;
+        @Nonnull
+        private/* final */GridNode[] nodes;
+
+        public CreateMissingImportedKeyJobConf() {} // Externalizable
+
+        CreateMissingImportedKeyJobConf(@CheckForNull String viewNamePrefix, @CheckForNull ForeignKey[] fkeys, boolean useGzip, @CheckForNull GridNode[] nodes) {
+            if(viewNamePrefix == null) {
+                throw new IllegalArgumentException();
+            }
+            if(fkeys == null || fkeys.length == 0) {
+                throw new IllegalArgumentException("ForeignKeys are required: "
+                        + Arrays.toString(fkeys));
+            }
+            if(nodes == null || nodes.length == 0) {
+                throw new IllegalArgumentException("Nodes are required: " + Arrays.toString(nodes));
+            }
+            this.viewNamePrefix = viewNamePrefix;
+            this.fkeys = fkeys;
+            this.useGzip = useGzip;
+            this.nodes = nodes;
+        }
+
+        @Nonnull
+        public String getViewNamePrefix() {
+            return viewNamePrefix;
+        }
+
+        @Nonnull
+        public ForeignKey[] getForeignKeys() {
+            return fkeys;
+        }
+
+        public boolean isUseGzip() {
+            return useGzip;
+        }
+
+        @Nonnull
+        public GridNode[] getNodes() {
+            return nodes;
+        }
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            this.viewNamePrefix = IOUtils.readString(in);
+            final int numFkeys = in.readInt();
+            final ForeignKey[] l_fkeys = new ForeignKey[numFkeys];
+            for(int i = 0; i < numFkeys; i++) {
+                l_fkeys[i] = (ForeignKey) in.readObject();
+            }
+            this.fkeys = l_fkeys;
+            this.useGzip = in.readBoolean();
+            final int numNodes = in.readInt();
+            final GridNode[] l_nodes = new GridNode[numNodes];
+            for(int i = 0; i < numNodes; i++) {
+                l_nodes[i] = (GridNode) in.readObject();
+            }
+            this.nodes = l_nodes;
+        }
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            IOUtils.writeString(viewNamePrefix, out);
+            out.writeInt(fkeys.length);
+            for(int i = 0; i < fkeys.length; i++) {
+                out.writeObject(fkeys[i]);
+            }
+            out.writeBoolean(useGzip);
+            out.writeInt(nodes.length);
+            for(int i = 0; i < nodes.length; i++) {
+                out.writeObject(nodes[i]);
+            }
+        }
+
+    }
+
+    public static final class RetrieveMissingForeignKeysJob extends
+            GridJobBase<CreateMissingImportedKeyJobConf, Boolean> {
         private static final long serialVersionUID = -1419333559953426203L;
 
         public RetrieveMissingForeignKeysJob() {
             super();
         }
 
-        @Override
-        public boolean injectResources() {
-            return true;
-        }
-
-        public Map<GridTask, GridNode> map(GridTaskRouter router, JobConf jobConf)
+        public Map<GridTask, GridNode> map(GridTaskRouter router, CreateMissingImportedKeyJobConf jobConf)
                 throws GridException {
             final GridNode[] nodes = jobConf.getNodes();
             final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(nodes.length);
@@ -391,7 +467,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
     private static final class RetrieveMissingForeignKeysTask extends GridTaskAdapter {
         private static final long serialVersionUID = 1263155385842261227L;
 
-        private final JobConf jobConf;
+        private final CreateMissingImportedKeyJobConf jobConf;
 
         @GridRegistryResource
         private transient GridResourceRegistry registry;
@@ -399,7 +475,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         private transient GridConfiguration config;
 
         @SuppressWarnings("unchecked")
-        RetrieveMissingForeignKeysTask(GridJob job, JobConf jobConf) {
+        RetrieveMissingForeignKeysTask(GridJob job, CreateMissingImportedKeyJobConf jobConf) {
             super(job, false);
             this.jobConf = jobConf;
         }
@@ -496,17 +572,18 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         private static String prepareTempolaryTable(final Connection conn, final String viewNamePrefix, final ForeignKey fk, final String nodeid, final String inFilePath)
                 throws SQLException {
             String fkName = fk.getFkName();
-            String tableName = fkName + '_' + nodeid.replace(".", "");
+            String tmpTableName = fkName + '_' + nodeid.replace(".", "");
             String viewName = viewNamePrefix + fkName;
-            String createTable = "CREATE TABLE \"" + tableName + "\" (LIKE \"" + viewName + "\")";
+            String createTable = "CREATE TABLE \"" + tmpTableName + "\" (LIKE \"" + viewName
+                    + "\")";
             JDBCUtils.update(conn, createTable);
-            String copyInto = "COPY INTO \"" + tableName + "\" FROM '" + inFilePath
+            String copyInto = "COPY INTO \"" + tmpTableName + "\" FROM '" + inFilePath
                     + "' USING DELIMITERS '|','\n','\"'";
             int ret = JDBCUtils.update(conn, copyInto);
             if(ret <= 0) {
                 LOG.warn("updated ret=" + ret);
             }
-            return tableName;
+            return tmpTableName;
         }
 
         private static int dumpMissingForeignKeys(final Connection conn, final ForeignKey fk, final String rhsTableName, final String outFilePath, final SQLTranslator trans)
@@ -547,85 +624,4 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         }
 
     }
-
-    static final class JobConf implements Externalizable {
-
-        @Nonnull
-        private/* final */String viewNamePrefix;
-        @Nonnull
-        private/* final */ForeignKey[] fkeys;
-        private/* final */boolean useGzip;
-        @Nonnull
-        private/* final */GridNode[] nodes;
-
-        public JobConf() {} // Externalizable
-
-        JobConf(@CheckForNull String viewNamePrefix, @CheckForNull ForeignKey[] fkeys, boolean useGzip, @CheckForNull GridNode[] nodes) {
-            if(viewNamePrefix == null) {
-                throw new IllegalArgumentException();
-            }
-            if(fkeys == null || fkeys.length == 0) {
-                throw new IllegalArgumentException("ForeignKeys are required: "
-                        + Arrays.toString(fkeys));
-            }
-            if(nodes == null || nodes.length == 0) {
-                throw new IllegalArgumentException("Nodes are required: " + Arrays.toString(nodes));
-            }
-            this.viewNamePrefix = viewNamePrefix;
-            this.fkeys = fkeys;
-            this.useGzip = useGzip;
-            this.nodes = nodes;
-        }
-
-        @Nonnull
-        public String getViewNamePrefix() {
-            return viewNamePrefix;
-        }
-
-        @Nonnull
-        public ForeignKey[] getForeignKeys() {
-            return fkeys;
-        }
-
-        public boolean isUseGzip() {
-            return useGzip;
-        }
-
-        @Nonnull
-        public GridNode[] getNodes() {
-            return nodes;
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            this.viewNamePrefix = IOUtils.readString(in);
-            final int numFkeys = in.readInt();
-            final ForeignKey[] l_fkeys = new ForeignKey[numFkeys];
-            for(int i = 0; i < numFkeys; i++) {
-                l_fkeys[i] = (ForeignKey) in.readObject();
-            }
-            this.fkeys = l_fkeys;
-            this.useGzip = in.readBoolean();
-            final int numNodes = in.readInt();
-            final GridNode[] l_nodes = new GridNode[numNodes];
-            for(int i = 0; i < numNodes; i++) {
-                l_nodes[i] = (GridNode) in.readObject();
-            }
-            this.nodes = l_nodes;
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            IOUtils.writeString(viewNamePrefix, out);
-            out.writeInt(fkeys.length);
-            for(int i = 0; i < fkeys.length; i++) {
-                out.writeObject(fkeys[i]);
-            }
-            out.writeBoolean(useGzip);
-            out.writeInt(nodes.length);
-            for(int i = 0; i < nodes.length; i++) {
-                out.writeObject(nodes[i]);
-            }
-        }
-
-    }
-
 }

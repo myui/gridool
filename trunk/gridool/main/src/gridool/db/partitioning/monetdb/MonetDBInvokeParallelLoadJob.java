@@ -31,7 +31,7 @@ import gridool.annotation.GridKernelResource;
 import gridool.construct.GridJobBase;
 import gridool.db.DBTaskAdapter;
 import gridool.db.catalog.DistributionCatalog;
-import gridool.db.catalog.UpdateCatalogJob;
+import gridool.db.catalog.RegisterPatitionInCatalogJob;
 import gridool.routing.GridTaskRouter;
 
 import java.util.ArrayList;
@@ -116,8 +116,8 @@ public final class MonetDBInvokeParallelLoadJob extends
 
     public Long reduce() throws GridException {
         // register mapping
-        UpdateCatalogJob.JobConf jobConf = new UpdateCatalogJob.JobConf(DistributionCatalog.defaultDistributionKey, masterSlaves); // FIXME to use tableName
-        final GridJobFuture<Boolean> future = kernel.execute(UpdateCatalogJob.class, jobConf);
+        RegisterPatitionInCatalogJob.JobConf jobConf = new RegisterPatitionInCatalogJob.JobConf(DistributionCatalog.defaultDistributionKey, masterSlaves); // FIXME to use tableName
+        final GridJobFuture<Boolean> future = kernel.execute(RegisterPatitionInCatalogJob.class, jobConf);
         try {
             future.get();
         } catch (InterruptedException ie) {
