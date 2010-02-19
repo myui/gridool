@@ -419,9 +419,6 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             final GridNode localNode = config.getLocalNode();
             final String localNodeId = localNode.getPhysicalAdress().getHostAddress() + '_'
                     + localNode.getPort();
-
-            GridNode dstNode = getSenderNode();
-            final InetAddress dstAddr = dstNode.getPhysicalAdress();
             final int dstPort = config.getFileReceiverPort();
 
             final ForeignKey[] fkeys = jobConf.getForeignKeys();
@@ -438,6 +435,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                         File outputFile = prepareOutputFile(fk, localNodeId, dirPath, gzip);
                         String outFilePath = outputFile.getAbsolutePath();
                         performQuery(inputFilePath, outFilePath, fk, nodeId, viewNamePrefix, registry);
+                        InetAddress dstAddr = node.getPhysicalAdress();
                         try {
                             TransferUtils.sendfile(outputFile, dstAddr, dstPort, false, true);
                         } catch (IOException e) {
@@ -500,10 +498,11 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             String fkName = fk.getFkName();
             String tableName = fkName + '_' + nodeid.replace(".", "");
             String viewName = viewNamePrefix + fkName;
-            String query = "CREATE TABLE \"" + tableName + "\" (LIKE \"" + viewName + "\");\n"
-                    + "COPY INTO \"" + tableName + "\" FROM '" + inFilePath
+            String createTable = "CREATE TABLE \"" + tableName + "\" (LIKE \"" + viewName + "\")";
+            JDBCUtils.update(conn, createTable);
+            String copyInto = "COPY INTO \"" + tableName + "\" FROM '" + inFilePath
                     + "' USING DELIMITERS '|','\n','\"'";
-            int ret = JDBCUtils.update(conn, query);
+            int ret = JDBCUtils.update(conn, copyInto);
             if(ret <= 0) {
                 LOG.warn("updated ret=" + ret);
             }
