@@ -497,7 +497,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         private static String prepareTempolaryTable(final Connection conn, final String viewNamePrefix, final ForeignKey fk, final String nodeid, final String inFilePath)
                 throws SQLException {
             String fkName = fk.getFkName();
-            String tableName = fkName + '_' + nodeid;
+            String tableName = fkName + '_' + nodeid.replace(".", "");
             String viewName = viewNamePrefix + fkName;
             String query = "CREATE TABLE \"" + tableName + "\" (LIKE \"" + viewName + "\");\n"
                     + "COPY INTO \"" + tableName + "\" FROM '" + inFilePath
