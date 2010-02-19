@@ -46,6 +46,7 @@ import xbird.util.xfer.TransferServer;
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
 public final class GridDFSService implements GridService {
+    public static final int DEFAULT_RECV_PORT = 47110;
 
     private final GridConfiguration config;
     private final ExecutorService recvExecs;

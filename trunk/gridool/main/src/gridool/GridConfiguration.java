@@ -24,6 +24,7 @@ import gridool.communication.payload.GridNodeInfo;
 import gridool.communication.transport.CommunicationServiceBase;
 import gridool.communication.transport.GridTransportClient;
 import gridool.communication.transport.tcp.GridMasterSlaveWorkerServer;
+import gridool.dfs.GridDFSService;
 import gridool.directory.ILocalDirectory.DirectoryIndexType;
 import gridool.loadblancing.GridLoadProbe;
 import gridool.loadblancing.GridLoadProbeFactory;
@@ -37,7 +38,6 @@ import javax.annotation.Nonnull;
 
 import xbird.config.Settings;
 import xbird.util.lang.ObjectUtils;
-import xbird.util.net.NetUtils;
 import xbird.util.primitive.Primitives;
 
 /**
@@ -90,7 +90,7 @@ public final class GridConfiguration implements GridConfigurationMBean {
         this.transportServerPort = Primitives.parseInt(Settings.get("gridool.transport.port"), CommunicationServiceBase.DEFAULT_PORT);
         this.transportChannelSweepInterval = Primitives.parseInt(Settings.get("gridool.transport.channel.sweep_interval"), GridTransportClient.DEFAULT_SWEEP_INTERVAL);
         this.transportChannelTTL = Primitives.parseInt(Settings.get("gridool.transport.channel.ttl"), GridTransportClient.DEFAULT_TTL);
-        this.fileReceiverPort = Primitives.parseInt(Settings.get("gridool.dfs.file_receiver.port"), NetUtils.getAvailablePort());
+        this.fileReceiverPort = Primitives.parseInt(Settings.get("gridool.dfs.file_receiver.port"), GridDFSService.DEFAULT_RECV_PORT);
         this.socketReceiveBufferSize = Primitives.parseInt(Settings.get("gridool.transport.channel.rcvbufsz"), GridTransportClient.DEFAULT_RCVBUFSZ);
         this.selectorReadThreadsCount = Primitives.parseInt(Settings.get("gridool.transport.readThreads"), 6);
         this.readThreadsGrowThreshold = Primitives.parseInt(Settings.get("gridool.transport.readThreads.growThreshold"), GridMasterSlaveWorkerServer.READER_POOL_GROW_THRESHOLD);
