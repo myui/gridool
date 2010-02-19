@@ -404,6 +404,11 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         }
 
         @Override
+        public boolean injectResources() {
+            return true;
+        }
+
+        @Override
         protected Serializable execute() throws GridException {
             DbCollection rootCol = DbCollection.getRootCollection();
             File colDir = rootCol.getDirectory();
