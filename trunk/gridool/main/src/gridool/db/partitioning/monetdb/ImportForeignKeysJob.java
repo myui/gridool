@@ -904,7 +904,6 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             return fkeys;
         }
 
-        // ALTER TABLE lineitem ADD CONSTRAINT lineitem_partsuppkey FOREIGN KEY (l_partkey,l_suppkey) REFERENCES partsupp (ps_partkey,ps_suppkey);
         private static void addForeignKeyConstraints(final Connection conn, final Set<ForeignKey> fkeys)
                 throws SQLException {
             final StringBuilder queryBuf = new StringBuilder(256);
@@ -939,7 +938,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                     queryBuf.append(column);
                     queryBuf.append('"');
                 }
-                queryBuf.append(";\n");
+                queryBuf.append(");\n");
             }
             String sql = queryBuf.toString();
             if(LOG.isInfoEnabled()) {
