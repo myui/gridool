@@ -1110,11 +1110,11 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 throw new IllegalArgumentException();
             }
             final StringBuilder subquery = new StringBuilder(256);
-            subquery.append("SELECT * FROM \"");
+            subquery.append("SELECT src.* FROM \"");
             subquery.append(srcTable);
-            subquery.append("\" EXCEPT DISTINCT SELECT * FROM \"");
+            subquery.append("\" src EXCEPT DISTINCT SELECT dst.* FROM \"");
             subquery.append(destTable);
-            subquery.append('"');
+            subquery.append("\" dst");
             String insertQuery = "INSERT INTO \"" + destTable + "\" (" + subquery.toString() + ')';
             int updatedRows = JDBCUtils.update(conn, insertQuery);
             if(LOG.isInfoEnabled()) {
