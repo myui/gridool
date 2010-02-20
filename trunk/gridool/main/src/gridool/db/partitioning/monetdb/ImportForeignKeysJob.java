@@ -503,7 +503,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
         DumpFile(@Nonnull File file, @Nonnegative int records, @Nonnull ForeignKey fk, @Nonnull GridNode dumpedNode) {
             if(records < 1) {
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException("Illegal records: " + records);
             }
             this.fileName = file.getName();
             this.records = records;
@@ -644,7 +644,19 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             for(final DumpFile dumpFile : dumpedInputFiles) {
                 final GridNode origNode = dumpFile.getDumpedNode();
                 if(!origNode.equals(localNode)) {
-                    DumpFile output = performQuery(dba, dumpFile, localNode, localNodeId);
+                    final DumpFile output;
+                    try {
+                        output = performQuery(dba, dumpFile, localNode, localNodeId);
+                    } finally {
+                        File inputFile = dumpFile.getFile();
+                        if(!inputFile.delete()) {
+                            LOG.warn("Failed to delete a input dump file: "
+                                    + inputFile.getAbsolutePath());
+                        }
+                    }
+                    if(output == null) {
+                        continue;
+                    }
                     InetAddress dstAddr = origNode.getPhysicalAdress();
                     try {
                         TransferUtils.sendfile(output.getFile(), dstAddr, dstPort, false, true);
@@ -662,6 +674,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             return ArrayUtils.toArray(dumpedOutputFiles, DumpFile[].class);
         }
 
+        @Nullable
         private DumpFile performQuery(final DBAccessor dba, final DumpFile dumpFile, final GridNode localNode, final String localNodeId)
                 throws GridException {
             final ForeignKey fk = dumpFile.getForeignKey();
@@ -678,7 +691,11 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             } finally {
                 JDBCUtils.closeQuietly(conn);
             }
-            return new DumpFile(outputFile, affectedRows, fk, localNode);
+            if(affectedRows > 0) {
+                return new DumpFile(outputFile, affectedRows, fk, localNode);
+            } else {
+                return null;
+            }
         }
 
         private static File prepareOutputFile(final ForeignKey fk, final String nodeid, final boolean gzip)
