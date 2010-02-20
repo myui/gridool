@@ -1025,6 +1025,10 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                             + ") != Actual records imported (" + updatedRecords + "):\n"
                             + copyIntoTable);
                 }
+                if(LOG.isInfoEnabled()) {
+                    LOG.info("Loaded " + updatedRecords + " missing records into table '"
+                            + tableName + "':\n" + copyIntoTable);
+                }
                 File UnNeededfile = dumpFile.getFile();
                 if(!UnNeededfile.delete()) {
                     LOG.warn("Failed to delete a file: " + UnNeededfile.getAbsolutePath());
