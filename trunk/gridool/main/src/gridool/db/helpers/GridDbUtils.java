@@ -21,6 +21,7 @@
 package gridool.db.helpers;
 
 import gridool.GridException;
+import gridool.GridNode;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -86,8 +87,21 @@ public final class GridDbUtils {
         return mapping.values();
     }
 
-    public static String getCopyIntoFileQuery(String subquery, String filePath) {
-        return "COPY (" + subquery + ") INTO '" + filePath + "' USING DELIMITERS '|','\n','\"'";
+    public static String makeCopyIntoFileQuery(final String subquery, final String outputFilePath) {
+        return "COPY (" + subquery + ") INTO '" + outputFilePath
+                + "' USING DELIMITERS '|','\n','\"'";
+    }
+
+    public static String makeCopyIntoTableQuery(final String tableName, final String inputFilePath, final int expectedRecords) {
+        if(expectedRecords <= 0) {
+            throw new IllegalArgumentException("Illegal expected records: " + expectedRecords);
+        }
+        return "COPY " + expectedRecords + " RECORDS INTO \"" + tableName + "\" FROM '"
+                + inputFilePath + "' USING DELIMITERS '|','\n','\"'";
+    }
+
+    public static String getIdentitifier(final GridNode node) {
+        return node.getPhysicalAdress().getHostName().replace(".", "") + '_' + node.getPort();
     }
 
 }

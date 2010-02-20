@@ -32,6 +32,7 @@ import gridool.communication.payload.GridNodeInfo;
 import gridool.deployment.GridPerNodeClassLoader;
 import gridool.deployment.PeerClassLoader;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -48,6 +49,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.stack.IpAddress;
 
+import xbird.storage.DbCollection;
 import xbird.util.annotation.AnnotationUtils;
 import xbird.util.compress.LZFInputStream;
 import xbird.util.compress.LZFOutputStream;
@@ -375,6 +377,18 @@ public final class GridUtils {
         } catch (Throwable e) {
             throw new GridException(e);
         }
+    }
+
+    public static File getWorkDir() {
+        DbCollection rootCol = DbCollection.getRootCollection();
+        File colDir = rootCol.getDirectory();
+        return colDir;
+    }
+
+    public static String getWorkDirPath() {
+        DbCollection rootCol = DbCollection.getRootCollection();
+        File colDir = rootCol.getDirectory();
+        return colDir.getAbsolutePath();
     }
 
 }

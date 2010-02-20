@@ -27,9 +27,6 @@ import java.sql.SQLException;
 
 import javax.annotation.Nonnull;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import xbird.config.Settings;
 import xbird.util.jdbc.JDBCUtils;
 
@@ -41,7 +38,6 @@ import xbird.util.jdbc.JDBCUtils;
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
 public class DBAccessor {
-    private static final Log LOG = LogFactory.getLog(DBAccessor.class);
 
     protected static final String PROP_DRIVER = "gridool.db.driver";
     protected static final String PROP_DBURL = "gridool.db.primarydb.url";
