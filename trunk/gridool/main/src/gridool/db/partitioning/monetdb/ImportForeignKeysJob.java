@@ -353,7 +353,8 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 int updatedRows = JDBCUtils.update(conn, query);
                 if(updatedRows > 0) {
                     if(LOG.isInfoEnabled()) {
-                        LOG.info("Dump missing referenced keys in exported table '" + pkTableName
+                        LOG.info("Dumped " + updatedRows
+                                + " missing referenced keys in exported table '" + pkTableName
                                 + "':\n" + query);
                     }
                     List<String> pkColumnNames = fkeys.get(0).getPkColumnNames();
