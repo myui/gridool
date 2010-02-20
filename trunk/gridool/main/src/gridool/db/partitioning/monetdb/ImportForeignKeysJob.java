@@ -35,11 +35,9 @@ import gridool.annotation.GridKernelResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridJobBase;
 import gridool.construct.GridTaskAdapter;
-import gridool.db.catalog.DistributionCatalog;
 import gridool.db.helpers.DBAccessor;
 import gridool.db.helpers.ForeignKey;
 import gridool.db.helpers.GridDbUtils;
-import gridool.db.sql.SQLTranslator;
 import gridool.routing.GridTaskRouter;
 import gridool.util.GridUtils;
 
@@ -364,6 +362,11 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                     if(LOG.isDebugEnabled()) {
                         LOG.debug("No missing referenced keys on table '" + pkTableName
                                 + "' is found. Skip because there is no need to dump.");
+                    }
+                    if(file.exists()) {
+                        if(!file.delete()) {
+                            LOG.warn("Failed to delete a garbage file: " + file.getAbsolutePath());
+                        }
                     }
                 }
             }
@@ -718,6 +721,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             final GridNode localNode = config.getLocalNode();
             final String localNodeId = getIdentitifier(localNode);
             final int dstPort = config.getFileReceiverPort();
+            final boolean useGzip = jobConf.isUseGzip();
 
             final DumpFile[] dumpedInputFiles = jobConf.getDumpedFiles();
             final List<DumpFile> dumpedOutputFiles = new ArrayList<DumpFile>(dumpedInputFiles.length);
@@ -726,7 +730,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 if(!origNode.equals(localNode)) {
                     final DumpFile output;
                     try {
-                        output = performQuery(dba, dumpFile, localNodeId);
+                        output = performQuery(dba, dumpFile, localNodeId, useGzip);
                     } finally {
                         File inputFile = dumpFile.getFile();
                         if(!inputFile.delete()) {
@@ -755,15 +759,15 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         }
 
         @Nullable
-        private DumpFile performQuery(final DBAccessor dba, final DumpFile dumpFile, final String localNodeId)
+        private static DumpFile performQuery(final DBAccessor dba, final DumpFile dumpFile, final String localNodeId, final boolean gzip)
                 throws GridException {
-            final File outputFile = prepareResponseFile(dumpFile, localNodeId, jobConf.isUseGzip());
+            final File outputFile = prepareResponseFile(dumpFile, localNodeId, gzip);
 
             final int affectedRows;
             final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, false);
             try {
                 String importedTableName = prepareTempolaryTable(conn, dumpFile);
-                affectedRows = dumpRequiredRows(conn, dumpFile, importedTableName, outputFile.getAbsolutePath(), registry.getDistributionCatalog());
+                affectedRows = dumpRequiredRows(conn, dumpFile, importedTableName, outputFile.getAbsolutePath());
             } catch (SQLException e) {
                 LOG.error(e);
                 if(!outputFile.delete()) {
@@ -774,17 +778,14 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 JDBCUtils.closeQuietly(conn);
             }
             if(affectedRows > 0) {
-                if(LOG.isInfoEnabled()) {
-                    LOG.info("Dumped " + affectedRows + " found records:\n"
-                            + outputFile.getAbsolutePath());
-                }
                 String dumpedTableName = dumpFile.getTableName();
                 GridNode origNode = dumpFile.getAssociatedNode();
                 return new DumpFile(outputFile, dumpedTableName, affectedRows, origNode);
             } else {
-                if(LOG.isDebugEnabled()) {
-                    LOG.debug("Found no missing referenced rows for table: "
-                            + dumpFile.getTableName());
+                if(outputFile.exists()) {
+                    if(!outputFile.delete()) {
+                        LOG.warn("Failed to delete a garbage file: " + outputFile.getAbsolutePath());
+                    }
                 }
                 return null;
             }
@@ -856,7 +857,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             return tmpTableName;
         }
 
-        private static int dumpRequiredRows(final Connection conn, final DumpFile dumpFile, final String importedTableName, final String outputFilePath, final DistributionCatalog catalog)
+        private static int dumpRequiredRows(final Connection conn, final DumpFile dumpFile, final String importedTableName, final String outputFilePath)
                 throws GridException, SQLException {
             final StringBuilder queryBuf = new StringBuilder(256);
             queryBuf.append("SELECT l.* FROM \"");
@@ -865,21 +866,13 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             queryBuf.append("\" l, \"");
             queryBuf.append(importedTableName);
             queryBuf.append("\" r WHERE ");
-            queryBuf.append(lhsTableName);
-            queryBuf.append(" partitioned by (");
             final List<String> columns = dumpFile.getColumnNames();
             final int numColumns = columns.size();
             for(int i = 0; i < numColumns; i++) {
                 if(i != 0) {
-                    queryBuf.append(',');
+                    queryBuf.append(" AND ");
                 }
-                String column = columns.get(i);
-                queryBuf.append(column);
-            }
-            queryBuf.append(")");
-            queryBuf.append(" alias l");
-            for(int i = 0; i < numColumns; i++) {
-                queryBuf.append(" AND l.\"");
+                queryBuf.append("l.\"");
                 String column = columns.get(i);
                 queryBuf.append(column);
                 queryBuf.append("\" = r.\"");
@@ -887,10 +880,16 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 queryBuf.append('"');
             }
 
-            SQLTranslator trans = new SQLTranslator(catalog);
-            String subquery = trans.translateQuery(queryBuf.toString());
+            String subquery = queryBuf.toString();
             String copyIntoFile = GridDbUtils.makeCopyIntoFileQuery(subquery, outputFilePath);
-            int records = JDBCUtils.update(conn, copyIntoFile);
+            final int records = JDBCUtils.update(conn, copyIntoFile);
+            if(LOG.isInfoEnabled()) {
+                if(records > 0) {
+                    LOG.info("Dumped " + records + " missing records:\n" + copyIntoFile);
+                } else {
+                    LOG.info("No referenced rows found for table: " + dumpFile.getTableName());
+                }
+            }
             return records;
         }
 
@@ -994,7 +993,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             DBAccessor dba = registry.getDbAccessor();
             final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, false);
             try {
-                loadRequiredRecords(conn, receivedDumpedFiles);
+                loadAll(conn, receivedDumpedFiles);
                 addForeignKeyConstraints(conn, fkeys);
                 conn.commit();
             } catch (SQLException e) {
@@ -1019,27 +1018,79 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             return Boolean.TRUE;
         }
 
-        private static void loadRequiredRecords(final Connection conn, final DumpFile[] dumpedFiles)
+        private static void loadAll(final Connection conn, final DumpFile[] dumpedFiles)
                 throws SQLException, GridException {
-            for(final DumpFile dumpFile : dumpedFiles) {
-                String tableName = dumpFile.getTableName();
-                String inputFilePath = dumpFile.getFilePath();
-                final int expectedRecords = dumpFile.getRecords();
-                String copyIntoTable = GridDbUtils.makeCopyIntoTableQuery(tableName, inputFilePath, expectedRecords);
-                final int updatedRecords = JDBCUtils.update(conn, copyIntoTable);
-                if(expectedRecords != updatedRecords) {
-                    throw new GridException("Expected records to import (" + expectedRecords
-                            + ") != Actual records imported (" + updatedRecords + "):\n"
-                            + copyIntoTable);
+            final Map<String, List<DumpFile>> loadList = mapDumpFiles(dumpedFiles);
+            for(final Map.Entry<String, List<DumpFile>> e : loadList.entrySet()) {
+                String tableName = e.getKey();
+                List<DumpFile> loadFiles = e.getValue();
+                String tmpTableName = loadAllIntoTempolaryTable(conn, tableName, loadFiles);
+                loadRequiredRecords(conn, tmpTableName, tableName);
+            }
+        }
+
+        private static Map<String, List<DumpFile>> mapDumpFiles(final DumpFile[] dumpedFiles) {
+            final Map<String, List<DumpFile>> map = new HashMap<String, List<DumpFile>>(16);
+            for(final DumpFile file : dumpedFiles) {
+                String tableName = file.getTableName();
+                List<DumpFile> list = map.get(tableName);
+                if(list == null) {
+                    list = new ArrayList<DumpFile>(64);
+                    map.put(tableName, list);
                 }
-                if(LOG.isInfoEnabled()) {
-                    LOG.info("Loaded " + updatedRecords + " missing records into table '"
-                            + tableName + "':\n" + copyIntoTable);
+                list.add(file);
+            }
+            return map;
+        }
+
+        private static String loadAllIntoTempolaryTable(final Connection conn, final String tableName, final List<DumpFile> dumpFiles)
+                throws SQLException, GridException {
+            String tmpTableName = "copy_" + tableName;
+            String ddl = "CREATE TABLE \"" + tmpTableName + "\" (LIKE \"" + tableName + "\")";
+            JDBCUtils.update(conn, ddl);
+
+            int expectedRecords = 0;
+            final StringBuilder sources = new StringBuilder(512);
+            final int numDumpFiles = dumpFiles.size();
+            for(int i = 0; i < numDumpFiles; i++) {
+                if(i != 0) {
+                    sources.append(',');
                 }
-                File UnNeededfile = dumpFile.getFile();
-                if(!UnNeededfile.delete()) {
-                    LOG.warn("Failed to delete a file: " + UnNeededfile.getAbsolutePath());
+                sources.append('\'');
+                DumpFile dumpFile = dumpFiles.get(i);
+                sources.append(dumpFile.getFilePath());
+                sources.append('\'');
+                expectedRecords += dumpFile.getRecords();
+            }
+            String copyIntoTable = "COPY " + expectedRecords + " RECORDS INTO \"" + tmpTableName
+                    + "\" FROM " + sources.toString() + " USING DELIMITERS '|','\n','\"'";
+            final int updatedRecords = JDBCUtils.update(conn, copyIntoTable);
+            if(expectedRecords != updatedRecords) {
+                throw new GridException("Expected records to import (" + expectedRecords
+                        + ") != Actual records imported (" + updatedRecords + "):\n"
+                        + copyIntoTable);
+            }
+            if(LOG.isInfoEnabled()) {
+                LOG.info("Loaded " + updatedRecords + " missing records into table '"
+                        + tmpTableName + "':\n" + copyIntoTable);
+            }
+            for(final DumpFile df : dumpFiles) {
+                File unNeededfile = df.getFile();
+                if(!unNeededfile.delete()) {
+                    LOG.warn("Failed to delete a file: " + unNeededfile.getAbsolutePath());
                 }
+            }
+            return tmpTableName;
+        }
+
+        private static void loadRequiredRecords(final Connection conn, final String srcTable, final String destTable)
+                throws SQLException {
+            String insertQuery = "INSERT INTO \"" + destTable + "\" (SELECT DISTINCT * FROM \""
+                    + srcTable + "\")";
+            int updatedRows = JDBCUtils.update(conn, insertQuery);
+            if(LOG.isInfoEnabled()) {
+                LOG.info("Loaded " + updatedRows + " missing records into table '" + destTable
+                        + "':\n" + insertQuery);
             }
         }
 
