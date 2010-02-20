@@ -400,7 +400,7 @@ public final class DistributionCatalog {
                 JDBCUtils.closeQuietly(conn);
             }
         }
-        if(updateDb) {
+        if(updateDb) {//TODO REVIEWME permit delay?
             UpdatePartitionInCatalogJobConf jobConf = new UpdatePartitionInCatalogJobConf(actualTableName, fieldPartitionMap);
             GridJobFuture<Boolean> future = kernel.execute(UpdatePartitionInCatalogJob.class, jobConf);
             Boolean status = GridUtils.invokeGet(future);
