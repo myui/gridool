@@ -613,7 +613,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 this.columnNames = new ArrayList<String>(numColumns);
                 for(int i = 0; i < numColumns; i++) {
                     String name = IOUtils.readString(in);
-                    columnNames.set(i, name);
+                    columnNames.add(name);
                 }
             }
             this.records = in.readInt();
