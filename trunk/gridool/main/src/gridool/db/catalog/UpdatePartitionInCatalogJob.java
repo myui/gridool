@@ -139,6 +139,8 @@ public final class UpdatePartitionInCatalogJob extends
         @Nonnull
         private/* final */Map<String, PartitionKey> fieldPartitionMap;
 
+        public UpdatePartitionInCatalogJobConf() {} // for Externalizable
+        
         public UpdatePartitionInCatalogJobConf(@Nonnull String tableName, @Nonnull Map<String, PartitionKey> fieldPartitionMap) {
             this.tableName = tableName;
             this.fieldPartitionMap = fieldPartitionMap;
