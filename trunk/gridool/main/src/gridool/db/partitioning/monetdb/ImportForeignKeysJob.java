@@ -179,7 +179,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         Boolean res = result.getResult();
-        if(Boolean.TRUE != res) {
+        if(res == null || res.booleanValue() == false) {
             GridException error = result.getException();
             GridNode executedNode = result.getExecutedNode();
             throw new GridException("ImportCollectedExportedKeysTask failed on node: "
