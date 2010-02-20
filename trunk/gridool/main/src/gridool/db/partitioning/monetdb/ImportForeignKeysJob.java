@@ -775,7 +775,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             }
             if(affectedRows > 0) {
                 if(LOG.isInfoEnabled()) {
-                    LOG.info("Dumped " + affectedRows + " missing records:\n"
+                    LOG.info("Dumped " + affectedRows + " found records:\n"
                             + outputFile.getAbsolutePath());
                 }
                 String dumpedTableName = dumpFile.getTableName();
@@ -783,7 +783,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 return new DumpFile(outputFile, dumpedTableName, affectedRows, origNode);
             } else {
                 if(LOG.isDebugEnabled()) {
-                    LOG.debug("No missing referenced rows found for table: "
+                    LOG.debug("Found no missing referenced rows for table: "
                             + dumpFile.getTableName());
                 }
                 return null;
