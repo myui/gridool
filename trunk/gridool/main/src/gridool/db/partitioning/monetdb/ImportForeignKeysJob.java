@@ -772,6 +772,10 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 GridNode origNode = dumpFile.getAssociatedNode();
                 return new DumpFile(outputFile, dumpedTableName, affectedRows, origNode);
             } else {
+                if(LOG.isDebugEnabled()) {
+                    LOG.debug("No missing referenced rows found for table: "
+                            + dumpFile.getTableName());
+                }
                 return null;
             }
         }
@@ -835,6 +839,10 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                         + ") != Actual records imported (" + updatedRecords + "):\n"
                         + copyIntoTable);
             }
+            if(LOG.isInfoEnabled()) {
+                LOG.info("Loaded " + updatedRecords + " missing referencing keys:\n"
+                        + copyIntoTable);
+            }
             return tmpTableName;
         }
 
@@ -868,10 +876,15 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 queryBuf.append(column);
                 queryBuf.append('"');
             }
+
             SQLTranslator trans = new SQLTranslator(catalog);
             String subquery = trans.translateQuery(queryBuf.toString());
             String copyIntoFile = GridDbUtils.makeCopyIntoFileQuery(subquery, outputFilePath);
-            return JDBCUtils.update(conn, copyIntoFile);
+            int records = JDBCUtils.update(conn, copyIntoFile);
+            if(LOG.isInfoEnabled()) {
+                LOG.info("Dumped " + records + " missing records:\n" + copyIntoFile);
+            }
+            return records;
         }
 
     }
