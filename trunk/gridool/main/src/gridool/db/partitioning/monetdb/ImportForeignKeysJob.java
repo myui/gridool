@@ -350,15 +350,20 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 List<ForeignKey> fkeys = e.getValue();
                 String subquery = makeSelectMissingForeignKeyQuery(fkeys);
                 String query = GridDbUtils.makeCopyIntoFileQuery(subquery, filePath);
-                if(LOG.isInfoEnabled()) {
-                    LOG.info("Dump missing referenced keys in exported table '" + pkTableName
-                            + ":\n" + query);
-                }
                 int updatedRows = JDBCUtils.update(conn, query);
                 if(updatedRows > 0) {
+                    if(LOG.isInfoEnabled()) {
+                        LOG.info("Dump missing referenced keys in exported table '" + pkTableName
+                                + "':\n" + query);
+                    }
                     List<String> pkColumnNames = fkeys.get(0).getPkColumnNames();
                     DumpFile dumpFile = new DumpFile(file, pkTableName, pkColumnNames, updatedRows, localNode);
                     dumpedFiles.add(dumpFile);
+                } else {
+                    if(LOG.isDebugEnabled()) {
+                        LOG.debug("No missing referenced keys on table '" + pkTableName
+                                + "' is found. Skip because there is no need to dump.");
+                    }
                 }
             }
             return dumpedFiles;
