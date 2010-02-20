@@ -993,8 +993,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             DBAccessor dba = registry.getDbAccessor();
             final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, false);
             try {
-                loadAll(conn, receivedDumpedFiles);
-                addForeignKeyConstraints(conn, fkeys);
+                loadAll(conn, receivedDumpedFiles, fkeys);
                 conn.commit();
             } catch (SQLException e) {
                 LOG.error(e);
@@ -1018,15 +1017,21 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             return Boolean.TRUE;
         }
 
-        private static void loadAll(final Connection conn, final DumpFile[] dumpedFiles)
+        private static void loadAll(final Connection conn, final DumpFile[] dumpedFiles, final ForeignKey[] fkeys)
                 throws SQLException, GridException {
             final Map<String, List<DumpFile>> loadList = mapDumpFiles(dumpedFiles);
+            final Map<String, List<ForeignKey>> fkmap = aggrForeignKeyByReferencedTable(fkeys);
             for(final Map.Entry<String, List<DumpFile>> e : loadList.entrySet()) {
                 String tableName = e.getKey();
                 List<DumpFile> loadFiles = e.getValue();
+                // #1 load all collected records into tmp table
                 String tmpTableName = loadAllIntoTempolaryTable(conn, tableName, loadFiles);
-                List<String> pkColumns = loadFiles.get(0).getColumnNames();
+                List<ForeignKey> fklist = fkmap.get(tableName);
+                List<String> pkColumns = fklist.get(0).getPkColumnNames();
+                // #2 load only required records
                 loadRequiredRecords(conn, tmpTableName, tableName, pkColumns);
+                // #3 add foreign key constraints
+                addForeignKeyConstraints(conn, fklist);
             }
         }
 
@@ -1040,6 +1045,20 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                     map.put(tableName, list);
                 }
                 list.add(file);
+            }
+            return map;
+        }
+
+        private static Map<String, List<ForeignKey>> aggrForeignKeyByReferencedTable(final ForeignKey[] fkeys) {
+            final Map<String, List<ForeignKey>> map = new HashMap<String, List<ForeignKey>>(16);
+            for(final ForeignKey fk : fkeys) {
+                String pkTable = fk.getPkTableName();
+                List<ForeignKey> list = map.get(pkTable);
+                if(list == null) {
+                    list = new ArrayList<ForeignKey>(4);
+                    map.put(pkTable, list);
+                }
+                list.add(fk);
             }
             return map;
         }
@@ -1125,7 +1144,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             }
         }
 
-        private static void addForeignKeyConstraints(final Connection conn, final ForeignKey[] fkeys)
+        private static void addForeignKeyConstraints(final Connection conn, final List<ForeignKey> fkeys)
                 throws SQLException {
             final StringBuilder queryBuf = new StringBuilder(256);
             for(final ForeignKey fk : fkeys) {
