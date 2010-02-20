@@ -746,10 +746,12 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         private static File prepareOutputFile(final ForeignKey fk, final GridNode origNode, final String fromNodeId, final boolean gzip)
                 throws GridException {
             String toNodeId = getIdentitifier(origNode);
-            String outFilePath = WORK_DIR + File.separatorChar + fk.getPkTableName() + ".dump.f"
+            String outFilePath = WORK_DIR + File.separatorChar + fk.getFkName() + ".dump.f"
                     + fromNodeId + 't' + (gzip ? (toNodeId + ".gz") : toNodeId);
             final File outFile = new File(outFilePath);
-            if(!outFile.exists()) {
+            if(outFile.exists()) {
+                LOG.warn("Output file already exists: " + outFile.getAbsolutePath());
+            } else {
                 try {
                     if(!outFile.createNewFile()) {
                         throw new GridException("Cannot create a file: "
