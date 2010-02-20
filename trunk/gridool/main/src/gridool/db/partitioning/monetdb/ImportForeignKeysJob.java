@@ -673,7 +673,8 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         private DumpFile performQuery(final DBAccessor dba, final DumpFile dumpFile, final GridNode localNode, final String localNodeId)
                 throws GridException {
             final ForeignKey fk = dumpFile.getForeignKey();
-            final File outputFile = prepareOutputFile(fk, localNodeId, jobConf.isUseGzip());
+            final GridNode origNode = dumpFile.getDumpedNode();
+            final File outputFile = prepareOutputFile(fk, origNode, localNodeId, jobConf.isUseGzip());
 
             final int affectedRows;
             final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, false);
@@ -693,10 +694,11 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             }
         }
 
-        private static File prepareOutputFile(final ForeignKey fk, final String nodeid, final boolean gzip)
+        private static File prepareOutputFile(final ForeignKey fk, final GridNode origNode, final String fromNodeId, final boolean gzip)
                 throws GridException {
-            String outFilePath = WORK_DIR + File.separatorChar + fk.getPkTableName() + ".dump."
-                    + (gzip ? (nodeid + ".gz") : nodeid);
+            String toNodeId = getIdentitifier(origNode);
+            String outFilePath = WORK_DIR + File.separatorChar + fk.getPkTableName() + ".dump.f"
+                    + fromNodeId + 't' + (gzip ? (toNodeId + ".gz") : toNodeId);
             final File outFile = new File(outFilePath);
             if(!outFile.exists()) {
                 try {
@@ -962,7 +964,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
     }
 
     private static String getIdentitifier(final GridNode node) {
-        return node.getPhysicalAdress().getHostAddress().replace(".", "") + '_' + node.getPort();
+        return node.getPhysicalAdress().getHostAddress().replace(".", "") + node.getPort();
     }
 
 }
