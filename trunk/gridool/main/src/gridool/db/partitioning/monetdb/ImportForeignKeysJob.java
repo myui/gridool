@@ -1110,7 +1110,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 throw new IllegalArgumentException();
             }
             final StringBuilder subquery = new StringBuilder(256);
-            subquery.append("SELECT src.* FROM \"");
+            subquery.append("SELECT DISTINCT src.* FROM \"");
             subquery.append(srcTable);
             subquery.append("\" src WHERE NOT EXISTS (SELECT null FROM \"");
             subquery.append(destTable);
