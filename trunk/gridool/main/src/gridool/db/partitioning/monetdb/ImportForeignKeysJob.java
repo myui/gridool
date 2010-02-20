@@ -68,7 +68,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import xbird.storage.DbCollection;
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.lang.ArrayUtils;
@@ -86,6 +85,11 @@ import xbird.util.xfer.TransferUtils;
 public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean>, Boolean> {
     private static final long serialVersionUID = -1580857354649767246L;
     private static final Log LOG = LogFactory.getLog(ImportForeignKeysJob.class);
+
+    private static final String WORK_DIR;
+    static {
+        WORK_DIR = GridUtils.getWorkDirPath();
+    }
 
     @GridKernelResource
     private transient GridKernel kernel;
@@ -333,20 +337,15 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
         private static List<DumpFile> dumpViewsIntoFiles(final Connection conn, final ForeignKey[] fkeys, final String viewNamePrefix, final GridNode localNode, final boolean gzip)
                 throws SQLException, GridException {
-            DbCollection rootCol = DbCollection.getRootCollection();
-            File colDir = rootCol.getDirectory();
-            final String dirPath = colDir.getAbsolutePath();
-            final String nodeid = localNode.getPhysicalAdress().getHostAddress() + '_'
-                    + localNode.getPort();
-
+            final String localNodeId = getIdentitifier(localNode);
             final int numFkeys = fkeys.length;
             final List<DumpFile> dumpedFiles = new ArrayList<DumpFile>(numFkeys);
             for(int i = 0; i < numFkeys; i++) {
                 ForeignKey fk = fkeys[i];
                 String fkName = fk.getFkName();
                 String viewName = viewNamePrefix + fkName;
-                String fileName = fkName + ".dump." + (gzip ? (nodeid + ".gz") : nodeid);
-                String filePath = dirPath + File.separatorChar + fileName;
+                String fileName = fkName + ".dump." + (gzip ? (localNodeId + ".gz") : localNodeId);
+                String filePath = WORK_DIR + File.separatorChar + fileName;
                 File file = new File(filePath);
                 if(file.exists()) {
                     LOG.warn("File already exists: " + file.getAbsolutePath());
@@ -609,10 +608,6 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
     private static final class RetrieveMissingForeignKeysTask extends GridTaskAdapter {
         private static final long serialVersionUID = 1263155385842261227L;
-        private static final String WORK_DIR;
-        static {
-            WORK_DIR = GridUtils.getWorkDirPath();
-        }
 
         private final RetrieveMissingForeignKeysJobConf jobConf;
 
@@ -636,7 +631,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         protected DumpFile[] execute() throws GridException {
             final DBAccessor dba = registry.getDbAccessor();
             final GridNode localNode = config.getLocalNode();
-            final String localNodeId = GridDbUtils.getIdentitifier(localNode);
+            final String localNodeId = getIdentitifier(localNode);
             final int dstPort = config.getFileReceiverPort();
 
             final DumpFile[] dumpedInputFiles = jobConf.getDumpedFiles();
@@ -722,7 +717,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             ForeignKey fk = dumpFile.getForeignKey();
             String fkName = fk.getFkName();
             GridNode node = dumpFile.getDumpedNode();
-            String tmpTableName = fkName + '_' + GridDbUtils.getIdentitifier(node);
+            String tmpTableName = fkName + '_' + getIdentitifier(node);
             String viewName = viewNamePrefix + fkName;
             final String createTable = "CREATE TABLE \"" + tmpTableName + "\" (LIKE \"" + viewName
                     + "\")";
@@ -964,6 +959,10 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             JDBCUtils.update(conn, sql);
         }
 
+    }
+
+    private static String getIdentitifier(final GridNode node) {
+        return node.getPhysicalAdress().getHostAddress().replace(".", "") + '_' + node.getPort();
     }
 
 }

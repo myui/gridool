@@ -21,7 +21,6 @@
 package gridool.db.helpers;
 
 import gridool.GridException;
-import gridool.GridNode;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -98,10 +97,6 @@ public final class GridDbUtils {
         }
         return "COPY " + expectedRecords + " RECORDS INTO \"" + tableName + "\" FROM '"
                 + inputFilePath + "' USING DELIMITERS '|','\n','\"'";
-    }
-
-    public static String getIdentitifier(final GridNode node) {
-        return node.getPhysicalAdress().getHostName().replace(".", "") + '_' + node.getPort();
     }
 
 }
