@@ -370,25 +370,25 @@ public final class DistributionCatalog {
             throws GridException {
         final Pair<int[], int[]> keys;
         final Map<String, PartitionKey> fieldPartitionMap = new HashMap<String, PartitionKey>(12);
-        boolean readOnly = true;
+        boolean updateDb = true;
         synchronized(partitionKeyMappping) {
             if(partitionKeyMappping.put(actualTableName, fieldPartitionMap) != null) {
-                readOnly = false;
+                updateDb = false;
             }
-            boolean autocommit = !readOnly;
+            boolean autocommit = !updateDb;
             final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, autocommit);
             try {
                 // inquire PK/FK relationship on database catalog
                 keys = inquirePartitioningKeyPositions(conn, templateTableName, fieldPartitionMap, false);
                 // store partitioning information into database.       
-                if(readOnly) {
+                if(updateDb) {
                     storePartitioningInformation(conn, actualTableName, fieldPartitionMap);
                     conn.commit();
                 }
             } catch (SQLException e) {
                 String errmsg = "failed to get partitioning keys for table: " + templateTableName;
                 LOG.error(errmsg, e);
-                if(readOnly) {
+                if(updateDb) {
                     try {
                         conn.rollback();
                     } catch (SQLException rbe) {
@@ -400,7 +400,7 @@ public final class DistributionCatalog {
                 JDBCUtils.closeQuietly(conn);
             }
         }
-        if(!readOnly) {
+        if(updateDb) {
             UpdatePartitionInCatalogJobConf jobConf = new UpdatePartitionInCatalogJobConf(actualTableName, fieldPartitionMap);
             GridJobFuture<Boolean> future = kernel.execute(UpdatePartitionInCatalogJob.class, jobConf);
             Boolean status = GridUtils.invokeGet(future);
