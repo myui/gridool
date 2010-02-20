@@ -1025,7 +1025,8 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 String tableName = e.getKey();
                 List<DumpFile> loadFiles = e.getValue();
                 String tmpTableName = loadAllIntoTempolaryTable(conn, tableName, loadFiles);
-                loadRequiredRecords(conn, tmpTableName, tableName);
+                List<String> pkColumns = loadFiles.get(0).getColumnNames();
+                loadRequiredRecords(conn, tmpTableName, tableName, pkColumns);
             }
         }
 
@@ -1083,10 +1084,40 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             return tmpTableName;
         }
 
-        private static void loadRequiredRecords(final Connection conn, final String srcTable, final String destTable)
+        private static void loadRequiredRecords(final Connection conn, final String srcTable, final String destTable, final List<String> pkColumns)
                 throws SQLException {
-            String insertQuery = "INSERT INTO \"" + destTable + "\" (SELECT DISTINCT * FROM \""
-                    + srcTable + "\")";
+            final int numColumns = pkColumns.size();
+            if(numColumns == 0) {
+                throw new IllegalArgumentException();
+            }
+            final StringBuilder subquery = new StringBuilder(256);
+            subquery.append("SELECT l.* FROM \"");
+            subquery.append(srcTable);
+            subquery.append("\" l LEFT OUTER JOIN \"");
+            subquery.append(destTable);
+            subquery.append("\" r ON ");
+            for(int i = 0; i < numColumns; i++) {
+                if(i != 0) {
+                    subquery.append(" AND ");
+                }
+                subquery.append("l.\"");
+                String colname = pkColumns.get(i);
+                subquery.append(colname);
+                subquery.append("\" = r.\"");
+                subquery.append(colname);
+                subquery.append('"');
+            }
+            subquery.append(" WHERE ");
+            for(int i = 0; i < numColumns; i++) {
+                if(i != 0) {
+                    subquery.append(" AND ");
+                }
+                subquery.append("r.\"");
+                String colname = pkColumns.get(i);
+                subquery.append(colname);
+                subquery.append("\" IS NULL");
+            }
+            String insertQuery = "INSERT INTO \"" + destTable + "\" (" + subquery.toString() + ')';
             int updatedRows = JDBCUtils.update(conn, insertQuery);
             if(LOG.isInfoEnabled()) {
                 LOG.info("Loaded " + updatedRows + " missing records into table '" + destTable
