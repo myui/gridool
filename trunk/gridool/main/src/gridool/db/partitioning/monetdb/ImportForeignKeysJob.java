@@ -995,7 +995,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, false);
             try {
                 loadRequiredRecords(conn, receivedDumpedFiles);
-                //addForeignKeyConstraints(conn, fkeys);
+                addForeignKeyConstraints(conn, fkeys);
                 conn.commit();
             } catch (SQLException e) {
                 LOG.error(e);
