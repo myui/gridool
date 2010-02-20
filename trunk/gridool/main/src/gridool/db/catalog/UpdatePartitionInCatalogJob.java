@@ -38,6 +38,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -140,7 +141,7 @@ public final class UpdatePartitionInCatalogJob extends
         private/* final */Map<String, PartitionKey> fieldPartitionMap;
 
         public UpdatePartitionInCatalogJobConf() {} // for Externalizable
-        
+
         public UpdatePartitionInCatalogJobConf(@Nonnull String tableName, @Nonnull Map<String, PartitionKey> fieldPartitionMap) {
             this.tableName = tableName;
             this.fieldPartitionMap = fieldPartitionMap;
@@ -157,7 +158,7 @@ public final class UpdatePartitionInCatalogJob extends
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             this.tableName = IOUtils.readString(in);
             final int size = in.readInt();
-            final Map<String, PartitionKey> map = new IdentityHashMap<String, PartitionKey>(size);
+            final Map<String, PartitionKey> map = new HashMap<String, PartitionKey>(size); // should not be a IdentityHashMap
             for(int i = 0; i < size; i++) {
                 String columnName = IOUtils.readString(in);
                 boolean isPrimary = in.readBoolean();
