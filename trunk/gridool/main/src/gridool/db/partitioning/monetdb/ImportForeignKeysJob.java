@@ -54,6 +54,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -124,9 +125,15 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
         // #3 import collected missing foreign keys
         final int numNodes = nodes.length;
+        final Map<GridNode, List<DumpFile>> dumpFileMapping = mapDumpFiles(receivedDumpedFiles, numNodes);
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
         for(final GridNode node : nodes) {
-            GridTask task = new ImportCollectedExportedKeysTask(this, receivedDumpedFiles);
+            List<DumpFile> dumpFileList = dumpFileMapping.get(node);
+            DumpFile[] dumpFiles = ArrayUtils.toArray(dumpFileList, DumpFile[].class);
+            for(DumpFile df : dumpFiles) {
+                df.clearAssociatedNode();
+            }
+            GridTask task = new ImportCollectedExportedKeysTask(this, dumpFiles);
             map.put(task, node);
         }
         return map;
@@ -155,7 +162,28 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         return new CreateMissingImportedKeyViewJobConf(viewNamePrefix, fkeyArray, useGzip, nodes);
     }
 
+    private static Map<GridNode, List<DumpFile>> mapDumpFiles(final DumpFile[] dumpFiles, final int numNodes) {
+        final Map<GridNode, List<DumpFile>> map = new HashMap<GridNode, List<DumpFile>>(numNodes);
+        for(final DumpFile file : dumpFiles) {
+            GridNode node = file.getAssociatedNode();
+            List<DumpFile> fileList = map.get(node);
+            if(fileList == null) {
+                fileList = new ArrayList<DumpFile>(numNodes);
+                map.put(node, fileList);
+            }
+            fileList.add(file);
+        }
+        return map;
+    }
+
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
+        Boolean res = result.getResult();
+        if(Boolean.TRUE != res) {
+            GridException error = result.getException();
+            GridNode executedNode = result.getExecutedNode();
+            throw new GridException("ImportCollectedExportedKeysTask failed on node: "
+                    + executedNode, error);
+        }
         return GridTaskResultPolicy.CONTINUE;
     }
 
@@ -480,7 +508,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         private/* final */String fileName;
         private/* final */int records;
         private/* final */ForeignKey fkey;
-        private/* final */GridNode dumpedNode;
+        private/* final */GridNode assocNode;
 
         @Nullable
         private transient File file;
@@ -489,51 +517,64 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
         public DumpFile() {}//Externalizable
 
-        DumpFile(@Nonnull String fileName, @Nonnull String filePath, @Nonnegative int records, @Nonnull ForeignKey fk, @Nonnull GridNode dumpedNode) {
+        /**
+         * @param assocNode one to many
+         */
+        DumpFile(@Nonnull String fileName, @Nonnull String filePath, @Nonnegative int records, @Nonnull ForeignKey fk, @Nonnull GridNode assocNode) {
             if(records < 1) {
                 throw new IllegalArgumentException();
             }
             this.fileName = fileName;
             this.records = records;
             this.fkey = fk;
-            this.dumpedNode = dumpedNode;
+            this.assocNode = assocNode;
             this.filePath = filePath;
         }
 
-        DumpFile(@Nonnull File file, @Nonnegative int records, @Nonnull ForeignKey fk, @Nonnull GridNode dumpedNode) {
+        /**
+         * @param assocNode many to one
+         */
+        DumpFile(@Nonnull File file, @Nonnegative int records, @Nonnull ForeignKey fk, @Nonnull GridNode assocNode) {
             if(records < 1) {
                 throw new IllegalArgumentException("Illegal records: " + records);
             }
             this.fileName = file.getName();
             this.records = records;
             this.fkey = fk;
-            this.dumpedNode = dumpedNode;
+            this.assocNode = assocNode;
             this.file = file;
             this.filePath = file.getAbsolutePath();
         }
 
         @Nonnull
-        public String getFileName() {
+        String getFileName() {
             return fileName;
         }
 
         @Nonnegative
-        public int getRecords() {
+        int getRecords() {
             return records;
         }
 
         @Nonnull
-        public ForeignKey getForeignKey() {
+        ForeignKey getForeignKey() {
             return fkey;
         }
 
         @Nonnull
-        public GridNode getDumpedNode() {
-            return dumpedNode;
+        GridNode getAssociatedNode() {
+            if(assocNode == null) {
+                throw new IllegalStateException("DumpFile#getAssociatedNode() should not be called when associated node is null");
+            }
+            return assocNode;
+        }
+
+        void clearAssociatedNode() {
+            this.assocNode = null;
         }
 
         @Nonnull
-        public String getFilePath() {
+        String getFilePath() {
             if(filePath == null) {
                 this.filePath = getFile().getAbsolutePath();
             }
@@ -541,7 +582,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         }
 
         @Nonnull
-        public File getFile() {
+        File getFile() {
             if(file == null) {
                 File colDir = GridUtils.getWorkDir();
                 this.file = new File(colDir, fileName);
@@ -553,14 +594,22 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             this.fileName = IOUtils.readString(in);
             this.records = in.readInt();
             this.fkey = (ForeignKey) in.readObject();
-            this.dumpedNode = (GridNode) in.readObject();
+            boolean hasAssocNode = in.readBoolean();
+            if(hasAssocNode) {
+                this.assocNode = (GridNode) in.readObject();
+            }
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
             IOUtils.writeString(fileName, out);
             out.writeInt(records);
             out.writeObject(fkey);
-            out.writeObject(dumpedNode);
+            if(assocNode == null) {
+                out.writeBoolean(false);
+            } else {
+                out.writeBoolean(true);
+                out.writeObject(assocNode);
+            }
         }
 
     }
@@ -637,11 +686,11 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             final DumpFile[] dumpedInputFiles = jobConf.getDumpedFiles();
             final List<DumpFile> dumpedOutputFiles = new ArrayList<DumpFile>(dumpedInputFiles.length);
             for(final DumpFile dumpFile : dumpedInputFiles) {
-                final GridNode origNode = dumpFile.getDumpedNode();
+                final GridNode origNode = dumpFile.getAssociatedNode();
                 if(!origNode.equals(localNode)) {
                     final DumpFile output;
                     try {
-                        output = performQuery(dba, dumpFile, localNode, localNodeId);
+                        output = performQuery(dba, dumpFile, localNodeId);
                     } finally {
                         File inputFile = dumpFile.getFile();
                         if(!inputFile.delete()) {
@@ -670,10 +719,10 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
         }
 
         @Nullable
-        private DumpFile performQuery(final DBAccessor dba, final DumpFile dumpFile, final GridNode localNode, final String localNodeId)
+        private DumpFile performQuery(final DBAccessor dba, final DumpFile dumpFile, final String localNodeId)
                 throws GridException {
             final ForeignKey fk = dumpFile.getForeignKey();
-            final GridNode origNode = dumpFile.getDumpedNode();
+            final GridNode origNode = dumpFile.getAssociatedNode();
             final File outputFile = prepareOutputFile(fk, origNode, localNodeId, jobConf.isUseGzip());
 
             final int affectedRows;
@@ -688,7 +737,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 JDBCUtils.closeQuietly(conn);
             }
             if(affectedRows > 0) {
-                return new DumpFile(outputFile, affectedRows, fk, localNode);
+                return new DumpFile(outputFile, affectedRows, fk, origNode);
             } else {
                 return null;
             }
@@ -718,7 +767,7 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             // create a table to load a incoming dump file
             ForeignKey fk = dumpFile.getForeignKey();
             String fkName = fk.getFkName();
-            GridNode node = dumpFile.getDumpedNode();
+            GridNode node = dumpFile.getAssociatedNode();
             String tmpTableName = fkName + '_' + getIdentitifier(node);
             String viewName = viewNamePrefix + fkName;
             final String createTable = "CREATE TABLE \"" + tmpTableName + "\" (LIKE \"" + viewName
@@ -855,8 +904,6 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
         @GridRegistryResource
         private transient GridResourceRegistry registry;
-        @GridConfigResource
-        private transient GridConfiguration config;
 
         @SuppressWarnings("unchecked")
         ImportCollectedExportedKeysTask(@Nonnull GridJob job, @CheckForNull DumpFile[] receivedDumpedFiles) {
@@ -874,11 +921,10 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
         @Override
         protected Boolean execute() throws GridException {
-            final GridNode localNode = config.getLocalNode();
             DBAccessor dba = registry.getDbAccessor();
             final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, false);
             try {
-                Set<ForeignKey> fkeys = loadRequiredRecords(conn, receivedDumpedFiles, localNode);
+                Set<ForeignKey> fkeys = loadRequiredRecords(conn, receivedDumpedFiles);
                 addForeignKeyConstraints(conn, fkeys);
                 conn.commit();
             } catch (SQLException e) {
@@ -895,25 +941,22 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
             return Boolean.TRUE;
         }
 
-        private static Set<ForeignKey> loadRequiredRecords(final Connection conn, final DumpFile[] dumpedFiles, final GridNode localNode)
+        private static Set<ForeignKey> loadRequiredRecords(final Connection conn, final DumpFile[] dumpedFiles)
                 throws SQLException, GridException {
             final Set<ForeignKey> fkeys = new HashSet<ForeignKey>(32);
             for(final DumpFile dumpFile : dumpedFiles) {
-                final GridNode origNode = dumpFile.getDumpedNode();
-                if(!origNode.equals(localNode)) {
-                    ForeignKey fk = dumpFile.getForeignKey();
-                    String tableName = fk.getPkTableName();
-                    String inputFilePath = dumpFile.getFilePath();
-                    final int expectedRecords = dumpFile.getRecords();
-                    String copyIntoTable = GridDbUtils.makeCopyIntoTableQuery(tableName, inputFilePath, expectedRecords);
-                    final int updatedRecords = JDBCUtils.update(conn, copyIntoTable);
-                    if(expectedRecords != updatedRecords) {
-                        throw new GridException("Expected records to import (" + expectedRecords
-                                + ") != Actual records imported (" + updatedRecords + "):\n"
-                                + copyIntoTable);
-                    }
-                    fkeys.add(fk);
+                ForeignKey fk = dumpFile.getForeignKey();
+                String tableName = fk.getPkTableName();
+                String inputFilePath = dumpFile.getFilePath();
+                final int expectedRecords = dumpFile.getRecords();
+                String copyIntoTable = GridDbUtils.makeCopyIntoTableQuery(tableName, inputFilePath, expectedRecords);
+                final int updatedRecords = JDBCUtils.update(conn, copyIntoTable);
+                if(expectedRecords != updatedRecords) {
+                    throw new GridException("Expected records to import (" + expectedRecords
+                            + ") != Actual records imported (" + updatedRecords + "):\n"
+                            + copyIntoTable);
                 }
+                fkeys.add(fk);
             }
             return fkeys;
         }
