@@ -21,7 +21,6 @@
 package gridool.tools;
 
 import gridool.tools.cmd.CoordinateReplicaCommand;
-import gridool.tools.cmd.ImportForeignKeysCommand;
 import gridool.tools.cmd.ParallelSQLExecCommand;
 import gridool.tools.cmd.RegisterReplicaCommand;
 import xbird.util.cmdline.Command;
@@ -42,7 +41,7 @@ public final class GridCommandInvoker extends CommandInvokerBase {
 
     private static Command[] listCommands() {
         return new Command[] { new RegisterReplicaCommand(), new CoordinateReplicaCommand(),
-                new ParallelSQLExecCommand(), new ImportForeignKeysCommand() };
+                new ParallelSQLExecCommand() };
     }
 
     public static void main(String[] args) {
