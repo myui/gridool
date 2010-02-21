@@ -33,10 +33,12 @@ import javax.annotation.Nonnull;
  */
 public interface ConstraintKey extends Serializable {
 
+    boolean isPrimaryKey();
+
     @Nonnull
     String getConstraintName();
-    
+
     @Nonnull
     String getTableName();
-    
+
 }

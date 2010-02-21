@@ -55,7 +55,6 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
     @Override
     protected void postShuffle(int numShuffled) {
         super.postShuffle(numShuffled);
-
         assert (csvFileName != null);
 
         String connectUrl = jobConf.getConnectUrl();

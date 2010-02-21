@@ -108,6 +108,10 @@ public final class ForeignKey implements ConstraintKey, Externalizable {
         pkColumnNames.add(pkColumn);
     }
 
+    public boolean isPrimaryKey() {
+        return false;
+    }
+
     @Nonnull
     public String getConstraintName() {
         return getFkName();

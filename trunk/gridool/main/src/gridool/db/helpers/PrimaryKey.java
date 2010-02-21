@@ -88,6 +88,10 @@ public final class PrimaryKey implements ConstraintKey, Externalizable {
         }
     }
 
+    public boolean isPrimaryKey() {
+        return true;
+    }
+
     @Nonnull
     public String getConstraintName() {
         return getPkName();
