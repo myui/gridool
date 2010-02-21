@@ -30,7 +30,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -64,26 +66,49 @@ public final class GridDbUtils {
         return conn;
     }
 
-    @Deprecated
-    @Nonnull
-    public static Collection<ForeignKey> getForeignKeys(final Connection conn) throws SQLException {
+    @Nullable
+    public static PrimaryKey getPrimaryKey(@Nonnull final Connection conn, @CheckForNull final String tableName)
+            throws SQLException {
+        if(tableName == null) {
+            throw new IllegalArgumentException();
+        }
         DatabaseMetaData metadata = conn.getMetaData();
         String catalog = conn.getCatalog();
 
-        final Map<String, ForeignKey> mapping = new HashMap<String, ForeignKey>(32);
-        final ResultSet rs = metadata.getImportedKeys(catalog, null, null);
+        final ResultSet rs = metadata.getPrimaryKeys(catalog, null, tableName);
+        if(!rs.next()) {
+            return null;
+        }
+        String pkName = rs.getString("PK_NAME");
+        final PrimaryKey pkey = new PrimaryKey(pkName, tableName, true);
+        do {
+            pkey.addColumn(rs, metadata);
+        } while(rs.next());
+        return pkey;
+    }
+
+    @Nonnull
+    public static Collection<ForeignKey> getForeignKeys(@Nonnull final Connection conn, @CheckForNull final String tableName)
+            throws SQLException {
+        if(tableName == null) {
+            throw new IllegalArgumentException();
+        }
+        DatabaseMetaData metadata = conn.getMetaData();
+        String catalog = conn.getCatalog();
+
+        final Map<String, ForeignKey> mapping = new HashMap<String, ForeignKey>(4);
+        final ResultSet rs = metadata.getImportedKeys(catalog, null, tableName);
         while(rs.next()) {
             final String fkName = rs.getString("FK_NAME");
             ForeignKey fk = mapping.get(fkName);
             if(fk == null) {
                 String fkTableName = rs.getString("FKTABLE_NAME");
                 String pkTableName = rs.getString("PKTABLE_NAME");
-                fk = new ForeignKey(fkName, fkTableName, pkTableName, false);
+                fk = new ForeignKey(fkName, fkTableName, pkTableName, true);
                 mapping.put(fkName, fk);
             }
             fk.addColumn(rs, metadata);
         }
-
         return mapping.values();
     }
 
