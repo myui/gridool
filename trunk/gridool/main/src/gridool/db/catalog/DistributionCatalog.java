@@ -487,13 +487,13 @@ public final class DistributionCatalog {
         }
 
         int shift = 0;
-        if(pkeyIdxs != null && pkeyColumns == 1) {// FIXME workaround for avoiding multiple keys for partitioning key
+        if(pkeyIdxs != null /* && pkeyColumns == 1 */) {// FIXME workaround for avoiding multiple keys for partitioning key
             PartitionKey pkeyForPrimary = new PartitionKey(true, 1);
             shift++;
             fieldPartitionMap.put(DummyFieldNameForPrimaryKey, pkeyForPrimary);
-            //if(pkeyColumns == 1) {
-            fieldPartitionMap.put(pkColumnName, pkeyForPrimary);
-            //}
+            if(pkeyColumns == 1) {
+                fieldPartitionMap.put(pkColumnName, pkeyForPrimary);
+            }
         }
         if(fkeyIdxs != null) {
             for(int i = 0; i < fkeyIdxs.length; i++) {

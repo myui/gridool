@@ -1,5 +1,5 @@
 select
-    count(*)
+    count(*) as C1
 from
     lineitem,
     partsupp
