@@ -24,6 +24,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -32,7 +33,10 @@ import java.util.List;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
+import xbird.util.collections.ints.IntArrayList;
 import xbird.util.io.IOUtils;
+
+import com.sun.istack.internal.Nullable;
 
 /**
  * 
@@ -41,11 +45,13 @@ import xbird.util.io.IOUtils;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class ForeignKey implements Externalizable {
+public final class ForeignKey implements ConstraintKey, Externalizable {
 
     private/* final */String fkName; // useful for debugging
     private/* final */String fkTableName;
     private/* final */List<String> fkColumnNames;
+    @Nullable
+    private/* final */IntArrayList fkColumnPositions;
 
     // references
     private/* final */String pkTableName;
@@ -53,7 +59,7 @@ public final class ForeignKey implements Externalizable {
 
     public ForeignKey() {}// for Externalizable
 
-    public ForeignKey(@CheckForNull String fkName, @CheckForNull String fkTableName, @CheckForNull String pkTableName) {
+    public ForeignKey(@CheckForNull String fkName, @CheckForNull String fkTableName, @CheckForNull String pkTableName, boolean reserveFkColumnPosition) {
         if(fkName == null) {
             throw new IllegalArgumentException();
         }
@@ -68,19 +74,48 @@ public final class ForeignKey implements Externalizable {
         this.fkColumnNames = new ArrayList<String>(2);
         this.pkTableName = pkTableName;
         this.pkColumnNames = new ArrayList<String>(2);
+        this.fkColumnPositions = reserveFkColumnPosition ? new IntArrayList(2) : null;
     }
 
-    public void addReference(@Nonnull final ResultSet rs) throws SQLException {
-        String fkColumn = rs.getString("FKCOLUMN_NAME");
+    public void addColumn(@Nonnull final ResultSet rs, @CheckForNull final DatabaseMetaData metadata)
+            throws SQLException {
+        final String fkColumn = rs.getString("FKCOLUMN_NAME");
         if(fkColumn == null) {
             throw new IllegalStateException();
         }
         fkColumnNames.add(fkColumn);
-        String pkColumn = rs.getString("PKCOLUMN_NAME");
+        if(fkColumnPositions != null) {
+            if(metadata == null) {
+                throw new IllegalArgumentException();
+            }
+            final ResultSet colrs = metadata.getColumns(null, null, fkTableName, fkColumn);
+            try {
+                if(!colrs.next()) {
+                    throw new IllegalStateException("Existing FK column not defined: "
+                            + fkTableName + '.' + fkColumn);
+                }
+                int pos = colrs.getInt("ORDINAL_POSITION");
+                fkColumnPositions.add(pos);
+                assert (!colrs.next());
+            } finally {
+                colrs.close();
+            }
+        }
+        final String pkColumn = rs.getString("PKCOLUMN_NAME");
         if(pkColumn == null) {
             throw new IllegalStateException();
         }
         pkColumnNames.add(pkColumn);
+    }
+
+    @Nonnull
+    public String getConstraintName() {
+        return getFkName();
+    }
+
+    @Nonnull
+    public String getTableName() {
+        return getFkTableName();
     }
 
     @Nonnull
@@ -96,6 +131,14 @@ public final class ForeignKey implements Externalizable {
     @Nonnull
     public List<String> getFkColumnNames() {
         return fkColumnNames;
+    }
+
+    @Nonnull
+    public int[] getForeignColumnPositions() {
+        if(fkColumnPositions == null) {
+            throw new UnsupportedOperationException("ForeignColumnPositions is not reserved");
+        }
+        return fkColumnPositions.toArray();
     }
 
     @Nonnull
@@ -130,16 +173,27 @@ public final class ForeignKey implements Externalizable {
         return fkName;
     }
 
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
         this.fkName = IOUtils.readString(in);
         this.fkTableName = IOUtils.readString(in);
-        final int numFkColumns = in.readInt();
+        final int numFkColumns = in.readShort();
         final List<String> fkColumns = new ArrayList<String>(numFkColumns);
         for(int i = 0; i < numFkColumns; i++) {
             String e = IOUtils.readString(in);
             fkColumns.add(e);
         }
         this.fkColumnNames = fkColumns;
+        final int numPositions = in.readShort();
+        if(numPositions == -1) {
+            this.fkColumnPositions = null;
+        } else {
+            IntArrayList positions = new IntArrayList(numPositions);
+            for(int i = 0; i < numPositions; i++) {
+                int pos = in.readInt();
+                positions.add(pos);
+            }
+            this.fkColumnPositions = positions;
+        }
         this.pkTableName = IOUtils.readString(in);
         final int numPkColumns = in.readInt();
         final List<String> pkColumns = new ArrayList<String>(numPkColumns);
@@ -150,14 +204,24 @@ public final class ForeignKey implements Externalizable {
         this.pkColumnNames = pkColumns;
     }
 
-    public void writeExternal(ObjectOutput out) throws IOException {
+    public void writeExternal(final ObjectOutput out) throws IOException {
         IOUtils.writeString(fkName, out);
         IOUtils.writeString(fkTableName, out);
         final int numFkColumns = fkColumnNames.size();
-        out.writeInt(numFkColumns);
+        out.writeShort(numFkColumns);
         for(int i = 0; i < numFkColumns; i++) {
             String s = fkColumnNames.get(i);
             IOUtils.writeString(s, out);
+        }
+        if(fkColumnPositions == null) {
+            out.writeShort(-1);
+        } else {
+            final int numPositions = fkColumnPositions.size();
+            out.writeShort(numPositions);
+            for(int i = 0; i < numPositions; i++) {
+                int pos = fkColumnPositions.get(i);
+                out.writeInt(pos);
+            }
         }
         IOUtils.writeString(pkTableName, out);
         final int numPkColumns = pkColumnNames.size();

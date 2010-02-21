@@ -64,6 +64,7 @@ public final class GridDbUtils {
         return conn;
     }
 
+    @Deprecated
     @Nonnull
     public static Collection<ForeignKey> getForeignKeys(final Connection conn) throws SQLException {
         DatabaseMetaData metadata = conn.getMetaData();
@@ -77,10 +78,10 @@ public final class GridDbUtils {
             if(fk == null) {
                 String fkTableName = rs.getString("FKTABLE_NAME");
                 String pkTableName = rs.getString("PKTABLE_NAME");
-                fk = new ForeignKey(fkName, fkTableName, pkTableName);
+                fk = new ForeignKey(fkName, fkTableName, pkTableName, false);
                 mapping.put(fkName, fk);
             }
-            fk.addReference(rs);
+            fk.addColumn(rs, metadata);
         }
 
         return mapping.values();
