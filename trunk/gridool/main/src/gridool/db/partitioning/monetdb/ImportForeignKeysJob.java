@@ -1110,6 +1110,9 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 throw new IllegalArgumentException();
             }
             final StringBuilder subquery = new StringBuilder(256);
+            // TODO #1 group by except _hidden field (when there are multiple copies)
+            // TODO #2 dump as CSV file
+            // TODO #3 load into table
             subquery.append("SELECT src.* FROM \"");
             subquery.append(srcTable);
             subquery.append("\" src EXCEPT DISTINCT SELECT dst.* FROM \"");
