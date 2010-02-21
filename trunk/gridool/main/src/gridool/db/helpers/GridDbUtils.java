@@ -77,18 +77,25 @@ public final class GridDbUtils {
         }
         DatabaseMetaData metadata = conn.getMetaData();
         String catalog = conn.getCatalog();
-
         final ResultSet rs = metadata.getPrimaryKeys(catalog, null, pkTableName);
-        if(!rs.next()) {
-            return null;
+        final PrimaryKey pkey;
+        try {
+            if(!rs.next()) {
+                return null;
+            }
+            String pkName = rs.getString("PK_NAME");
+            pkey = new PrimaryKey(pkName, pkTableName);
+            do {
+                pkey.addColumn(rs);
+            } while(rs.next());
+        } finally {
+            rs.close();
         }
-        String pkName = rs.getString("PK_NAME");
-        final PrimaryKey pkey = new PrimaryKey(pkName, pkTableName, reserveAdditionalInfo);
-        do {
-            pkey.addColumn(rs, metadata);
-        } while(rs.next());
 
         if(reserveAdditionalInfo) {
+            // set foreign key column positions
+            pkey.setColumnPositions(metadata);
+            // set exported keys
             final Collection<ForeignKey> exportedKeys = getExportedKeys(conn, pkTableName, false);
             if(!exportedKeys.isEmpty()) {
                 final List<String> pkColumnsProbe = pkey.getColumnNames();
@@ -118,47 +125,67 @@ public final class GridDbUtils {
      * @return column position is not provided in the returning foreign keys
      */
     @Nonnull
-    public static Collection<ForeignKey> getExportedKeys(@Nonnull final Connection conn, @Nullable final String pkTableName, final boolean reserveFkColumnPosition)
+    public static Collection<ForeignKey> getExportedKeys(@Nonnull final Connection conn, @Nullable final String pkTableName, final boolean setColumnPositions)
             throws SQLException {
         DatabaseMetaData metadata = conn.getMetaData();
         String catalog = conn.getCatalog();
         final Map<String, ForeignKey> mapping = new HashMap<String, ForeignKey>(4);
         final ResultSet rs = metadata.getExportedKeys(catalog, null, pkTableName);
-        while(rs.next()) {
-            final String fkName = rs.getString("FK_NAME");
-            ForeignKey fk = mapping.get(fkName);
-            if(fk == null) {
-                String fkTableName = rs.getString("FKTABLE_NAME");
-                fk = new ForeignKey(fkName, fkTableName, pkTableName, reserveFkColumnPosition);
-                mapping.put(fkName, fk);
+        try {
+            while(rs.next()) {
+                final String fkName = rs.getString("FK_NAME");
+                ForeignKey fk = mapping.get(fkName);
+                if(fk == null) {
+                    String fkTableName = rs.getString("FKTABLE_NAME");
+                    fk = new ForeignKey(fkName, fkTableName, pkTableName);
+                    mapping.put(fkName, fk);
+                }
+                fk.addColumn(rs, metadata);
             }
-            fk.addColumn(rs, metadata);
+        } finally {
+            rs.close();
         }
-        return mapping.values();
+        final Collection<ForeignKey> fkeys = mapping.values();
+        if(setColumnPositions) {
+            for(ForeignKey fk : fkeys) {
+                fk.setColumnPositions(metadata);
+            }
+        }
+        return fkeys;
     }
 
     /**
      * @return column position is provided in the returning foreign keys
      */
     @Nonnull
-    public static Collection<ForeignKey> getForeignKeys(@Nonnull final Connection conn, @Nullable final String fkTableName)
+    public static Collection<ForeignKey> getForeignKeys(@Nonnull final Connection conn, @Nullable final String fkTableName, final boolean setColumnPositions)
             throws SQLException {
         DatabaseMetaData metadata = conn.getMetaData();
         String catalog = conn.getCatalog();
         final Map<String, ForeignKey> mapping = new HashMap<String, ForeignKey>(4);
         final ResultSet rs = metadata.getImportedKeys(catalog, null, fkTableName);
-        while(rs.next()) {
-            final String fkName = rs.getString("FK_NAME");
-            ForeignKey fk = mapping.get(fkName);
-            if(fk == null) {
-                //String fkTableName = rs.getString("FKTABLE_NAME");
-                String pkTableName = rs.getString("PKTABLE_NAME");
-                fk = new ForeignKey(fkName, fkTableName, pkTableName, true);
-                mapping.put(fkName, fk);
+        try {
+            while(rs.next()) {
+                final String fkName = rs.getString("FK_NAME");
+                ForeignKey fk = mapping.get(fkName);
+                if(fk == null) {
+                    //String fkTableName = rs.getString("FKTABLE_NAME");
+                    String pkTableName = rs.getString("PKTABLE_NAME");
+                    fk = new ForeignKey(fkName, fkTableName, pkTableName);
+                    mapping.put(fkName, fk);
+                }
+                fk.addColumn(rs, metadata);
             }
-            fk.addColumn(rs, metadata);
+        } finally {
+            rs.close();
         }
-        return mapping.values();
+        final Collection<ForeignKey> fkeys = mapping.values();
+        if(setColumnPositions) {
+            for(ForeignKey fk : fkeys) {
+                fk.setColumnPositions(metadata);
+            }
+        }
+        return fkeys;
     }
 
     public static String getCombinedColumnName(final List<String> columnNames, final boolean sortByName) {

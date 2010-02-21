@@ -59,7 +59,7 @@ public final class ForeignKey implements ConstraintKey, Externalizable {
 
     public ForeignKey() {}// for Externalizable
 
-    public ForeignKey(@CheckForNull String fkName, @CheckForNull String fkTableName, @CheckForNull String pkTableName, boolean reserveFkColumnPosition) {
+    public ForeignKey(@CheckForNull String fkName, @CheckForNull String fkTableName, @CheckForNull String pkTableName) {
         if(fkName == null) {
             throw new IllegalArgumentException();
         }
@@ -74,7 +74,7 @@ public final class ForeignKey implements ConstraintKey, Externalizable {
         this.fkColumnNames = new ArrayList<String>(2);
         this.pkTableName = pkTableName;
         this.pkColumnNames = new ArrayList<String>(2);
-        this.fkColumnPositions = reserveFkColumnPosition ? new IntArrayList(2) : null;
+        this.fkColumnPositions = new IntArrayList(2);
     }
 
     public void addColumn(@Nonnull final ResultSet rs, @CheckForNull final DatabaseMetaData metadata)
@@ -84,10 +84,21 @@ public final class ForeignKey implements ConstraintKey, Externalizable {
             throw new IllegalStateException();
         }
         fkColumnNames.add(fkColumn);
-        if(fkColumnPositions != null) {
-            if(metadata == null) {
-                throw new IllegalArgumentException();
-            }
+        final String pkColumn = rs.getString("PKCOLUMN_NAME");
+        if(pkColumn == null) {
+            throw new IllegalStateException();
+        }
+        pkColumnNames.add(pkColumn);
+    }
+
+    public void setColumnPositions(@CheckForNull final DatabaseMetaData metadata)
+            throws SQLException {
+        if(metadata == null) {
+            throw new IllegalArgumentException();
+        }
+        int numColumns = fkColumnNames.size();
+        final IntArrayList positions = new IntArrayList(numColumns);
+        for(String fkColumn : fkColumnNames) {
             final ResultSet colrs = metadata.getColumns(null, null, fkTableName, fkColumn);
             try {
                 if(!colrs.next()) {
@@ -95,17 +106,13 @@ public final class ForeignKey implements ConstraintKey, Externalizable {
                             + fkTableName + '.' + fkColumn);
                 }
                 int pos = colrs.getInt("ORDINAL_POSITION");
-                fkColumnPositions.add(pos);
+                positions.add(pos);
                 assert (!colrs.next());
             } finally {
                 colrs.close();
             }
         }
-        final String pkColumn = rs.getString("PKCOLUMN_NAME");
-        if(pkColumn == null) {
-            throw new IllegalStateException();
-        }
-        pkColumnNames.add(pkColumn);
+        this.fkColumnPositions = positions;
     }
 
     public boolean isPrimaryKey() {

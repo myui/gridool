@@ -59,25 +59,29 @@ public final class PrimaryKey implements ConstraintKey, Externalizable {
 
     public PrimaryKey() {} // for Externalizable
 
-    public PrimaryKey(@Nonnull String pkName, @Nonnull String tableName, boolean reserveAdditionalEntries) {
+    public PrimaryKey(@Nonnull String pkName, @Nonnull String tableName) {
         super();
         this.pkName = pkName;
         this.tableName = tableName;
         this.columnNames = new ArrayList<String>(2);
-        this.columnPositions = reserveAdditionalEntries ? new IntArrayList(2) : null;
     }
 
-    public void addColumn(@Nonnull final ResultSet rs, @CheckForNull final DatabaseMetaData metadata)
-            throws SQLException {
+    public void addColumn(@Nonnull final ResultSet rs) throws SQLException {
         final String columnName = rs.getString("COLUMN_NAME");
         if(columnName == null) {
             throw new IllegalStateException();
         }
         columnNames.add(columnName);
-        if(columnPositions != null) {
-            if(metadata == null) {
-                throw new IllegalArgumentException();
-            }
+    }
+
+    public void setColumnPositions(@CheckForNull final DatabaseMetaData metadata)
+            throws SQLException {
+        if(metadata == null) {
+            throw new IllegalArgumentException();
+        }
+        final int numColumns = columnNames.size();
+        final IntArrayList positions = new IntArrayList(numColumns);
+        for(String columnName : columnNames) {
             final ResultSet colrs = metadata.getColumns(null, null, tableName, columnName);
             try {
                 if(!colrs.next()) {
@@ -85,12 +89,13 @@ public final class PrimaryKey implements ConstraintKey, Externalizable {
                             + '.' + columnName);
                 }
                 int pos = colrs.getInt("ORDINAL_POSITION");
-                columnPositions.add(pos);
+                positions.add(pos);
                 assert (!colrs.next());
             } finally {
                 colrs.close();
             }
         }
+        this.columnPositions = positions;
     }
 
     public boolean isPrimaryKey() {

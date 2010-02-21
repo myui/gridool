@@ -21,8 +21,11 @@
 package gridool.db.helpers;
 
 import java.io.Serializable;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
 import java.util.List;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -42,10 +45,12 @@ public interface ConstraintKey extends Serializable {
 
     @Nonnull
     String getTableName();
-    
+
     @Nonnull
     List<String> getColumnNames();
-    
+
+    void setColumnPositions(@CheckForNull final DatabaseMetaData metadata) throws SQLException;
+
     @Nullable
     int[] getColumnPositions(boolean sort);
 

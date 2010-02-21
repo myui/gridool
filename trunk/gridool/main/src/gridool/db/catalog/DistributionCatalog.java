@@ -427,7 +427,7 @@ public final class DistributionCatalog {
         fieldPartitionMap.put(DummyFieldNameForPrimaryKey, partPrimaryKey);
 
         // foreign key 
-        final Collection<ForeignKey> fkeys = GridDbUtils.getForeignKeys(conn, tableName);
+        final Collection<ForeignKey> fkeys = GridDbUtils.getForeignKeys(conn, tableName, true);
         final List<PartitionKey> partlistForeignKey = fkeys.isEmpty() ? Collections.<PartitionKey> emptyList()
                 : new ArrayList<PartitionKey>(fkeys.size());
         for(ForeignKey fk : fkeys) {
