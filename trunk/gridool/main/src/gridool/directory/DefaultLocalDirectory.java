@@ -51,7 +51,7 @@ import xbird.storage.indexer.BasicIndexQuery.IndexConditionSW;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 @ThreadSafe
-public final class DefaultLocalDirectory extends AbstractLocalDirectory<BIndexFile> {
+public final class DefaultLocalDirectory extends AbstractLocalDirectory {
     private static final Log LOG = LogFactory.getLog(DefaultLocalDirectory.class);
     private static final String IDX_SUFFIX_NAME = ".bfile";
 
@@ -63,6 +63,7 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory<BIndexFi
         this.map = new ConcurrentHashMap<String, BIndexFile>(8);
     }
 
+    @SuppressWarnings("unchecked")
     public BIndexFile getInternalIndex(String idxName) {
         return map.get(idxName);
     }
@@ -219,6 +220,16 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory<BIndexFi
         btree.search(query, callback);
     }
 
+    public byte[] getValue(String idxName, byte[] key) throws DbException {
+        final BIndexFile btree = map.get(idxName);
+        if(btree == null) {
+            return null;
+        }
+        Value k = new Value(key);
+        byte[] v = btree.getValueBytes(k);
+        return v;
+    }
+
     private static BIndexFile createIndex(final String name, final boolean create)
             throws DbException {
         DbCollection rootColl = DbCollection.getRootCollection();
@@ -242,4 +253,5 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory<BIndexFi
                 + " for LocalDirectory");
         return btree;
     }
+
 }

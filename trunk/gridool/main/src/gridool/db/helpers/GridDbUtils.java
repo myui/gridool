@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -92,6 +93,7 @@ public final class GridDbUtils {
             if(!exportedKeys.isEmpty()) {
                 final List<String> pkColumnsProbe = pkey.getColumnNames();
                 final int numPkColumnsProbe = pkColumnsProbe.size();
+                final List<ForeignKey> exportedKeyList = new ArrayList<ForeignKey>(4);
                 outer: for(ForeignKey fk : exportedKeys) {
                     List<String> names = fk.getPkColumnNames();
                     if(names.size() != numPkColumnsProbe) {
@@ -102,8 +104,10 @@ public final class GridDbUtils {
                             continue outer;
                         }
                     }
-                    pkey.setExportedKey(fk);
-                    break;
+                    exportedKeyList.add(fk);
+                }
+                if(!exportedKeyList.isEmpty()) {
+                    pkey.setExportedKeys(exportedKeyList);
                 }
             }
         }

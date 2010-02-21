@@ -129,7 +129,7 @@ public final class ForeignKey implements ConstraintKey, Externalizable {
 
     @Nullable
     public int[] getColumnPositions(boolean sort) {
-        return getForeignColumnPositions(sort);
+        return getFkColumnPositions(sort);
     }
 
     @Nonnull
@@ -148,7 +148,7 @@ public final class ForeignKey implements ConstraintKey, Externalizable {
     }
 
     @Nonnull
-    public int[] getForeignColumnPositions(boolean sort) {
+    public int[] getFkColumnPositions(boolean sort) {
         if(fkColumnPositions == null) {
             throw new UnsupportedOperationException("ForeignColumnPositions is not reserved");
         }

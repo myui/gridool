@@ -51,7 +51,7 @@ import xbird.storage.indexer.IndexQuery;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 @ThreadSafe
-public final class TcbLocalDirectory extends AbstractLocalDirectory<BDB> {
+public final class TcbLocalDirectory extends AbstractLocalDirectory {
     private static final Log LOG = LogFactory.getLog(TcbLocalDirectory.class);
     private static final String IDX_SUFFIX_NAME = ".tcb";
 
@@ -62,6 +62,7 @@ public final class TcbLocalDirectory extends AbstractLocalDirectory<BDB> {
         this.map = new ConcurrentHashMap<String, BDB>(8);
     }
 
+    @SuppressWarnings("unchecked")
     public BDB getInternalIndex(String idxName) {
         return map.get(idxName);
     }
@@ -292,6 +293,15 @@ public final class TcbLocalDirectory extends AbstractLocalDirectory<BDB> {
         System.arraycopy(v, 0, b, 0, vlen);
         b[vlen] = Byte.MAX_VALUE;
         return b;
+    }
+
+    public byte[] getValue(String idxName, byte[] key) throws DbException {
+        final BDB tcb = map.get(idxName);
+        if(tcb == null) {
+            return null;
+        }
+        byte[] v = tcb.get(key);
+        return v;
     }
 
     private static BDB createIndex(final String name) throws DbException {

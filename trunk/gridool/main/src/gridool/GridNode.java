@@ -54,4 +54,7 @@ public interface GridNode extends GridLocatable {
     @Nonnull
     List<GridNode> getReplicas();
 
+    @Nonnull
+    byte[] toBytes();
+
 }

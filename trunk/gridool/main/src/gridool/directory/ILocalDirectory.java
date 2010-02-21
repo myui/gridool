@@ -36,15 +36,15 @@ import xbird.storage.indexer.IndexQuery;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public interface ILocalDirectory<T> {
+public interface ILocalDirectory {
 
     public static final String DEFAULT_IDX_NAME = "gridool";
 
     @Nonnull
     public LockManager getLockManager();
-    
+
     @Nullable
-    public T getInternalIndex(@Nonnull String idxName);
+    public <T> T getInternalIndex(@Nonnull String idxName);
 
     public void start() throws DbException;
 
@@ -56,7 +56,7 @@ public interface ILocalDirectory<T> {
      * @return true if created for this time. false if the specified index already exists.
      */
     public boolean create(@Nonnull String idxName) throws DbException;
-    
+
     public void drop(@Nonnull String... idxNames) throws DbException;
 
     public void addMapping(@Nonnull byte[] key, @Nonnull byte[] value) throws DbException;
@@ -99,6 +99,9 @@ public interface ILocalDirectory<T> {
 
     public void retrieve(@Nonnull String idxName, @Nonnull IndexQuery query, @Nonnull BTreeCallback callback)
             throws DbException;
+
+    @Nullable
+    public byte[] getValue(@Nonnull String idxName, @Nonnull byte[] key) throws DbException;
 
     public enum DirectoryIndexType {
         bfile /* default */, tcb;

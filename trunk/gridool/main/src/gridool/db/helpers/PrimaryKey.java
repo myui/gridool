@@ -55,7 +55,7 @@ public final class PrimaryKey implements ConstraintKey, Externalizable {
     @Nullable
     private/* final */IntArrayList columnPositions;
     @Nonnull
-    private transient ForeignKey exportedKey;
+    private transient List<ForeignKey> exportedKeys;
 
     public PrimaryKey() {} // for Externalizable
 
@@ -128,12 +128,12 @@ public final class PrimaryKey implements ConstraintKey, Externalizable {
     }
 
     @Nullable
-    public ForeignKey getExportedKey() {
-        return exportedKey;
+    public List<ForeignKey> getExportedKeys() {
+        return exportedKeys;
     }
 
-    public void setExportedKey(ForeignKey exportedKey) {
-        this.exportedKey = exportedKey;
+    public void setExportedKeys(List<ForeignKey> exportedKeyList) {
+        this.exportedKeys = exportedKeyList;
     }
 
     public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
