@@ -66,9 +66,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import ImportForeignKeysJob.DumpFile;
-import ImportForeignKeysJob.ScatterMissingReferencingKeysJobConf;
-
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.lang.ArrayUtils;
@@ -698,67 +695,6 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
     }
 
     private static final class RetrieveMissingReferencedRowsTask extends GridTaskAdapter {
-        static final class RetrieveMissingReferencedRowsJobConf implements Externalizable {
-        
-            private/* final */DumpFile[] dumpedFiles;
-            private/* final */GridNode[] nodes;
-            private/* final */boolean useGzip;
-        
-            public RetrieveMissingReferencedRowsJobConf() {}// Externalizable
-        
-            RetrieveMissingReferencedRowsJobConf(@CheckForNull DumpFile[] dumpedFiles, ScatterMissingReferencingKeysJobConf jobConf) {
-                if(dumpedFiles == null) {
-                    throw new IllegalArgumentException();
-                }
-                this.dumpedFiles = dumpedFiles;
-                this.nodes = jobConf.getNodes();
-                this.useGzip = jobConf.isUseGzip();
-            }
-        
-            @Nonnull
-            public DumpFile[] getDumpedFiles() {
-                return dumpedFiles;
-            }
-        
-            @Nonnull
-            public GridNode[] getNodes() {
-                return nodes;
-            }
-        
-            public boolean isUseGzip() {
-                return useGzip;
-            }
-        
-            public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-                final int numDumpedFiles = in.readInt();
-                final DumpFile[] df = new DumpFile[numDumpedFiles];
-                for(int i = 0; i < numDumpedFiles; i++) {
-                    df[i] = (DumpFile) in.readObject();
-                }
-                this.dumpedFiles = df;
-                final int numNodes = in.readInt();
-                final GridNode[] nodes = new GridNode[numNodes];
-                for(int i = 0; i < numNodes; i++) {
-                    nodes[i] = (GridNode) in.readObject();
-                }
-                this.nodes = nodes;
-                this.useGzip = in.readBoolean();
-            }
-        
-            public void writeExternal(ObjectOutput out) throws IOException {
-                out.writeInt(dumpedFiles.length);
-                for(final DumpFile df : dumpedFiles) {
-                    out.writeObject(df);
-                }
-                out.writeInt(nodes.length);
-                for(final GridNode node : nodes) {
-                    out.writeObject(node);
-                }
-                out.writeBoolean(useGzip);
-            }
-        
-        }
-
         private static final long serialVersionUID = 1263155385842261227L;
 
         private final RetrieveMissingReferencedRowsJobConf jobConf;
@@ -959,6 +895,67 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
 
     }
 
+    static final class RetrieveMissingReferencedRowsJobConf implements Externalizable {
+
+        private/* final */DumpFile[] dumpedFiles;
+        private/* final */GridNode[] nodes;
+        private/* final */boolean useGzip;
+
+        public RetrieveMissingReferencedRowsJobConf() {}// Externalizable
+
+        RetrieveMissingReferencedRowsJobConf(@CheckForNull DumpFile[] dumpedFiles, ScatterMissingReferencingKeysJobConf jobConf) {
+            if(dumpedFiles == null) {
+                throw new IllegalArgumentException();
+            }
+            this.dumpedFiles = dumpedFiles;
+            this.nodes = jobConf.getNodes();
+            this.useGzip = jobConf.isUseGzip();
+        }
+
+        @Nonnull
+        public DumpFile[] getDumpedFiles() {
+            return dumpedFiles;
+        }
+
+        @Nonnull
+        public GridNode[] getNodes() {
+            return nodes;
+        }
+
+        public boolean isUseGzip() {
+            return useGzip;
+        }
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            final int numDumpedFiles = in.readInt();
+            final DumpFile[] df = new DumpFile[numDumpedFiles];
+            for(int i = 0; i < numDumpedFiles; i++) {
+                df[i] = (DumpFile) in.readObject();
+            }
+            this.dumpedFiles = df;
+            final int numNodes = in.readInt();
+            final GridNode[] nodes = new GridNode[numNodes];
+            for(int i = 0; i < numNodes; i++) {
+                nodes[i] = (GridNode) in.readObject();
+            }
+            this.nodes = nodes;
+            this.useGzip = in.readBoolean();
+        }
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(dumpedFiles.length);
+            for(final DumpFile df : dumpedFiles) {
+                out.writeObject(df);
+            }
+            out.writeInt(nodes.length);
+            for(final GridNode node : nodes) {
+                out.writeObject(node);
+            }
+            out.writeBoolean(useGzip);
+        }
+
+    }
+
     private static final class ImportCollectedExportedKeysTask extends GridTaskAdapter {
         private static final long serialVersionUID = 1192299061445569050L;
 
@@ -1113,11 +1110,23 @@ public final class ImportForeignKeysJob extends GridJobBase<Pair<String, Boolean
                 throw new IllegalArgumentException();
             }
             final StringBuilder subquery = new StringBuilder(256);
-            subquery.append("SELECT src.* FROM \"");
+            subquery.append("SELECT DISTINCT src.* FROM \"");
             subquery.append(srcTable);
-            subquery.append("\" src EXCEPT DISTINCT SELECT dst.* FROM \"");
+            subquery.append("\" src WHERE NOT EXISTS (SELECT null FROM \"");
             subquery.append(destTable);
-            subquery.append("\" dst");
+            subquery.append("\" dst WHERE ");
+            for(int i = 0; i < numColumns; i++) {
+                if(i != 0) {
+                    subquery.append(" AND ");
+                }
+                subquery.append("dst.\"");
+                String colname = pkColumns.get(i);
+                subquery.append(colname);
+                subquery.append("\" = src.\"");
+                subquery.append(colname);
+                subquery.append('"');
+            }
+            subquery.append(')');
             String insertQuery = "INSERT INTO \"" + destTable + "\" (" + subquery.toString() + ')';
             int updatedRows = JDBCUtils.update(conn, insertQuery);
             if(LOG.isInfoEnabled()) {
