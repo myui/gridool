@@ -103,8 +103,8 @@ public final class GridDbUtils {
             ForeignKey fk = mapping.get(fkName);
             if(fk == null) {
                 String fkTableName = rs.getString("FKTABLE_NAME");
-                String pkTableName = rs.getString("PKTABLE_NAME");
-                fk = new ForeignKey(fkName, fkTableName, pkTableName, true);
+                //String pkTableName = rs.getString("PKTABLE_NAME");
+                fk = new ForeignKey(fkName, fkTableName, tableName, true);
                 mapping.put(fkName, fk);
             }
             fk.addColumn(rs, metadata);
