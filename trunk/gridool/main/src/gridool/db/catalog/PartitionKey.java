@@ -20,10 +20,15 @@
  */
 package gridool.db.catalog;
 
+import gridool.db.helpers.ConstraintKey;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
 /**
  * 
@@ -37,11 +42,28 @@ public final class PartitionKey implements Externalizable {
     private/* final */boolean isPrimary;
     private/* final */int partitionNo;
 
+    private transient ConstraintKey key;
+
     public PartitionKey() {} // Externalizable
+
+    public PartitionKey(@CheckForNull ConstraintKey key, int partitionNo) {
+        if(key == null) {
+            throw new IllegalArgumentException();
+        }
+        this.isPrimary = key.isPrimaryKey();
+        this.partitionNo = partitionNo;
+        this.key = key;
+    }
 
     public PartitionKey(boolean isPrimary, int partitionNo) {
         this.isPrimary = isPrimary;
         this.partitionNo = partitionNo;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Nullable
+    public <T extends ConstraintKey> T getKey() {
+        return (T) key;
     }
 
     public boolean isPrimary() {
@@ -54,7 +76,7 @@ public final class PartitionKey implements Externalizable {
 
     @Override
     public String toString() {
-        return (isPrimary ? "PK" : "FK") + " partition #" + partitionNo;
+        return (isPrimary ? "PK:" : "FK:") + " partition #" + partitionNo;
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {

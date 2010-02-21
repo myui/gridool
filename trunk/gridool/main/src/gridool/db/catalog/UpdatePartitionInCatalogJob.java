@@ -155,30 +155,27 @@ public final class UpdatePartitionInCatalogJob extends
             return fieldPartitionMap;
         }
 
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
             this.tableName = IOUtils.readString(in);
             final int size = in.readInt();
             final Map<String, PartitionKey> map = new HashMap<String, PartitionKey>(size); // should not be a IdentityHashMap
             for(int i = 0; i < size; i++) {
                 String columnName = IOUtils.readString(in);
-                boolean isPrimary = in.readBoolean();
-                int partitionNo = in.readInt();
-                PartitionKey key = new PartitionKey(isPrimary, partitionNo);
+                PartitionKey key = (PartitionKey) in.readObject();
                 map.put(columnName, key);
             }
             this.fieldPartitionMap = map;
         }
 
-        public void writeExternal(ObjectOutput out) throws IOException {
+        public void writeExternal(final ObjectOutput out) throws IOException {
             IOUtils.writeString(tableName, out);
             final int size = fieldPartitionMap.size();
             out.writeInt(size);
-            for(Map.Entry<String, PartitionKey> e : fieldPartitionMap.entrySet()) {
+            for(final Map.Entry<String, PartitionKey> e : fieldPartitionMap.entrySet()) {
                 String columnName = e.getKey();
-                PartitionKey key = e.getValue();
                 IOUtils.writeString(columnName, out);
-                out.writeBoolean(key.isPrimary());
-                out.writeInt(key.getPartitionNo());
+                PartitionKey partkey = e.getValue();
+                out.writeObject(partkey);
             }
         }
 

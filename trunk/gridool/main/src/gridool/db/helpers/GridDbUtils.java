@@ -27,7 +27,9 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.CheckForNull;
@@ -67,49 +69,114 @@ public final class GridDbUtils {
     }
 
     @Nullable
-    public static PrimaryKey getPrimaryKey(@Nonnull final Connection conn, @CheckForNull final String tableName)
+    public static PrimaryKey getPrimaryKey(@Nonnull final Connection conn, @CheckForNull final String pkTableName, final boolean reserveAdditionalInfo)
             throws SQLException {
-        if(tableName == null) {
+        if(pkTableName == null) {
             throw new IllegalArgumentException();
         }
         DatabaseMetaData metadata = conn.getMetaData();
         String catalog = conn.getCatalog();
 
-        final ResultSet rs = metadata.getPrimaryKeys(catalog, null, tableName);
+        final ResultSet rs = metadata.getPrimaryKeys(catalog, null, pkTableName);
         if(!rs.next()) {
             return null;
         }
         String pkName = rs.getString("PK_NAME");
-        final PrimaryKey pkey = new PrimaryKey(pkName, tableName, true);
+        final PrimaryKey pkey = new PrimaryKey(pkName, pkTableName, reserveAdditionalInfo);
         do {
             pkey.addColumn(rs, metadata);
         } while(rs.next());
+
+        if(reserveAdditionalInfo) {
+            final Collection<ForeignKey> exportedKeys = getExportedKeys(conn, pkTableName, false);
+            if(!exportedKeys.isEmpty()) {
+                final List<String> pkColumnsProbe = pkey.getColumnNames();
+                final int numPkColumnsProbe = pkColumnsProbe.size();
+                outer: for(ForeignKey fk : exportedKeys) {
+                    List<String> names = fk.getPkColumnNames();
+                    if(names.size() != numPkColumnsProbe) {
+                        continue;
+                    }
+                    for(String name : names) {
+                        if(!pkColumnsProbe.contains(name)) {
+                            continue outer;
+                        }
+                    }
+                    pkey.setExportedKey(fk);
+                    break;
+                }
+            }
+        }
         return pkey;
     }
 
+    /**
+     * @return column position is not provided in the returning foreign keys
+     */
     @Nonnull
-    public static Collection<ForeignKey> getForeignKeys(@Nonnull final Connection conn, @CheckForNull final String tableName)
+    public static Collection<ForeignKey> getExportedKeys(@Nonnull final Connection conn, @Nullable final String pkTableName, final boolean reserveFkColumnPosition)
             throws SQLException {
-        if(tableName == null) {
-            throw new IllegalArgumentException();
-        }
         DatabaseMetaData metadata = conn.getMetaData();
         String catalog = conn.getCatalog();
-
         final Map<String, ForeignKey> mapping = new HashMap<String, ForeignKey>(4);
-        final ResultSet rs = metadata.getImportedKeys(catalog, null, tableName);
+        final ResultSet rs = metadata.getExportedKeys(catalog, null, pkTableName);
         while(rs.next()) {
             final String fkName = rs.getString("FK_NAME");
             ForeignKey fk = mapping.get(fkName);
             if(fk == null) {
                 String fkTableName = rs.getString("FKTABLE_NAME");
-                //String pkTableName = rs.getString("PKTABLE_NAME");
-                fk = new ForeignKey(fkName, fkTableName, tableName, true);
+                fk = new ForeignKey(fkName, fkTableName, pkTableName, reserveFkColumnPosition);
                 mapping.put(fkName, fk);
             }
             fk.addColumn(rs, metadata);
         }
         return mapping.values();
+    }
+
+    /**
+     * @return column position is provided in the returning foreign keys
+     */
+    @Nonnull
+    public static Collection<ForeignKey> getForeignKeys(@Nonnull final Connection conn, @Nullable final String fkTableName)
+            throws SQLException {
+        DatabaseMetaData metadata = conn.getMetaData();
+        String catalog = conn.getCatalog();
+        final Map<String, ForeignKey> mapping = new HashMap<String, ForeignKey>(4);
+        final ResultSet rs = metadata.getImportedKeys(catalog, null, fkTableName);
+        while(rs.next()) {
+            final String fkName = rs.getString("FK_NAME");
+            ForeignKey fk = mapping.get(fkName);
+            if(fk == null) {
+                //String fkTableName = rs.getString("FKTABLE_NAME");
+                String pkTableName = rs.getString("PKTABLE_NAME");
+                fk = new ForeignKey(fkName, fkTableName, pkTableName, true);
+                mapping.put(fkName, fk);
+            }
+            fk.addColumn(rs, metadata);
+        }
+        return mapping.values();
+    }
+
+    public static String getCombinedColumnName(final List<String> columnNames, final boolean sortByName) {
+        final int size = columnNames.size();
+        if(size == 0) {
+            throw new IllegalArgumentException();
+        }
+        if(size == 1) {
+            return columnNames.get(0);
+        }
+        if(sortByName) {
+            Collections.sort(columnNames);
+        }
+        final StringBuilder buf = new StringBuilder(32);
+        for(int i = 0; i < size; i++) {
+            if(i != 0) {
+                buf.append('&');
+            }
+            String name = columnNames.get(i);
+            buf.append(name);
+        }
+        return buf.toString();
     }
 
     public static String makeCopyIntoFileQuery(final String subquery, final String outputFilePath) {

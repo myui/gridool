@@ -29,6 +29,9 @@ import gridool.GridTaskResultPolicy;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridJobBase;
 import gridool.db.catalog.DistributionCatalog;
+import gridool.db.catalog.PartitionKey;
+import gridool.db.helpers.ConstraintKey;
+import gridool.db.helpers.PrimaryKey;
 import gridool.db.partitioning.DBPartitioningJobConf;
 import gridool.db.partitioning.FileAppendTask;
 import gridool.routing.GridTaskRouter;
@@ -39,6 +42,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.charset.Charset;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nonnull;
@@ -77,27 +81,36 @@ public final class CsvHashPartitioningJob extends
     public Map<GridTask, GridNode> map(final GridTaskRouter router, final CsvHashPartitioningJob.JobConf ops)
             throws GridException {
         assert (registry != null);
-        final DistributionCatalog catalog = registry.getDistributionCatalog();
-
         final String[] lines = ops.getLines();
         final String csvFileName = ops.getFileName();
         final boolean append = !ops.isFirst();
         final DBPartitioningJobConf jobConf = ops.getJobConf();
-        final String baseTableName = jobConf.getBaseTableName();
-        final String actualTableName = jobConf.getTableName();
-        final Pair<int[], int[]> partitioningKeys = catalog.bindPartitioningKeyPositions(baseTableName, actualTableName);
 
-        final int[] pkeyIndicies = partitioningKeys.getFirst();
-        final int[] fkeyIndicies = partitioningKeys.getSecond();
+        final PartitionKey primaryPartitionKey;
+        final List<PartitionKey> foreignPartitionKeys;
+        final int pkeyPartitionNo;
+        final int[] pkeyIndicies;
+        {
+            DistributionCatalog catalog = registry.getDistributionCatalog();
+            String baseTableName = jobConf.getBaseTableName();
+            String actualTableName = jobConf.getTableName();
+            Pair<PartitionKey, List<PartitionKey>> partitioningKeys = catalog.bindPartitioningKeyPositions(baseTableName, actualTableName);
+            primaryPartitionKey = partitioningKeys.getFirst();
+            foreignPartitionKeys = partitioningKeys.getSecond();            
+            pkeyPartitionNo = primaryPartitionKey.getPartitionNo();
+            PrimaryKey primaryKey = primaryPartitionKey.getKey();
+            pkeyIndicies = primaryKey.getColumnPositions(true);
+        }
+
         final boolean insertHiddenField = jobConf.insertHiddenField();
         final char filedSeparator = jobConf.getFieldSeparator();
         final char quoteChar = jobConf.getStringQuote();
-        final String[] fields = new String[Math.max(pkeyIndicies == null ? 0 : pkeyIndicies.length, fkeyIndicies == null ? 0
-                : fkeyIndicies.length)];
+        final String[] fields = new String[getMaxColumnCount(primaryPartitionKey, foreignPartitionKeys)];
         assert (fields.length > 0);
         final FixedArrayList<String> fieldList = new FixedArrayList<String>(fields);
 
         final Charset charset = Charset.forName("UTF-8");
+        final StringBuilder strBuf = new StringBuilder(64);
         final int totalRecords = lines.length;
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new IdentityHashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
@@ -107,17 +120,11 @@ public final class CsvHashPartitioningJob extends
             String line = lines[i];
             lines[i] = null;
             final byte[] lineBytes = line.getBytes(charset);
-            if(pkeyIndicies != null) {
+            {//primary mapping
                 CsvUtils.retrieveFields(line, pkeyIndicies, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
-                final StringBuilder pkeys = new StringBuilder(64);
-                for(final String k : fields) {
-                    if(k == null) {
-                        break;
-                    }
-                    pkeys.append(k);
-                }
-                decideRecordMapping(router, mappedNodes, bitShift, pkeys.toString());
+                String pkeysField = combineFields(fields, strBuf);
+                decideRecordMapping(router, mappedNodes, pkeysField, pkeyPartitionNo);
                 bitShift++;
             }
             if(fkeyIndicies != null) {
@@ -153,31 +160,23 @@ public final class CsvHashPartitioningJob extends
                 assignedRecMap.put(node, new MutableInt(0));
             }
         }
-
         this.assignedRecMap = assignedRecMap;
         return map;
     }
 
-    private static void decideRecordMapping(final GridTaskRouter router, final Map<GridNode, MutableInt> mappedNodes, int counter, final String... fields)
+    private static void decideRecordMapping(final GridTaskRouter router, final Map<GridNode, MutableInt> mappedNodes, final String field, final int partitionNo)
             throws GridException {
-        assert (counter < 7) : counter;
-        for(final String f : fields) {
-            if(f == null) {
-                break;
-            }
-            final byte[] k = StringUtils.getBytes(f);
-            final GridNode node = router.selectNode(k);
-            if(node == null) {
-                throw new GridException("Could not find any node in cluster.");
-            }
-            MutableInt hiddenMapping = mappedNodes.get(node);
-            if(hiddenMapping == null) {
-                mappedNodes.put(node, new MutableInt(1 << counter));
-            } else {
-                int newValue = hiddenMapping.intValue() | (1 << counter);
-                hiddenMapping.setValue(newValue);
-            }
-            counter++;
+        final byte[] k = StringUtils.getBytes(field);
+        final GridNode node = router.selectNode(k);
+        if(node == null) {
+            throw new GridException("Could not find any node in cluster.");
+        }
+        MutableInt hiddenMapping = mappedNodes.get(node);
+        if(hiddenMapping == null) {
+            mappedNodes.put(node, new MutableInt(partitionNo));
+        } else {
+            int newValue = hiddenMapping.intValue() | partitionNo;
+            hiddenMapping.setValue(newValue);
         }
     }
 
@@ -279,6 +278,31 @@ public final class CsvHashPartitioningJob extends
             out.writeBoolean(isFirst);
             out.writeObject(jobConf);
         }
+    }
 
+    private static int getMaxColumnCount(@Nonnull final PartitionKey primaryPartitionKey, @Nonnull final List<PartitionKey> foreignPartitionKeys) {
+        int max = primaryPartitionKey.getKey().getColumnNames().size();
+        for(final PartitionKey key : foreignPartitionKeys) {
+            int size = key.getKey().getColumnNames().size();
+            max = Math.max(size, max);
+        }
+        return max;
+    }
+
+    private static String combineFields(@Nonnull final String[] fields, @Nonnull final StringBuilder buf) {
+        final int numFields = fields.length;
+        if(numFields == 0) {
+            throw new IllegalArgumentException();
+        }
+        if(numFields == 1) {
+            return fields[0];
+        }
+        StringUtils.clear(buf);
+        buf.append(fields[0]);
+        for(int i = 1; i < numFields; i++) {
+            buf.append('|');
+            buf.append(fields[i]);
+        }
+        return buf.toString();
     }
 }

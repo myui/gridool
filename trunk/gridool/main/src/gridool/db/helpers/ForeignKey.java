@@ -28,15 +28,15 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import xbird.util.collections.ints.IntArrayList;
 import xbird.util.io.IOUtils;
-
-import com.sun.istack.internal.Nullable;
 
 /**
  * 
@@ -123,6 +123,16 @@ public final class ForeignKey implements ConstraintKey, Externalizable {
     }
 
     @Nonnull
+    public List<String> getColumnNames() {
+        return getFkColumnNames();
+    }
+
+    @Nullable
+    public int[] getColumnPositions(boolean sort) {
+        return getForeignColumnPositions(sort);
+    }
+
+    @Nonnull
     public String getFkName() {
         return fkName;
     }
@@ -138,11 +148,13 @@ public final class ForeignKey implements ConstraintKey, Externalizable {
     }
 
     @Nonnull
-    public int[] getForeignColumnPositions() {
+    public int[] getForeignColumnPositions(boolean sort) {
         if(fkColumnPositions == null) {
             throw new UnsupportedOperationException("ForeignColumnPositions is not reserved");
         }
-        return fkColumnPositions.toArray();
+        final int[] pos = fkColumnPositions.toArray();
+        Arrays.sort(pos);
+        return pos;
     }
 
     @Nonnull

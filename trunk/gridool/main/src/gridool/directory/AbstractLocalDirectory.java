@@ -36,7 +36,7 @@ import xbird.storage.index.BTreeCallback;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public abstract class AbstractLocalDirectory implements ILocalDirectory {
+public abstract class AbstractLocalDirectory<T> implements ILocalDirectory<T> {
 
     static final boolean DELETE_IDX_ON_EXIT = Boolean.parseBoolean(Settings.get("gridool.directory.btree.delete_on_exit"));
 

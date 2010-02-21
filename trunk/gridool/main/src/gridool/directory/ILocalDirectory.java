@@ -36,12 +36,15 @@ import xbird.storage.indexer.IndexQuery;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public interface ILocalDirectory {
+public interface ILocalDirectory<T> {
 
     public static final String DEFAULT_IDX_NAME = "gridool";
 
     @Nonnull
     public LockManager getLockManager();
+    
+    @Nullable
+    public T getInternalIndex(@Nonnull String idxName);
 
     public void start() throws DbException;
 

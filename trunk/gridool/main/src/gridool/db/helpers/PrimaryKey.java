@@ -28,6 +28,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.CheckForNull;
@@ -49,17 +50,21 @@ public final class PrimaryKey implements ConstraintKey, Externalizable {
     private/* final */String pkName;
     private/* final */String tableName;
     private/* final */List<String> columnNames;
+
+    // additional entries
     @Nullable
     private/* final */IntArrayList columnPositions;
+    @Nonnull
+    private transient ForeignKey exportedKey;
 
     public PrimaryKey() {} // for Externalizable
 
-    public PrimaryKey(@Nonnull String pkName, @Nonnull String tableName, boolean reserveColumnPosition) {
+    public PrimaryKey(@Nonnull String pkName, @Nonnull String tableName, boolean reserveAdditionalEntries) {
         super();
         this.pkName = pkName;
         this.tableName = tableName;
         this.columnNames = new ArrayList<String>(2);
-        this.columnPositions = reserveColumnPosition ? new IntArrayList(2) : null;
+        this.columnPositions = reserveAdditionalEntries ? new IntArrayList(2) : null;
     }
 
     public void addColumn(@Nonnull final ResultSet rs, @CheckForNull final DatabaseMetaData metadata)
@@ -111,11 +116,24 @@ public final class PrimaryKey implements ConstraintKey, Externalizable {
         return columnNames;
     }
 
-    public int[] getColumnPositions() {
+    public int[] getColumnPositions(boolean sort) {
         if(columnPositions == null) {
             throw new UnsupportedOperationException("columnPositions is not reserved");
         }
-        return columnPositions.toArray();
+        final int[] pos = columnPositions.toArray();
+        if(sort) {
+            Arrays.sort(pos);
+        }
+        return pos;
+    }
+
+    @Nullable
+    public ForeignKey getExportedKey() {
+        return exportedKey;
+    }
+
+    public void setExportedKey(ForeignKey exportedKey) {
+        this.exportedKey = exportedKey;
     }
 
     public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {

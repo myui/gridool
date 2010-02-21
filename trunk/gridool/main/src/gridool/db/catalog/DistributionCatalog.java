@@ -26,15 +26,15 @@ import gridool.GridKernel;
 import gridool.GridNode;
 import gridool.db.catalog.UpdatePartitionInCatalogJob.UpdatePartitionInCatalogJobConf;
 import gridool.db.helpers.DBAccessor;
+import gridool.db.helpers.ForeignKey;
 import gridool.db.helpers.GridDbUtils;
+import gridool.db.helpers.PrimaryKey;
 import gridool.util.GridUtils;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -88,7 +88,7 @@ public final class DistributionCatalog {
     private final Map<String, NodeWithState> nodeStateMap;
 
     /**
-     * TableName => [ColumnName => PartitionKey]
+     * TableName => [ColumnNames => PartitionKey]
      */
     @GuardedBy("partitionKeyMappping")
     private final Map<String, Map<String, PartitionKey>> partitionKeyMappping;
@@ -163,13 +163,13 @@ public final class DistributionCatalog {
     }
 
     private void inquirePartitioningKeyTable(final Connection conn) throws SQLException {
-        final String sql = "SELECT tablename, columnname, primarykey, partitionid FROM \""
+        final String sql = "SELECT tablename, columns, primarykey, partitionid FROM \""
                 + partitioningKeyTableName + '"';
         final ResultSetHandler rsh = new ResultSetHandler() {
             public Object handle(ResultSet rs) throws SQLException {
                 while(rs.next()) {
                     String tableName = rs.getString(1);
-                    String columnName = rs.getString(2);
+                    String columnNames = rs.getString(2);
                     boolean isPrimaryKey = rs.getBoolean(3);
                     int partitionId = rs.getInt(4);
                     Map<String, PartitionKey> columnMapping = partitionKeyMappping.get(tableName);
@@ -178,7 +178,7 @@ public final class DistributionCatalog {
                         partitionKeyMappping.put(tableName, columnMapping);
                     }
                     PartitionKey key = new PartitionKey(isPrimaryKey, partitionId);
-                    columnMapping.put(columnName, key);
+                    columnMapping.put(columnNames, key);
                     if(isPrimaryKey) {
                         columnMapping.put(DummyFieldNameForPrimaryKey, key);
                     }
@@ -366,9 +366,9 @@ public final class DistributionCatalog {
      * @throws GridException 
      */
     @Nonnull
-    public Pair<int[], int[]> bindPartitioningKeyPositions(@Nonnull final String templateTableName, @Nonnull final String actualTableName)
+    public Pair<PartitionKey, List<PartitionKey>> bindPartitioningKeyPositions(@Nonnull final String templateTableName, @Nonnull final String actualTableName)
             throws GridException {
-        final Pair<int[], int[]> keys;
+        final Pair<PartitionKey, List<PartitionKey>> keys;
         final Map<String, PartitionKey> fieldPartitionMap = new HashMap<String, PartitionKey>(12);
         boolean updateDb = true;
         synchronized(partitionKeyMappping) {
@@ -404,107 +404,41 @@ public final class DistributionCatalog {
             UpdatePartitionInCatalogJobConf jobConf = new UpdatePartitionInCatalogJobConf(actualTableName, fieldPartitionMap);
             GridJobFuture<Boolean> future = kernel.execute(UpdatePartitionInCatalogJob.class, jobConf);
             Boolean status = GridUtils.invokeGet(future);
-            if(Boolean.TRUE != status) {
+            if(status == null || status.booleanValue() == false) {
                 LOG.warn("Failed to execute UpdatePartitionInCatalogJob");
             }
         }
         return keys;
     }
 
-    private static Pair<int[], int[]> inquirePartitioningKeyPositions(@Nonnull final Connection conn, @Nonnull final String tableName, @Nonnull final Map<String, PartitionKey> fieldPartitionMap, final boolean returnNull)
+    private static Pair<PartitionKey, List<PartitionKey>> inquirePartitioningKeyPositions(@Nonnull final Connection conn, @Nonnull final String tableName, @Nonnull final Map<String, PartitionKey> fieldPartitionMap, final boolean returnNull)
             throws SQLException {
-        final List<String> keys = new ArrayList<String>();
-        final DatabaseMetaData meta = conn.getMetaData();
-        final String catalog = conn.getCatalog();
-
         // primary key
-        final ResultSet rs1 = meta.getPrimaryKeys(catalog, null, tableName);
-        try {
-            while(rs1.next()) {
-                String pk = rs1.getString("COLUMN_NAME");
-                keys.add(pk);
-            }
-        } finally {
-            rs1.close();
+        final PrimaryKey pkey = GridDbUtils.getPrimaryKey(conn, tableName, true);
+        if(pkey == null) {
+            throw new IllegalStateException("Primary key is not defined on table: " + tableName);
         }
-        int[] pkeyIdxs = null;
-        String pkColumnName = null;
-        final int pkeyColumns = keys.size();
-        if(pkeyColumns != 0) {
-            final int[] idxs = new int[pkeyColumns];
-            for(int i = 0; i < pkeyColumns; i++) {
-                String columnName = keys.get(i);
-                if(pkeyColumns == 1 && i == 0) {
-                    pkColumnName = columnName;
-                }
-                ResultSet rs = meta.getColumns(catalog, null, tableName, columnName);
-                if(!rs.next()) {
-                    throw new IllegalStateException("Existing primary key '" + columnName
-                            + "' was not defined in the catalog");
-                }
-                int pos = rs.getInt("ORDINAL_POSITION");
-                idxs[i] = pos;
-                rs.close();
-            }
-            Arrays.sort(idxs);
-            pkeyIdxs = idxs;
-        }
-        keys.clear();
+        int shift = 0;
+        final PartitionKey partPrimaryKey = new PartitionKey(pkey, 1 << shift);
+        shift++;
+        List<String> pkColumns = pkey.getColumnNames();
+        String name = GridDbUtils.getCombinedColumnName(pkColumns, true);
+        fieldPartitionMap.put(name, partPrimaryKey);
+        fieldPartitionMap.put(DummyFieldNameForPrimaryKey, partPrimaryKey);
 
         // foreign key 
-        final Map<Integer, String> columnPosNameMapping = new HashMap<Integer, String>(8);
-        final ResultSet rs2 = meta.getImportedKeys(catalog, null, tableName);
-        try {
-            while(rs2.next()) {
-                final String fkColumnName = rs2.getString("FKCOLUMN_NAME");
-                if(!keys.contains(fkColumnName)) {
-                    if(!fkColumnName.equals(pkColumnName)) {
-                        keys.add(fkColumnName);
-                    }
-                }
-            }
-        } finally {
-            rs2.close();
-        }
-        final int fkeyColumns = keys.size();
-        int[] fkeyIdxs = null;
-        if(fkeyColumns != 0) {
-            final int[] idxs = new int[fkeyColumns];
-            for(int i = 0; i < fkeyColumns; i++) {
-                String columnName = keys.get(i);
-                ResultSet rs = meta.getColumns(catalog, null, tableName, columnName);
-                if(!rs.next()) {
-                    throw new IllegalStateException("Existing foreign key '" + columnName
-                            + "' was not defined in the catalog");
-                }
-                int pos = rs.getInt("ORDINAL_POSITION");
-                idxs[i] = pos;
-                columnPosNameMapping.put(pos, columnName);
-                rs.close();
-            }
-            Arrays.sort(idxs);
-            fkeyIdxs = idxs;
-        }
-
-        int shift = 0;
-        if(pkeyIdxs != null /* && pkeyColumns == 1 */) {// FIXME workaround for avoiding multiple keys for partitioning key
-            PartitionKey pkeyForPrimary = new PartitionKey(true, 1);
+        final Collection<ForeignKey> fkeys = GridDbUtils.getForeignKeys(conn, tableName);
+        final List<PartitionKey> partlistForeignKey = fkeys.isEmpty() ? Collections.<PartitionKey> emptyList()
+                : new ArrayList<PartitionKey>(fkeys.size());
+        for(ForeignKey fk : fkeys) {
+            PartitionKey partkey = new PartitionKey(fk, 1 << shift);
             shift++;
-            fieldPartitionMap.put(DummyFieldNameForPrimaryKey, pkeyForPrimary);
-            if(pkeyColumns == 1) {
-                fieldPartitionMap.put(pkColumnName, pkeyForPrimary);
-            }
+            List<String> fkColumns = fk.getFkColumnNames();
+            String colsName = GridDbUtils.getCombinedColumnName(fkColumns, true);
+            fieldPartitionMap.put(colsName, partkey);
+            partlistForeignKey.add(partkey);
         }
-        if(fkeyIdxs != null) {
-            for(int i = 0; i < fkeyIdxs.length; i++) {
-                int fkey = fkeyIdxs[i];
-                String columnName = columnPosNameMapping.get(fkey);
-                PartitionKey pkey = new PartitionKey(false, 1 << shift);
-                shift++;
-                fieldPartitionMap.put(columnName, pkey);
-            }
-        }
-        return returnNull ? null : new Pair<int[], int[]>(pkeyIdxs, fkeyIdxs);
+        return new Pair<PartitionKey, List<PartitionKey>>(partPrimaryKey, partlistForeignKey);
     }
 
     public void updatePartitioningInformation(@Nonnull final String tableName, @Nonnull final Map<String, PartitionKey> fieldPartitionMap)
@@ -543,12 +477,12 @@ public final class DistributionCatalog {
         final String sql = "INSERT INTO \"" + partitioningKeyTableName + "\" VALUES(?, ?, ?, ?)";
         final List<Object[]> paramsList = new ArrayList<Object[]>(fieldPartitionMap.size());
         for(final Map.Entry<String, PartitionKey> e : fieldPartitionMap.entrySet()) {
-            String columnName = e.getKey();
+            String columnNames = e.getKey();
             PartitionKey key = e.getValue();
-            if(key.isPrimary() && DummyFieldNameForPrimaryKey.equals(columnName)) {
+            if(key.isPrimary() && DummyFieldNameForPrimaryKey.equals(columnNames)) {
                 continue;
             }
-            Object[] o = new Object[] { tableName, columnName, key.isPrimary(),
+            Object[] o = new Object[] { tableName, columnNames, key.isPrimary(),
                     key.getPartitionNo() };
             paramsList.add(o);
         }
@@ -679,7 +613,7 @@ public final class DistributionCatalog {
                 + "\"(distkey varchar(50) NOT NULL, node varchar(50) NOT NULL, masternode varchar(50), state TINYINT NOT NULL);\n"
                 + "CREATE TABLE \""
                 + partitioningKeyTableName
-                + "\"(tablename varchar(30) NOT NULL, columnname varchar(30) NOT NULL, primarykey boolean NOT NULL, partitionid int NOT NULL)";
+                + "\"(tablename varchar(30) NOT NULL, columns varchar(100) NOT NULL, primarykey boolean NOT NULL, partitionid int NOT NULL)";
         try {
             JDBCUtils.update(conn, ddl);
             if(!autoCommit) {
