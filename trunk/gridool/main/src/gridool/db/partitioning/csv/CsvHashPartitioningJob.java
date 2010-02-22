@@ -46,6 +46,7 @@ import java.nio.charset.Charset;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 
@@ -56,6 +57,7 @@ import xbird.storage.DbException;
 import xbird.storage.index.BTreeCallback;
 import xbird.storage.index.Value;
 import xbird.util.collections.FixedArrayList;
+import xbird.util.collections.IdentityHashSet;
 import xbird.util.csv.CsvUtils;
 import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.io.IOUtils;
@@ -135,6 +137,7 @@ public final class CsvHashPartitioningJob extends
         final GridNode[] derivedNodes = new GridNode[numDerived];
         final byte[][] fkKeys = new byte[numDerived][];
         final String[] fkIdxNames = getFkIndexNames(foreignPartitionKeys);
+        final Set<GridNode> excludeNodeSet = new IdentityHashSet<GridNode>(numDerived);
         for(int i = 0; i < totalRecords; i++) {
             int bitShift = 0;
             String line = lines[i];
@@ -153,7 +156,9 @@ public final class CsvHashPartitioningJob extends
                         mapBasedOnDrivedFragmentation(distkey, hiddenValue, mappedNodes, pkMappedNode, index, idxName);
                     }
                 } else {
-                    LOG.warn("No parent table with FK found for table: " + actualTableName);
+                    if(LOG.isDebugEnabled()) {
+                        LOG.debug("No parent table with FK found for table: " + actualTableName);
+                    }
                 }
                 bitShift++;
             }
@@ -167,9 +172,12 @@ public final class CsvHashPartitioningJob extends
                 int partNo = partkey.getPartitionNo();
                 String fkeysField = combineFields(fields, strBuf);
                 byte[] distkey = StringUtils.getBytes(fkeysField);
-                fkKeys[i] = distkey;
+                fkKeys[j] = distkey;
                 GridNode node = router.selectNode(distkey);
-                derivedNodes[i] = node;
+                if(node == null) {
+                    throw new GridException("Could not find any node in cluster.");
+                }
+                derivedNodes[j] = node;
                 decideRecordMapping(node, mappedNodes, partNo);
             }
             if(mappedNodes.isEmpty()) {
@@ -177,9 +185,9 @@ public final class CsvHashPartitioningJob extends
                         + actualTableName + '\'');
             }
             for(int k = 0; k < numDerived; k++) {
-                String fkIdxName = fkIdxNames[i];
-                byte[] distkey = fkKeys[i];
-                storeDerivedFragmentationInfo(distkey, derivedNodes, k, pkMappedNode, index, fkIdxName);
+                String fkIdxName = fkIdxNames[k];
+                byte[] distkey = fkKeys[k];
+                storeDerivedFragmentationInfo(distkey, derivedNodes, k, pkMappedNode, index, fkIdxName, excludeNodeSet);
             }
             mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator);
             mappedNodes.clear();
@@ -210,9 +218,6 @@ public final class CsvHashPartitioningJob extends
 
     private static MutableInt decideRecordMapping(final GridNode node, final Map<GridNode, MutableInt> mappedNodes, final int partitionNo)
             throws GridException {
-        if(node == null) {
-            throw new GridException("Could not find any node in cluster.");
-        }
         final MutableInt hiddenValue = mappedNodes.get(node);
         if(hiddenValue == null) {
             MutableInt newHidden = new MutableInt(partitionNo);
@@ -224,13 +229,17 @@ public final class CsvHashPartitioningJob extends
         return hiddenValue;
     }
 
-    private static void storeDerivedFragmentationInfo(final byte[] distkey, final GridNode[] derivedNodes, final int ith, final GridNode pkMappedNode, final ILocalDirectory index, final String idxName)
+    private static void storeDerivedFragmentationInfo(final byte[] distkey, final GridNode[] derivedNodes, final int ith, final GridNode pkMappedNode, final ILocalDirectory index, final String idxName, final Set<GridNode> excludeNodeSet)
             throws GridException {
+        excludeNodeSet.clear();
+
         final GridNode derivedNode = derivedNodes[ith];
+        excludeNodeSet.add(derivedNode);
         if(pkMappedNode != derivedNode) {
             final byte[] v = pkMappedNode.toBytes();
             try {
                 index.addMapping(idxName, distkey, v);
+                excludeNodeSet.add(pkMappedNode);
             } catch (DbException e) {
                 throw new GridException(e);
             }
@@ -240,7 +249,7 @@ public final class CsvHashPartitioningJob extends
                 continue;
             }
             GridNode node = derivedNodes[i];
-            if(node != derivedNode) {
+            if(excludeNodeSet.add(node)) {
                 final byte[] v = node.toBytes();
                 try {
                     index.addMapping(idxName, distkey, v);
