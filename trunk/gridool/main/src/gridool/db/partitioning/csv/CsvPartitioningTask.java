@@ -45,6 +45,7 @@ import javax.annotation.Nonnull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import xbird.config.Settings;
 import xbird.util.collections.ArrayQueue;
 import xbird.util.collections.BoundedArrayQueue;
 import xbird.util.concurrent.DirectExecutorService;
@@ -55,6 +56,7 @@ import xbird.util.csv.CvsReader;
 import xbird.util.csv.SimpleCvsReader;
 import xbird.util.io.FastBufferedInputStream;
 import xbird.util.primitive.MutableInt;
+import xbird.util.primitive.Primitives;
 import xbird.util.system.SystemUtils;
 
 /**
@@ -67,6 +69,14 @@ import xbird.util.system.SystemUtils;
 public class CsvPartitioningTask extends GridTaskAdapter {
     private static final long serialVersionUID = -4477383489963213348L;
     private static final Log LOG = LogFactory.getLog(CsvPartitioningTask.class);
+
+    private static final int DEFAULT_SHUFFLE_UNITS;
+    private static final int DEFAULT_SHUFFLE_THREADS;
+    static {
+        DEFAULT_SHUFFLE_UNITS = Primitives.parseInt(Settings.get("gridool.db.partitioning.shuffle_units"), 20000);
+        int defaultNumThread = Math.max(2, SystemUtils.availableProcessors() - 1);
+        DEFAULT_SHUFFLE_THREADS = Primitives.parseInt(Settings.get("gridool.db.partitioning.shuffle_threads"), defaultNumThread);
+    }
 
     @Nonnull
     protected final DBPartitioningJobConf jobConf;
@@ -84,8 +94,9 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     // ------------------------
     // working resources
 
-    protected transient int shuffleUnits = 20000; // line 200 bytes * 100 nodes * 20,000 * 4 threads = 1600MB
-    protected transient int shuffleThreads = Math.max(2, SystemUtils.availableProcessors() - 1);
+    protected transient int shuffleUnits = DEFAULT_SHUFFLE_UNITS; // line 200 bytes * 100 nodes * 20,000 * 4 threads = 1600MB
+    protected transient int shuffleThreads = DEFAULT_SHUFFLE_THREADS;
+
     protected transient ExecutorService shuffleExecPool;
     protected transient BoundedArrayQueue<String> shuffleSink;
 

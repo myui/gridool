@@ -117,6 +117,14 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory {
         }
     }
 
+    public void purgeAll(boolean clear) throws DbException {
+        for(BIndexFile btree : map.values()) {
+            if(btree != null) {
+                btree.flush(true, clear);
+            }
+        }
+    }
+
     public void addMapping(final String idxName, final byte[][] keys, final byte[] value)
             throws DbException {
         final BIndexFile btree = prepareDatabase(idxName);

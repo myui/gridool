@@ -52,6 +52,8 @@ public interface ILocalDirectory {
 
     public void sync(String... idxNames) throws DbException;
 
+    public void purgeAll(boolean clear) throws DbException;
+
     /**
      * @return true if created for this time. false if the specified index already exists.
      */

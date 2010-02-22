@@ -125,6 +125,12 @@ public final class TcbLocalDirectory extends AbstractLocalDirectory {
         }
     }
 
+    public void purgeAll(boolean clear) throws DbException {
+        for(BDB tcb : map.values()) {
+            tcb.sync();
+        }
+    }
+
     public void addMapping(final String idxName, final byte[][] keys, final byte[] value)
             throws DbException {
         final BDB tcb = prepareDatabase(idxName);
