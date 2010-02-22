@@ -192,7 +192,7 @@ public final class CsvHashPartitioningJob extends
             mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator);
             mappedNodes.clear();
         }
-        
+
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
         final Map<GridNode, MutableInt> assignedRecMap = new IdentityHashMap<GridNode, MutableInt>(numNodes);
         for(final Map.Entry<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> e : nodeAssignMap.entrySet()) {
@@ -294,11 +294,11 @@ public final class CsvHashPartitioningJob extends
             final Pair<MutableInt, FastByteArrayOutputStream> pair = nodeAssignMap.get(node);
             if(pair == null) {
                 int expected = (int) ((lineSize * (totalRecords / numNodes)) * 1.3f);
-                if(expected > 314572800) {
+                if(expected > 209715200) {
                     LOG.warn("Expected record buffer for shuffling is too large: " + expected
                             + " bytes");
                 }
-                rowsBuf = new FastByteArrayOutputStream(Math.min(expected, 314572800)); //max 300MB
+                rowsBuf = new FastByteArrayOutputStream(Math.min(expected, 209715200)); //max 200MB
                 Pair<MutableInt, FastByteArrayOutputStream> newPair = new Pair<MutableInt, FastByteArrayOutputStream>(new MutableInt(1), rowsBuf);
                 nodeAssignMap.put(node, newPair);
             } else {
