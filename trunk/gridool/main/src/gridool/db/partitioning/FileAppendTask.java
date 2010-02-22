@@ -127,12 +127,12 @@ public final class FileAppendTask extends GridTaskAdapter {
             throw new IllegalStateException("Failed to write data into file: "
                     + file.getAbsolutePath(), e);
         } finally {
-            fileLock.unlock();
             try {
                 fos.close();
             } catch (IOException ioe) {
                 LOG.debug(ioe);
             }
+            fileLock.unlock();
         }
         return file;
     }

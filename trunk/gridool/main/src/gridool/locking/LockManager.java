@@ -23,6 +23,7 @@ package gridool.locking;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import javax.annotation.Nonnull;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * 
@@ -31,6 +32,7 @@ import javax.annotation.Nonnull;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
+@ThreadSafe
 public interface LockManager {
 
     @Nonnull
