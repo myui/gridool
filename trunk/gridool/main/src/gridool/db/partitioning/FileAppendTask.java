@@ -86,6 +86,7 @@ public final class FileAppendTask extends GridTaskAdapter {
 
     protected Serializable execute() throws GridException {
         appendToFile(fileName, rowsData, append);
+        this.rowsData = null; // TODO REVIEWME memory leaking?
         return null;
     }
 
@@ -149,7 +150,7 @@ public final class FileAppendTask extends GridTaskAdapter {
             IOUtils.writeString(fileName, s);
         }
         IOUtils.writeBytes(rowsData, s);
-        this.rowsData = null;   // TODO REVIEWME memory leaking?
+        this.rowsData = null; // TODO REVIEWME memory leaking?
         s.writeBoolean(append);
         s.writeBoolean(replicate);
     }
