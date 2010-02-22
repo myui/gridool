@@ -337,6 +337,9 @@ public final class DistributionCatalog {
         return prevState;
     }
 
+    /**
+     * @return -1 if not registered
+     */
     public int getPartitioningKey(@Nonnull final String tableName, @Nonnull final String fieldName)
             throws SQLException {
         final PartitionKey key;
@@ -355,8 +358,7 @@ public final class DistributionCatalog {
             key = fieldPartitionMap.get(fieldName);
         }
         if(key == null) {
-            throw new IllegalArgumentException("Partitioning key is not registered for "
-                    + tableName + '.' + fieldName);
+            return -1;
         }
         return key.getPartitionNo();
     }

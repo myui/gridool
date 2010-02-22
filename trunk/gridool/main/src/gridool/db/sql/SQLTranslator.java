@@ -24,6 +24,7 @@ import static java.io.StreamTokenizer.TT_EOF;
 import static java.io.StreamTokenizer.TT_WORD;
 import gridool.GridException;
 import gridool.db.catalog.DistributionCatalog;
+import gridool.db.helpers.GridDbUtils;
 
 import java.io.IOException;
 import java.io.StreamTokenizer;
@@ -183,20 +184,24 @@ public final class SQLTranslator {
                 throw new IllegalStateException("Syntax error: " + tokenizer.toString());
             }
         } else {
-            int partitionKey = catalog.getPartitioningKey(tableName, fieldName);
-            bitset |= partitionKey;
+            final List<String> partByColumns = new ArrayList<String>(4);
+            partByColumns.add(fieldName);
+            //int partitionKey = catalog.getPartitioningKey(tableName, fieldName);
+            //bitset |= partitionKey;
             int lastTT;
             while((lastTT = tokenizer.nextToken()) == TT_COMMA) {
                 if(tokenizer.nextToken() != TT_WORD) {
                     throw new IllegalStateException("Syntax error: " + tokenizer.toString());
                 }
                 fieldName = tokenizer.sval;
-                partitionKey = catalog.getPartitioningKey(tableName, fieldName);
-                bitset |= partitionKey;
+                partByColumns.add(fieldName);
+                //partitionKey = catalog.getPartitioningKey(tableName, fieldName);
+                //bitset |= partitionKey;
             }
             if(lastTT != TT_RPAR) {
                 throw new IllegalStateException("Syntax error: " + tokenizer.toString());
             }
+            
         }
 
         if(tokenizer.nextToken() == TT_WORD && "alias".equalsIgnoreCase(tokenizer.sval)) {
@@ -216,6 +221,20 @@ public final class SQLTranslator {
         queryBuf.append(bitset);
         queryBuf.append(") = ");
         queryBuf.append(bitset);
+    }
+
+    private static int getPartitionKey(final List<String> partByColumns) {
+        final int numColumns = partByColumns.size();
+        if(numColumns == 0) {
+            throw new IllegalArgumentException();
+        }
+        int bitset = 0;
+        final int last = numColumns - 1;
+        for(int i = 0; i<numColumns; i++) {
+            List<String> sublist = partByColumns.subList(i, numColumns);
+            
+            GridDbUtils.getCombinedColumnName(columnNames, true);
+        }
     }
 
     @Nonnull
