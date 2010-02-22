@@ -175,13 +175,11 @@ public final class CsvHashPartitioningJob extends
                 throw new IllegalStateException("Could not map records because there is neither PK nor FK in the template table of '"
                         + actualTableName + '\'');
             }
-            if(parentTableFkIndexNames != null) {
-                for(int k = 0; k < numDerived; k++) {
-                    String fkIdxName = fkIdxNames[k];
-                    byte[] distkey = fkKeys[k];
-                    GridNode derivedNode = derivedNodes[k];
-                    storeDerivedFragmentationInfo(distkey, derivedNode, k, pkMappedNode, index, fkIdxName);
-                }
+            for(int k = 0; k < numDerived; k++) {
+                String fkIdxName = fkIdxNames[k];
+                byte[] distkey = fkKeys[k];
+                GridNode derivedNode = derivedNodes[k];
+                storeDerivedFragmentationInfo(distkey, derivedNode, k, pkMappedNode, index, fkIdxName);
             }
             mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator);
             mappedNodes.clear();
