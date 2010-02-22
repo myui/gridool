@@ -84,7 +84,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     // ------------------------
     // working resources
 
-    protected transient int shuffleUnits = 100000;
+    protected transient int shuffleUnits = 20000; // line 200 bytes * 100 nodes * 20,000 * 4 threads = 1600MB
     protected transient int shuffleThreads = Math.max(2, SystemUtils.availableProcessors() - 1);
     protected transient ExecutorService shuffleExecPool;
     protected transient BoundedArrayQueue<String> shuffleSink;
