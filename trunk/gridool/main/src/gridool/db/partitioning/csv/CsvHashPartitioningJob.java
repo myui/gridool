@@ -157,8 +157,8 @@ public final class CsvHashPartitioningJob extends
                 bitShift++;
             }
             // derived mapping
-            for(int j = 0; j < numDerived; j++) {
-                PartitionKey partkey = foreignPartitionKeys.get(j);
+            for(int jj = 0; jj < numDerived; jj++) {
+                PartitionKey partkey = foreignPartitionKeys.get(jj);
                 ForeignKey fk = partkey.getKey();
                 int[] fkeyIndicies = fk.getFkColumnPositions(true);
                 CsvUtils.retrieveFields(line, fkeyIndicies, fieldList, filedSeparator, quoteChar);
@@ -166,27 +166,27 @@ public final class CsvHashPartitioningJob extends
                 int partNo = partkey.getPartitionNo();
                 String fkeysField = combineFields(fields, strBuf);
                 byte[] distkey = StringUtils.getBytes(fkeysField);
-                fkKeys[j] = distkey;
+                fkKeys[jj] = distkey;
                 GridNode node = router.selectNode(distkey);
                 decideRecordMapping(node, mappedNodes, partNo);
-                derivedNodes[j] = node;
+                derivedNodes[jj] = node;
             }
             if(mappedNodes.isEmpty()) {
                 throw new IllegalStateException("Could not map records because there is neither PK nor FK in the template table of '"
                         + actualTableName + '\'');
             }
-            for(int k = 0; k < numDerived; k++) {
-                String fkIdxName = fkIdxNames[k];
-                byte[] distkey = fkKeys[k];
-                GridNode derivedNode = derivedNodes[k];
-                storeDerivedFragmentationInfo(distkey, derivedNode, k, pkMappedNode, index, fkIdxName);
+            for(int kk = 0; kk < numDerived; kk++) {
+                String fkIdxName = fkIdxNames[kk];
+                byte[] distkey = fkKeys[kk];
+                GridNode derivedNode = derivedNodes[kk];
+                storeDerivedFragmentationInfo(distkey, derivedNode, kk, pkMappedNode, index, fkIdxName);
             }
             mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator);
             mappedNodes.clear();
         }
 
-        final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
-        final Map<GridNode, MutableInt> assignedRecMap = new IdentityHashMap<GridNode, MutableInt>(numNodes);
+        final Map<GridTask, GridNode> taskmap = new IdentityHashMap<GridTask, GridNode>(numNodes);
+        final Map<GridNode, MutableInt> assignedRecMap = new HashMap<GridNode, MutableInt>(numNodes);
         for(final Map.Entry<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> e : nodeAssignMap.entrySet()) {
             GridNode node = e.getKey();
             Pair<MutableInt, FastByteArrayOutputStream> pair = e.getValue();
@@ -196,7 +196,7 @@ public final class CsvHashPartitioningJob extends
             byte[] b = rows.toByteArray();
             pair.clear();
             GridTask task = new FileAppendTask(this, csvFileName, b, append, true);
-            map.put(task, node);
+            taskmap.put(task, node);
         }
 
         for(final GridNode node : router.getAllNodes()) {
@@ -205,7 +205,7 @@ public final class CsvHashPartitioningJob extends
             }
         }
         this.assignedRecMap = assignedRecMap;
-        return map;
+        return taskmap;
     }
 
     private static MutableInt decideRecordMapping(final GridNode node, final Map<GridNode, MutableInt> mappedNodes, final int partitionNo)
