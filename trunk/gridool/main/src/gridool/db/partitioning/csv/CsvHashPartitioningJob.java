@@ -31,9 +31,7 @@ import gridool.communication.payload.GridNodeInfo;
 import gridool.construct.GridJobBase;
 import gridool.db.catalog.DistributionCatalog;
 import gridool.db.catalog.PartitionKey;
-import gridool.db.helpers.DBAccessor;
 import gridool.db.helpers.ForeignKey;
-import gridool.db.helpers.GridDbUtils;
 import gridool.db.helpers.PrimaryKey;
 import gridool.db.partitioning.DBPartitioningJobConf;
 import gridool.db.partitioning.FileAppendTask;
@@ -45,8 +43,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.charset.Charset;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -64,7 +60,6 @@ import xbird.util.collections.FixedArrayList;
 import xbird.util.csv.CsvUtils;
 import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.io.IOUtils;
-import xbird.util.jdbc.JDBCUtils;
 import xbird.util.primitive.MutableInt;
 import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
@@ -108,7 +103,6 @@ public final class CsvHashPartitioningJob extends
         final int pkeyPartitionNo;
         final int[] pkeyIndicies;
         final String[] parentTableFkIndexNames;
-        final boolean hasParentTableExportedKey;
         {
             DistributionCatalog catalog = registry.getDistributionCatalog();
             actualTableName = jobConf.getTableName();
@@ -120,8 +114,6 @@ public final class CsvHashPartitioningJob extends
             PrimaryKey primaryKey = primaryPartitionKey.getKey();
             pkeyIndicies = primaryKey.getColumnPositions(true);
             parentTableFkIndexNames = getParentTableFkIndexNames(primaryKey);
-            hasParentTableExportedKey = (parentTableFkIndexNames == null) ? false
-                    : hasParentTableExportedKey(primaryKey, registry);
         }
 
         // COPY INTO control resources 
@@ -157,7 +149,7 @@ public final class CsvHashPartitioningJob extends
                 byte[] distkey = StringUtils.getBytes(pkeysField);
                 pkMappedNode = router.selectNode(distkey);
                 MutableInt hiddenValue = decideRecordMapping(pkMappedNode, mappedNodes, pkeyPartitionNo);
-                if(hasParentTableExportedKey) {
+                if(parentTableFkIndexNames != null) {
                     for(String idxName : parentTableFkIndexNames) {
                         mapBasedOnDrivedFragmentation(distkey, hiddenValue, mappedNodes, pkMappedNode, index, idxName);
                     }
@@ -450,24 +442,6 @@ public final class CsvHashPartitioningJob extends
         }
         buf.append(".fktbl");
         return buf.toString();
-    }
-
-    private static boolean hasParentTableExportedKey(final PrimaryKey childTablePk, final GridResourceRegistry registry)
-            throws GridException {
-        ForeignKey fk = childTablePk.getExportedKeys().get(0);
-        String parentTable = fk.getTableName();
-        DBAccessor dba = registry.getDbAccessor();
-        final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, false);
-        final boolean hasParent;
-        try {
-            hasParent = GridDbUtils.hasParentTable(conn, parentTable);
-        } catch (SQLException e) {
-            LOG.error("Failed to find parent table: " + parentTable, e);
-            throw new GridException(e);
-        } finally {
-            JDBCUtils.closeQuietly(conn);
-        }
-        return hasParent;
     }
 
 }
