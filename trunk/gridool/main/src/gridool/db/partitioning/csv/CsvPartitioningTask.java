@@ -73,7 +73,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     private static final int DEFAULT_SHUFFLE_UNITS;
     private static final int DEFAULT_SHUFFLE_THREADS;
     static {
-        DEFAULT_SHUFFLE_UNITS = Primitives.parseInt(Settings.get("gridool.db.partitioning.shuffle_units"), 10000);
+        DEFAULT_SHUFFLE_UNITS = Primitives.parseInt(Settings.get("gridool.db.partitioning.shuffle_units"), 20000);
         int defaultNumThread = Math.max(2, SystemUtils.availableProcessors() - 1);
         DEFAULT_SHUFFLE_THREADS = Primitives.parseInt(Settings.get("gridool.db.partitioning.shuffle_threads"), defaultNumThread);
     }

@@ -193,6 +193,14 @@ public final class CsvHashPartitioningJob extends
             mappedNodes.clear();
         }
 
+        // clear index buffer
+        try {
+            index.purgeAll(true);
+        } catch (DbException dbe) {
+            LOG.error(dbe);
+            throw new GridException(dbe);
+        }
+
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numNodes);
         final Map<GridNode, MutableInt> assignedRecMap = new IdentityHashMap<GridNode, MutableInt>(numNodes);
         for(final Map.Entry<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> e : nodeAssignMap.entrySet()) {
