@@ -102,7 +102,7 @@ public final class UpdatePartitionInCatalogJob extends
     }
 
     public Boolean reduce() throws GridException {
-        return null;
+        return Boolean.TRUE;
     }
 
     private static final class UpdatePartitionInCatalogTask extends GridTaskAdapter {
