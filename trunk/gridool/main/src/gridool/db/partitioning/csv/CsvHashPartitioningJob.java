@@ -294,7 +294,11 @@ public final class CsvHashPartitioningJob extends
             final Pair<MutableInt, FastByteArrayOutputStream> pair = nodeAssignMap.get(node);
             if(pair == null) {
                 int expected = (int) ((lineSize * (totalRecords / numNodes)) * 1.3f);
-                rowsBuf = new FastByteArrayOutputStream(Math.max(expected, 32786));
+                if(expected > 3145728) {
+                    LOG.warn("Expected record buffer for shuffling is too large: " + expected
+                            + " bytes");
+                }
+                rowsBuf = new FastByteArrayOutputStream(Math.min(expected, 3145728)); //max 300MB
                 Pair<MutableInt, FastByteArrayOutputStream> newPair = new Pair<MutableInt, FastByteArrayOutputStream>(new MutableInt(1), rowsBuf);
                 nodeAssignMap.put(node, newPair);
             } else {
