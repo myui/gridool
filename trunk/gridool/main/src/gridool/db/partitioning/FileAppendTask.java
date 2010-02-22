@@ -23,7 +23,10 @@ package gridool.db.partitioning;
 import gridool.GridException;
 import gridool.GridJob;
 import gridool.GridNode;
+import gridool.GridResourceRegistry;
+import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridTaskAdapter;
+import gridool.locking.LockManager;
 import gridool.util.GridUtils;
 
 import java.io.File;
@@ -32,8 +35,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -42,7 +45,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import xbird.storage.DbCollection;
-import xbird.util.io.FastBufferedOutputStream;
 import xbird.util.io.IOUtils;
 
 /**
@@ -66,12 +68,20 @@ public final class FileAppendTask extends GridTaskAdapter {
     @Nullable
     private transient GridNode masterNode;
 
+    @GridRegistryResource
+    private transient GridResourceRegistry registry;
+
     public FileAppendTask(GridJob<?, ?> job, @Nonnull String fileName, @Nonnull byte[] rowsData, boolean append, boolean replicate) {
         super(job, false);
         this.fileName = fileName;
         this.rowsData = rowsData;
         this.append = append;
         this.replicate = replicate;
+    }
+
+    @Override
+    public boolean injectResources() {
+        return true;
     }
 
     @Override
@@ -85,12 +95,13 @@ public final class FileAppendTask extends GridTaskAdapter {
     }
 
     protected Serializable execute() throws GridException {
-        appendToFile(fileName, rowsData, append);
+        LockManager lockMgr = registry.getLockManager();
+        appendToFile(fileName, rowsData, append, lockMgr);
         this.rowsData = null; // TODO REVIEWME memory leaking?
         return null;
     }
 
-    private static File appendToFile(final String fileName, final byte[] data, final boolean append) {
+    private static File appendToFile(final String fileName, final byte[] data, final boolean append, final LockManager lockMgr) {
         DbCollection rootColl = DbCollection.getRootCollection();
         final File colDir = rootColl.getDirectory();
         if(!colDir.exists()) {
@@ -105,34 +116,18 @@ public final class FileAppendTask extends GridTaskAdapter {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create a load file", e);
         }
-        FileLock fileExLock = null;
+        String filepath = file.getAbsolutePath();
+        ReadWriteLock lock = lockMgr.obtainLock(filepath);
+        final Lock fileLock = lock.writeLock();
         try {
-            fileExLock = fos.getChannel().lock();
-        } catch (OverlappingFileLockException oe) {
-            if(LOG.isWarnEnabled()) {
-                LOG.warn("failed to accquire a lock on file: " + file.getAbsoluteFile(), oe);
-            }
-            throw new IllegalStateException(oe);
-        } catch (IOException ioe) {
-            LOG.error("failed to accquire a lock on file: " + file.getAbsolutePath(), ioe);
-            throw new IllegalStateException(ioe);
-        }
-        try {
-            FastBufferedOutputStream bos = new FastBufferedOutputStream(fos, 8192);
-            bos.write(data, 0, data.length); // atomic writes in UNIX
-            bos.flush();
-            //bos.close();
+            fileLock.lock();
+            fos.write(data, 0, data.length); // REVIEWME atomic writes in UNIX?
+            fos.flush();
         } catch (IOException e) {
             throw new IllegalStateException("Failed to write data into file: "
                     + file.getAbsolutePath(), e);
         } finally {
-            if(fileExLock != null) {
-                try {
-                    fileExLock.release();
-                } catch (IOException e) {
-                    LOG.debug(e);
-                }
-            }
+            fileLock.unlock();
             try {
                 fos.close();
             } catch (IOException ioe) {
