@@ -97,7 +97,7 @@ public final class FileAppendTask extends GridTaskAdapter {
     protected Serializable execute() throws GridException {
         LockManager lockMgr = registry.getLockManager();
         appendToFile(fileName, rowsData, append, lockMgr);
-        this.rowsData = null; // TODO REVIEWME memory leaking?
+        //this.rowsData = null; // TODO REVIEWME memory leaking?
         return null;
     }
 
