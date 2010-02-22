@@ -31,11 +31,11 @@ import gridool.routing.GridTaskRouter;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import xbird.util.concurrent.collections.ConcurrentIdentityHashMap;
 import xbird.util.datetime.StopWatch;
 import xbird.util.math.MathUtils;
 import xbird.util.primitive.MutableInt;
@@ -67,7 +67,7 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
     }
 
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
-        final ConcurrentIdentityHashMap<GridNode, MutableInt> processed = result.getResult();
+        final ConcurrentHashMap<GridNode, MutableInt> processed = result.getResult();
         if(processed == null || processed.isEmpty()) {
             Exception err = result.getException();
             if(err == null) {

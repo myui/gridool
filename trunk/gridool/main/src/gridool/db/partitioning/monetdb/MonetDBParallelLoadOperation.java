@@ -116,9 +116,9 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             final StopWatch sw = new StopWatch();
             if(copyIntoQuery != null) {
                 numInserted = invokeCopyInto(conn, copyIntoQuery, csvFileName);
+                LOG.info("Elapsed time for COPY " + numInserted + " RECORDS INTO " + tableName
+                        + ": " + sw.toString());
             }
-            LOG.info("Elapsed time for COPY " + numInserted + " RECORDS INTO " + tableName + ": "
-                    + sw.toString());
             // #3 create indices and constraints
             if(alterTableDDL != null) {
                 sw.start();

@@ -40,6 +40,7 @@ import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
@@ -55,7 +56,6 @@ import xbird.util.collections.BoundedArrayQueue;
 import xbird.util.concurrent.DirectExecutorService;
 import xbird.util.concurrent.ExecutorFactory;
 import xbird.util.concurrent.ExecutorUtils;
-import xbird.util.concurrent.collections.ConcurrentIdentityHashMap;
 import xbird.util.csv.CvsReader;
 import xbird.util.csv.SimpleCvsReader;
 import xbird.util.io.FastBufferedInputStream;
@@ -96,7 +96,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
 
     // ------------------------
 
-    protected transient final ConcurrentIdentityHashMap<GridNode, MutableInt> assignMap;
+    protected transient final ConcurrentHashMap<GridNode, MutableInt> assignMap;
 
     // ------------------------
     // working resources
@@ -114,7 +114,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     public CsvPartitioningTask(GridJob job, DBPartitioningJobConf jobConf) {
         super(job, false);
         this.jobConf = jobConf;
-        this.assignMap = new ConcurrentIdentityHashMap<GridNode, MutableInt>(64);
+        this.assignMap = new ConcurrentHashMap<GridNode, MutableInt>(64);
     }
 
     @Override
@@ -138,7 +138,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         this.shuffleThreads = shuffleThreads;
     }
 
-    protected final ConcurrentIdentityHashMap<GridNode, MutableInt> execute() throws GridException {
+    protected final ConcurrentHashMap<GridNode, MutableInt> execute() throws GridException {
         int numShuffleThreads = shuffleThreads();
         this.shuffleExecPool = (numShuffleThreads <= 0) ? new DirectExecutorService()
                 : ExecutorFactory.newBoundedWorkQueueFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
@@ -218,7 +218,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
                     LOG.error(ee.getMessage(), ee);
                     throw new IllegalStateException(ee);
                 }
-                final ConcurrentIdentityHashMap<GridNode, MutableInt> recMap = assignMap;
+                final ConcurrentHashMap<GridNode, MutableInt> recMap = assignMap;
                 for(Map.Entry<GridNode, MutableInt> e : map.entrySet()) {
                     GridNode node = e.getKey();
                     MutableInt assigned = e.getValue();
