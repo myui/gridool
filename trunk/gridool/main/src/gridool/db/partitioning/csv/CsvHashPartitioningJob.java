@@ -31,7 +31,9 @@ import gridool.communication.payload.GridNodeInfo;
 import gridool.construct.GridJobBase;
 import gridool.db.catalog.DistributionCatalog;
 import gridool.db.catalog.PartitionKey;
+import gridool.db.helpers.DBAccessor;
 import gridool.db.helpers.ForeignKey;
+import gridool.db.helpers.GridDbUtils;
 import gridool.db.helpers.PrimaryKey;
 import gridool.db.partitioning.DBPartitioningJobConf;
 import gridool.db.partitioning.FileAppendTask;
@@ -43,11 +45,12 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.charset.Charset;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.Nonnull;
 
@@ -58,10 +61,10 @@ import xbird.storage.DbException;
 import xbird.storage.index.BTreeCallback;
 import xbird.storage.index.Value;
 import xbird.util.collections.FixedArrayList;
-import xbird.util.collections.IdentityHashSet;
 import xbird.util.csv.CsvUtils;
 import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.io.IOUtils;
+import xbird.util.jdbc.JDBCUtils;
 import xbird.util.primitive.MutableInt;
 import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
@@ -105,6 +108,7 @@ public final class CsvHashPartitioningJob extends
         final int pkeyPartitionNo;
         final int[] pkeyIndicies;
         final String[] parentTableFkIndexNames;
+        final boolean hasParentTableExportedKey;
         {
             DistributionCatalog catalog = registry.getDistributionCatalog();
             actualTableName = jobConf.getTableName();
@@ -116,6 +120,8 @@ public final class CsvHashPartitioningJob extends
             PrimaryKey primaryKey = primaryPartitionKey.getKey();
             pkeyIndicies = primaryKey.getColumnPositions(true);
             parentTableFkIndexNames = getParentTableFkIndexNames(primaryKey);
+            hasParentTableExportedKey = (parentTableFkIndexNames == null) ? false
+                    : hasParentTableExportedKey(primaryKey, registry);
         }
 
         // COPY INTO control resources 
@@ -138,7 +144,6 @@ public final class CsvHashPartitioningJob extends
         final GridNode[] derivedNodes = new GridNode[numDerived];
         final byte[][] fkKeys = new byte[numDerived][];
         final String[] fkIdxNames = getFkIndexNames(foreignPartitionKeys);
-        final Set<GridNode> excludeNodeSet = new IdentityHashSet<GridNode>(numDerived);
         for(int i = 0; i < totalRecords; i++) {
             int bitShift = 0;
             String line = lines[i];
@@ -152,13 +157,9 @@ public final class CsvHashPartitioningJob extends
                 byte[] distkey = StringUtils.getBytes(pkeysField);
                 pkMappedNode = router.selectNode(distkey);
                 MutableInt hiddenValue = decideRecordMapping(pkMappedNode, mappedNodes, pkeyPartitionNo);
-                if(parentTableFkIndexNames != null) {
+                if(hasParentTableExportedKey) {
                     for(String idxName : parentTableFkIndexNames) {
                         mapBasedOnDrivedFragmentation(distkey, hiddenValue, mappedNodes, pkMappedNode, index, idxName);
-                    }
-                } else {
-                    if(LOG.isDebugEnabled()) {
-                        LOG.debug("No parent table with FK found for table: " + actualTableName);
                     }
                 }
                 bitShift++;
@@ -175,20 +176,20 @@ public final class CsvHashPartitioningJob extends
                 byte[] distkey = StringUtils.getBytes(fkeysField);
                 fkKeys[j] = distkey;
                 GridNode node = router.selectNode(distkey);
-                if(node == null) {
-                    throw new GridException("Could not find any node in cluster.");
-                }
-                derivedNodes[j] = node;
                 decideRecordMapping(node, mappedNodes, partNo);
+                derivedNodes[j] = node;
             }
             if(mappedNodes.isEmpty()) {
                 throw new IllegalStateException("Could not map records because there is neither PK nor FK in the template table of '"
                         + actualTableName + '\'');
             }
-            for(int k = 0; k < numDerived; k++) {
-                String fkIdxName = fkIdxNames[k];
-                byte[] distkey = fkKeys[k];
-                storeDerivedFragmentationInfo(distkey, derivedNodes, k, pkMappedNode, index, fkIdxName, excludeNodeSet);
+            if(parentTableFkIndexNames != null) {
+                for(int k = 0; k < numDerived; k++) {
+                    String fkIdxName = fkIdxNames[k];
+                    byte[] distkey = fkKeys[k];
+                    GridNode derivedNode = derivedNodes[k];
+                    storeDerivedFragmentationInfo(distkey, derivedNode, k, pkMappedNode, index, fkIdxName);
+                }
             }
             mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator);
             mappedNodes.clear();
@@ -219,6 +220,9 @@ public final class CsvHashPartitioningJob extends
 
     private static MutableInt decideRecordMapping(final GridNode node, final Map<GridNode, MutableInt> mappedNodes, final int partitionNo)
             throws GridException {
+        if(node == null) {
+            throw new GridException("Could not find any node in cluster.");
+        }
         final MutableInt hiddenValue = mappedNodes.get(node);
         if(hiddenValue == null) {
             MutableInt newHidden = new MutableInt(partitionNo);
@@ -230,33 +234,14 @@ public final class CsvHashPartitioningJob extends
         return hiddenValue;
     }
 
-    private static void storeDerivedFragmentationInfo(final byte[] distkey, final GridNode[] derivedNodes, final int ith, final GridNode pkMappedNode, final ILocalDirectory index, final String idxName, final Set<GridNode> excludeNodeSet)
+    private static void storeDerivedFragmentationInfo(final byte[] distkey, final GridNode derivedNode, final int ith, final GridNode pkMappedNode, final ILocalDirectory index, final String idxName)
             throws GridException {
-        excludeNodeSet.clear();
-
-        final GridNode derivedNode = derivedNodes[ith];
-        excludeNodeSet.add(derivedNode);
         if(pkMappedNode != derivedNode) {
             final byte[] v = pkMappedNode.toBytes();
             try {
                 index.addMapping(idxName, distkey, v);
-                excludeNodeSet.add(pkMappedNode);
             } catch (DbException e) {
                 throw new GridException(e);
-            }
-        }
-        for(int i = 0; i < derivedNodes.length; i++) {
-            if(i == ith) {
-                continue;
-            }
-            GridNode node = derivedNodes[i];
-            if(excludeNodeSet.add(node)) {
-                final byte[] v = node.toBytes();
-                try {
-                    index.addMapping(idxName, distkey, v);
-                } catch (DbException e) {
-                    throw new GridException(e);
-                }
             }
         }
     }
@@ -465,6 +450,24 @@ public final class CsvHashPartitioningJob extends
         }
         buf.append(".fktbl");
         return buf.toString();
+    }
+
+    private static boolean hasParentTableExportedKey(final PrimaryKey childTablePk, final GridResourceRegistry registry)
+            throws GridException {
+        ForeignKey fk = childTablePk.getExportedKeys().get(0);
+        String parentTable = fk.getTableName();
+        DBAccessor dba = registry.getDbAccessor();
+        final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, false);
+        final boolean hasParent;
+        try {
+            hasParent = GridDbUtils.hasParentTable(conn, parentTable);
+        } catch (SQLException e) {
+            LOG.error("Failed to find parent table: " + parentTable, e);
+            throw new GridException(e);
+        } finally {
+            JDBCUtils.closeQuietly(conn);
+        }
+        return hasParent;
     }
 
 }

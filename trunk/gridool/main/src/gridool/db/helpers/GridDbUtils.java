@@ -154,6 +154,18 @@ public final class GridDbUtils {
         return fkeys;
     }
 
+    public static boolean hasParentTable(@Nonnull final Connection conn, @Nullable final String pkTableName)
+            throws SQLException {
+        DatabaseMetaData metadata = conn.getMetaData();
+        String catalog = conn.getCatalog();
+        final ResultSet rs = metadata.getExportedKeys(catalog, null, pkTableName);
+        try {
+            return rs.next();
+        } finally {
+            rs.close();
+        }
+    }
+
     /**
      * @return column position is provided in the returning foreign keys
      */
