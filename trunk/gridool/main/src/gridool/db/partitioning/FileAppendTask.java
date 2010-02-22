@@ -112,6 +112,7 @@ public final class FileAppendTask extends GridTaskAdapter {
             if(LOG.isWarnEnabled()) {
                 LOG.warn("failed to tryLock on a file: " + file.getAbsoluteFile(), oe);
             }
+            throw new IllegalStateException(oe);
         } catch (IOException ioe) {
             LOG.error("failed to trylock on a file: " + file.getAbsolutePath(), ioe);
             throw new IllegalStateException(ioe);
