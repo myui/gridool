@@ -41,9 +41,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import xbird.storage.DbCollection;
 import xbird.util.io.IOUtils;
 
@@ -56,7 +53,6 @@ import xbird.util.io.IOUtils;
  */
 public final class FileAppendTask extends GridTaskAdapter {
     private static final long serialVersionUID = 4313317121395228308L;
-    private static final Log LOG = LogFactory.getLog(FileAppendTask.class);
 
     @Nonnull
     private transient/* final */String fileName;
@@ -108,30 +104,21 @@ public final class FileAppendTask extends GridTaskAdapter {
             throw new IllegalStateException("Database directory not found: "
                     + colDir.getAbsoluteFile());
         }
-        final File file;
-        final FileOutputStream fos;
-        try {
-            file = new File(colDir, fileName);
-            fos = new FileOutputStream(file, append); // note that FileOutputStream takes exclusive lock
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to create a load file", e);
-        }
+        final File file = new File(colDir, fileName);
         String filepath = file.getAbsolutePath();
         ReadWriteLock lock = lockMgr.obtainLock(filepath);
         final Lock fileLock = lock.writeLock();
+        FileOutputStream fos = null;
         try {
             fileLock.lock();
+            fos = new FileOutputStream(file, append); // note that FileOutputStream takes exclusive lock            
             fos.write(data, 0, data.length); // REVIEWME atomic writes in UNIX?
             fos.flush();
         } catch (IOException e) {
             throw new IllegalStateException("Failed to write data into file: "
                     + file.getAbsolutePath(), e);
         } finally {
-            try {
-                fos.close();
-            } catch (IOException ioe) {
-                LOG.debug(ioe);
-            }
+            IOUtils.closeQuietly(fos);
             fileLock.unlock();
         }
         return file;
