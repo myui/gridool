@@ -25,9 +25,12 @@ import gridool.GridJob;
 import gridool.GridJobFuture;
 import gridool.GridKernel;
 import gridool.GridNode;
+import gridool.GridResourceRegistry;
 import gridool.annotation.GridKernelResource;
+import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridTaskAdapter;
 import gridool.db.partitioning.DBPartitioningJobConf;
+import gridool.directory.ILocalDirectory;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -46,6 +49,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import xbird.config.Settings;
+import xbird.storage.DbException;
 import xbird.util.collections.ArrayQueue;
 import xbird.util.collections.BoundedArrayQueue;
 import xbird.util.concurrent.DirectExecutorService;
@@ -86,6 +90,9 @@ public class CsvPartitioningTask extends GridTaskAdapter {
 
     @GridKernelResource
     protected transient GridKernel kernel;
+
+    @GridRegistryResource
+    private transient GridResourceRegistry registry;
 
     // ------------------------
 
@@ -176,6 +183,14 @@ public class CsvPartitioningTask extends GridTaskAdapter {
             invokeShuffle(shuffleExecPool, shuffleSink);
         }
         ExecutorUtils.shutdownAndAwaitTermination(shuffleExecPool);
+
+        // clear index buffer
+        ILocalDirectory index = registry.getDirectory();
+        try {
+            index.purgeAll(true);
+        } catch (DbException dbe) {
+            LOG.error(dbe);
+        }
     }
 
     private final void invokeShuffle(@Nonnull final ExecutorService shuffleExecPool, @Nonnull final ArrayQueue<String> queue) {
