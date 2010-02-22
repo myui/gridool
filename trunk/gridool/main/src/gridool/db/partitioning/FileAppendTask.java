@@ -110,11 +110,11 @@ public final class FileAppendTask extends GridTaskAdapter {
             fileExLock = fos.getChannel().lock();
         } catch (OverlappingFileLockException oe) {
             if(LOG.isWarnEnabled()) {
-                LOG.warn("failed to tryLock on a file: " + file.getAbsoluteFile(), oe);
+                LOG.warn("failed to accquire a lock on file: " + file.getAbsoluteFile(), oe);
             }
             throw new IllegalStateException(oe);
         } catch (IOException ioe) {
-            LOG.error("failed to trylock on a file: " + file.getAbsolutePath(), ioe);
+            LOG.error("failed to accquire a lock on file: " + file.getAbsolutePath(), ioe);
             throw new IllegalStateException(ioe);
         }
         try {
