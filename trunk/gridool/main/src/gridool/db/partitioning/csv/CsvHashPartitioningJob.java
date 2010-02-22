@@ -466,18 +466,4 @@ public final class CsvHashPartitioningJob extends
         return buf.toString();
     }
 
-    private static GridNode getNodeFromIndex(final String idxName, final byte[] key, final ILocalDirectory index)
-            throws GridException {
-        final byte[] v;
-        try {
-            v = index.getValue(idxName, key);
-        } catch (DbException e) {
-            throw new GridException(e);
-        }
-        if(v == null) {
-            return null;
-        }
-        GridNode node = GridNodeInfo.fromBytes(v);
-        return node;
-    }
 }

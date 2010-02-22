@@ -150,7 +150,6 @@ public final class FileAppendTask extends GridTaskAdapter {
             IOUtils.writeString(fileName, s);
         }
         IOUtils.writeBytes(rowsData, s);
-        this.rowsData = null; // TODO REVIEWME memory leaking?
         s.writeBoolean(append);
         s.writeBoolean(replicate);
     }
