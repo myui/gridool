@@ -191,6 +191,14 @@ public final class GridDbUtils {
         }
     }
 
+    public static boolean hasPArentTable(@Nonnull final PrimaryKey childTablePk) {
+        List<ForeignKey> fkeys = childTablePk.getExportedKeys();
+        if(fkeys == null || fkeys.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
     public static boolean hasParentTableExportedKey(@Nonnull final DBAccessor dba, @Nonnull final PrimaryKey childTablePk)
             throws GridException {
         List<ForeignKey> fkeys = childTablePk.getExportedKeys();

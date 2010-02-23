@@ -116,7 +116,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     protected transient String csvFileName;
     private transient boolean isFirstShuffle = true;
     private transient Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys;
-    protected transient boolean hasParentTableExportedKey;
+    protected transient boolean hasParentTable;
 
     @SuppressWarnings("unchecked")
     public CsvPartitioningTask(GridJob job, DBPartitioningJobConf jobConf) {
@@ -157,7 +157,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         DBAccessor dba = registry.getDbAccessor();
         String tableName = jobConf.getBaseTableName();
         this.primaryForeignKeys = GridDbUtils.getPrimaryForeignKeys(dba, tableName);
-        this.hasParentTableExportedKey = GridDbUtils.hasParentTableExportedKey(dba, primaryForeignKeys.getFirst());
+        this.hasParentTable = GridDbUtils.hasPArentTable(primaryForeignKeys.getFirst());
 
         // parse and shuffle a CSV file
         final CvsReader reader = getCsvReader(jobConf);
@@ -221,7 +221,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         shuffleExecPool.execute(new Runnable() {
             public void run() {
                 String[] lines = queue.toArray(String.class);
-                CsvHashPartitioningJob.JobConf conf = new CsvHashPartitioningJob.JobConf(lines, fileName, isFirst, primaryForeignKeys, hasParentTableExportedKey, jobConf);
+                CsvHashPartitioningJob.JobConf conf = new CsvHashPartitioningJob.JobConf(lines, fileName, isFirst, primaryForeignKeys, jobConf);
                 final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(CsvHashPartitioningJob.class, conf);
                 final Map<GridNode, MutableInt> map;
                 try {

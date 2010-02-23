@@ -60,7 +60,7 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
         String connectUrl = jobConf.getConnectUrl();
         String tableName = jobConf.getTableName();
         String createTableDDL = jobConf.getCreateTableDDL();
-        boolean addHiddenField = hasParentTableExportedKey;
+        boolean addHiddenField = hasParentTable;
         String copyIntoQuery = generateCopyIntoQuery(tableName, jobConf);
         String alterTableDDL = jobConf.getAlterTableDDL();
 
