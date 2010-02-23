@@ -301,6 +301,7 @@ public final class CsvHashPartitioningJob extends
             cnt.increment();
         }
         rowsBuf.write(line, 0, lineSize);
+        rowsBuf.write(filedSeparator);
         rowsBuf.write('\n'); // TODO FIXME support other record separator 
     }
 
