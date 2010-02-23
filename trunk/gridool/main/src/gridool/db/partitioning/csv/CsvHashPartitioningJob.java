@@ -143,17 +143,25 @@ public final class CsvHashPartitioningJob extends
                 pkMappedNode = router.selectNode(distkey);
                 if(hasParentTable) {
                     // derived fragment mapping
-                    for(int kk = 0; kk < numForeignKeys; kk++) {
-                        String idxName = parentTableFkIndexNames[kk];
-                        int partitionNo = kk + 1;
-                        mapBasedOnDrivedFragmentation(distkey, partitionNo, mappedNodes, index, idxName);
+                    if(numForeignKeys == 1) {
+                        final List<GridNode> nodelist = mapBasedOnDrivedFragmentation(distkey, index, parentTableFkIndexNames[0]);
+                        for(GridNode node: nodelist) {
+                            mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, node, filedSeparator);
+                        }
+                    } else {
+                        assert (numForeignKeys != 0);
+                        for(int kk = 0; kk < numForeignKeys; kk++) {
+                            String idxName = parentTableFkIndexNames[kk];
+                            int partitionNo = kk + 1;   // TODO
+                            mapBasedOnDrivedFragmentation(distkey, partitionNo, mappedNodes, index, idxName);
+                        }
+                        if(mappedNodes.isEmpty()) {
+                            throw new IllegalStateException("Could not map records by derived fragmentation: '"
+                                    + jobConf.getTableName() + '\'');
+                        }
+                        mapRecordWithHiddenField(lineBytes, totalRecords, numNodes, nodeAssignMap, mappedNodes, filedSeparator);
+                        mappedNodes.clear();
                     }
-                    if(mappedNodes.isEmpty()) {
-                        throw new IllegalStateException("Could not map records by derived fragmentation: '"
-                                + jobConf.getTableName() + '\'');
-                    }
-                    mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, mappedNodes, filedSeparator);
-                    mappedNodes.clear();
                 } else {
                     // primary fragment mapping
                     mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, pkMappedNode, filedSeparator);
@@ -216,6 +224,30 @@ public final class CsvHashPartitioningJob extends
         }
     }
 
+    private static List<GridNode> mapBasedOnDrivedFragmentation(final byte[] distkey, final ILocalDirectory index, final String parentTableFkIndex)
+            throws GridException {
+        final List<GridNode> mappedNodes = new ArrayList<GridNode>(4);
+        final BTreeCallback handler = new BTreeCallback() {
+            public boolean indexInfo(Value key, byte[] value) {
+                GridNode node = GridNodeInfo.fromBytes(value);
+                if(mappedNodes.contains(node)) {
+                    mappedNodes.add(node);
+                }
+                return true;
+            }
+
+            public boolean indexInfo(Value value, long pointer) {
+                throw new UnsupportedOperationException();
+            }
+        };
+        try {
+            index.exactSearch(parentTableFkIndex, distkey, handler);
+        } catch (DbException e) {
+            throw new GridException(e);
+        }
+        return mappedNodes;
+    }
+
     private static void mapBasedOnDrivedFragmentation(final byte[] distkey, final int partitionNo, final Map<GridNode, MutableInt> mappedNodes, final ILocalDirectory index, final String parentTableFkIndex)
             throws GridException {
         final BTreeCallback handler = new BTreeCallback() {
@@ -268,7 +300,7 @@ public final class CsvHashPartitioningJob extends
         rowsBuf.write('\n'); // TODO FIXME support other record separator 
     }
 
-    private static void mapRecord(final byte[] line, final int totalRecords, final int numNodes, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final Map<GridNode, MutableInt> mappedNodes, final char filedSeparator) {
+    private static void mapRecordWithHiddenField(final byte[] line, final int totalRecords, final int numNodes, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final Map<GridNode, MutableInt> mappedNodes, final char filedSeparator) {
         final int lineSize = line.length;
         for(Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
             final GridNode node = e.getKey();
@@ -291,15 +323,16 @@ public final class CsvHashPartitioningJob extends
                 cnt.increment();
             }
             rowsBuf.write(line, 0, lineSize);
-            if(hiddenValue != 0) {
-                final String str = Integer.toString(hiddenValue);
-                final int strlen = str.length();
-                for(int i = 0; i < strlen; i++) {
-                    char c = str.charAt(i);
-                    rowsBuf.write(c);
-                }
-                rowsBuf.write(filedSeparator);
+            if(hiddenValue == 0) {
+                throw new IllegalStateException("Illegal hidden value was detected");
             }
+            final String str = Integer.toString(hiddenValue);
+            final int strlen = str.length();
+            for(int i = 0; i < strlen; i++) {
+                char c = str.charAt(i);
+                rowsBuf.write(c);
+            }
+            rowsBuf.write(filedSeparator);
             rowsBuf.write('\n'); // TODO FIXME support other record separator 
         }
     }
