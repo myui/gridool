@@ -25,8 +25,6 @@ import gridool.GridJob;
 import gridool.GridNode;
 import gridool.GridResourceRegistry;
 import gridool.GridTask;
-import gridool.GridTaskResult;
-import gridool.GridTaskResultPolicy;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridJobBase;
 import gridool.construct.GridTaskAdapter;
@@ -43,9 +41,6 @@ import java.util.Map;
 
 import javax.annotation.Nonnull;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import xbird.util.io.IOUtils;
 import xbird.util.struct.Pair;
 
@@ -59,7 +54,6 @@ import xbird.util.struct.Pair;
 public final class RegisterPatitionInCatalogJob extends
         GridJobBase<RegisterPatitionInCatalogJob.JobConf, Boolean> {
     private static final long serialVersionUID = -4173733362983065008L;
-    private static final Log LOG = LogFactory.getLog(RegisterPatitionInCatalogJob.class);
 
     public RegisterPatitionInCatalogJob() {
         super();
@@ -74,20 +68,6 @@ public final class RegisterPatitionInCatalogJob extends
             map.put(task, node);
         }
         return map;
-    }
-
-    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
-        Boolean succeed = result.getResult();
-        if(succeed == null) {
-            if(LOG.isWarnEnabled()) {
-                GridNode node = result.getExecutedNode();
-                GridException err = result.getException();
-                LOG.warn("UpdateCatalogTask failed on node: " + node, err);
-            }
-        } else {
-            assert (succeed.booleanValue());
-        }
-        return GridTaskResultPolicy.CONTINUE;
     }
 
     public Boolean reduce() throws GridException {

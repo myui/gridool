@@ -185,7 +185,7 @@ public final class SQLTranslator {
         } else {
             final List<String> partByColumns = new ArrayList<String>(4);
             partByColumns.add(fieldName);
-            int partitionKey = catalog.getPartitioningKey(tableName, fieldName);
+            int partitionKey = catalog.getPartitioningKey(tableName);
             bitset |= partitionKey;
             int lastTT;
             while((lastTT = tokenizer.nextToken()) == TT_COMMA) {
@@ -194,7 +194,7 @@ public final class SQLTranslator {
                 }
                 fieldName = tokenizer.sval;
                 partByColumns.add(fieldName);
-                partitionKey = catalog.getPartitioningKey(tableName, fieldName);
+                partitionKey = catalog.getPartitioningKey(tableName);
                 bitset |= partitionKey;
             }
             if(lastTT != TT_RPAR) {

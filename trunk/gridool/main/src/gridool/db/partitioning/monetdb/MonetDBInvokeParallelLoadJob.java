@@ -71,13 +71,6 @@ public final class MonetDBInvokeParallelLoadJob extends
     public Map<GridTask, GridNode> map(GridTaskRouter router, Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>> args)
             throws GridException {
         final MonetDBParallelLoadOperation ops = args.getFirst();
-        final String connectUrl = ops.getConnectUrl();
-        final String userName = ops.getUserName();
-        final String password = ops.getPassword();
-        final String tableName = ops.getTableName();
-        final String csvFileName = ops.getCsvFileName();
-        final String createTableDDL = ops.getCreateTableDDL();
-        final String alterTableDDL = ops.getAlterTableDDL();
 
         final Map<GridNode, MutableInt> assigned = args.getSecond();
         final GridNode[] allNodes = router.getAllNodes();
@@ -92,8 +85,7 @@ public final class MonetDBInvokeParallelLoadJob extends
             GridNode node = e.getKey();
             int numRecords = e.getValue().intValue();
             String copyIntoQuery = (numRecords == 0) ? null : ops.getCopyIntoQuery(numRecords);
-            MonetDBParallelLoadOperation shrinkedOps = new MonetDBParallelLoadOperation(connectUrl, tableName, csvFileName, createTableDDL, copyIntoQuery, alterTableDDL);
-            shrinkedOps.setAuth(userName, password);
+            MonetDBParallelLoadOperation shrinkedOps = new MonetDBParallelLoadOperation(ops, copyIntoQuery);
             GridTask task = new DBTaskAdapter(this, shrinkedOps);
             map.put(task, node);
         }
@@ -103,6 +95,7 @@ public final class MonetDBInvokeParallelLoadJob extends
         return map;
     }
 
+    @Override
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         Integer processed = result.getResult();
         if(processed != null) {

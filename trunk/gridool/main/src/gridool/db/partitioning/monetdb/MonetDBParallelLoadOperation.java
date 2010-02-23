@@ -60,7 +60,8 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     @Nonnull
     private/* final */String csvFileName;
     @Nonnull
-    private/* final */String createTableDDL;
+    private/* final */String createTableDDL;    
+    private/* final */boolean addHiddenField;
     @Nullable
     private/* final */String copyIntoQuery;
     @Nullable
@@ -68,13 +69,26 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     public MonetDBParallelLoadOperation() {}
 
-    public MonetDBParallelLoadOperation(@Nonnull String connectUrl, @Nonnull String tableName, @Nonnull String csvFileName, @Nonnull String createTableDDL, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
+    public MonetDBParallelLoadOperation(@Nonnull String connectUrl, @Nonnull String tableName, @Nonnull String csvFileName, @Nonnull String createTableDDL, boolean addHiddenField, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
         super(driverClassName, connectUrl);
         this.tableName = tableName;
         this.csvFileName = csvFileName;
         this.createTableDDL = createTableDDL;
+        this.addHiddenField = addHiddenField;
         this.copyIntoQuery = copyIntoQuery;
         this.alterTableDDL = alterTableDDL;
+    }
+
+    public MonetDBParallelLoadOperation(@Nonnull MonetDBParallelLoadOperation ops, @Nullable String copyIntoQuery) {
+        super(driverClassName, ops.connectUrl);
+        this.tableName = ops.tableName;
+        this.csvFileName = ops.csvFileName;
+        this.createTableDDL = ops.createTableDDL;
+        this.addHiddenField = ops.addHiddenField;
+        this.copyIntoQuery = copyIntoQuery;
+        this.alterTableDDL = ops.alterTableDDL;
+        this.userName = ops.userName;
+        this.password = ops.password;
     }
 
     public String getTableName() {
@@ -111,7 +125,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         int numInserted = 0;
         try {
             // #1 create table
-            prepareTable(conn, createTableDDL, tableName);
+            prepareTable(conn, createTableDDL, tableName, addHiddenField);
             // #2 invoke COPY INTO
             final StopWatch sw = new StopWatch();
             if(copyIntoQuery != null) {
@@ -136,10 +150,11 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         return numInserted;
     }
 
-    private static void prepareTable(Connection conn, String createTableDDL, String tableName)
+    private static void prepareTable(final Connection conn, final String createTableDDL, final String tableName, final boolean addHiddenField)
             throws SQLException {
-        final String sql = createTableDDL + "; ALTER TABLE \"" + tableName + "\" ADD \""
-                + DistributionCatalog.hiddenFieldName + "\" TINYINT;";
+        final String sql = addHiddenField ? (createTableDDL + "; ALTER TABLE \"" + tableName
+                + "\" ADD \"" + DistributionCatalog.hiddenFieldName + "\" TINYINT;")
+                : createTableDDL;
         try {
             JDBCUtils.update(conn, sql);
             conn.commit();

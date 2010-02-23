@@ -29,6 +29,10 @@ import gridool.GridResourceRegistry;
 import gridool.annotation.GridKernelResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridTaskAdapter;
+import gridool.db.helpers.DBAccessor;
+import gridool.db.helpers.ForeignKey;
+import gridool.db.helpers.GridDbUtils;
+import gridool.db.helpers.PrimaryKey;
 import gridool.db.partitioning.DBPartitioningJobConf;
 import gridool.directory.ILocalDirectory;
 
@@ -39,6 +43,7 @@ import java.io.InputStreamReader;
 import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -61,6 +66,7 @@ import xbird.util.csv.SimpleCvsReader;
 import xbird.util.io.FastBufferedInputStream;
 import xbird.util.primitive.MutableInt;
 import xbird.util.primitive.Primitives;
+import xbird.util.struct.Pair;
 import xbird.util.system.SystemUtils;
 
 /**
@@ -109,6 +115,8 @@ public class CsvPartitioningTask extends GridTaskAdapter {
 
     protected transient String csvFileName;
     private transient boolean isFirstShuffle = true;
+    private transient Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys;
+    protected transient boolean hasParentTableExportedKey;
 
     @SuppressWarnings("unchecked")
     public CsvPartitioningTask(GridJob job, DBPartitioningJobConf jobConf) {
@@ -145,6 +153,13 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         this.shuffleSink = new BoundedArrayQueue<String>(shuffleUnits());
         this.csvFileName = generateCsvFileName();
 
+        // inquire primary foreign keys of the partitioning table
+        DBAccessor dba = registry.getDbAccessor();
+        String tableName = jobConf.getBaseTableName();
+        this.primaryForeignKeys = GridDbUtils.getPrimaryForeignKeys(dba, tableName);
+        this.hasParentTableExportedKey = GridDbUtils.hasParentTableExportedKey(dba, primaryForeignKeys.getFirst());
+
+        // parse and shuffle a CSV file
         final CvsReader reader = getCsvReader(jobConf);
         int numShuffled = 0;
         try {
@@ -206,7 +221,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         shuffleExecPool.execute(new Runnable() {
             public void run() {
                 String[] lines = queue.toArray(String.class);
-                CsvHashPartitioningJob.JobConf conf = new CsvHashPartitioningJob.JobConf(lines, fileName, isFirst, jobConf);
+                CsvHashPartitioningJob.JobConf conf = new CsvHashPartitioningJob.JobConf(lines, fileName, isFirst, primaryForeignKeys, hasParentTableExportedKey, jobConf);
                 final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(CsvHashPartitioningJob.class, conf);
                 final Map<GridNode, MutableInt> map;
                 try {

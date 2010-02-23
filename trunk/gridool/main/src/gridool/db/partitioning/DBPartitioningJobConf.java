@@ -66,10 +66,6 @@ public abstract class DBPartitioningJobConf implements Serializable {
         return '\"';
     }
 
-    public boolean insertHiddenField() {
-        return true;
-    }
-
     // -------------------------------------------------------------
     // JDBC stuffs
 

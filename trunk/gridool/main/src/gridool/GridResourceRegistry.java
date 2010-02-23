@@ -91,7 +91,7 @@ public final class GridResourceRegistry {
         this.lockManager = LockManagerFactory.createLockManager(config);
         this.dbAccessor = DBAccessorFactory.createDBAccessor();
         this.replicationManager = new ReplicationManager(kernel, dbAccessor, config);
-        this.distributionCatalog = new DistributionCatalog(kernel, dbAccessor);
+        this.distributionCatalog = new DistributionCatalog(dbAccessor);
     }
 
     public GridKernel getGridKernel() {

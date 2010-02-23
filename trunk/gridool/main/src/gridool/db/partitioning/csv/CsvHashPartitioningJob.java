@@ -24,13 +24,9 @@ import gridool.GridException;
 import gridool.GridNode;
 import gridool.GridResourceRegistry;
 import gridool.GridTask;
-import gridool.GridTaskResult;
-import gridool.GridTaskResultPolicy;
 import gridool.annotation.GridRegistryResource;
 import gridool.communication.payload.GridNodeInfo;
 import gridool.construct.GridJobBase;
-import gridool.db.catalog.DistributionCatalog;
-import gridool.db.catalog.PartitionKey;
 import gridool.db.helpers.ForeignKey;
 import gridool.db.helpers.PrimaryKey;
 import gridool.db.partitioning.DBPartitioningJobConf;
@@ -38,13 +34,12 @@ import gridool.db.partitioning.FileAppendTask;
 import gridool.directory.ILocalDirectory;
 import gridool.routing.GridTaskRouter;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -57,9 +52,9 @@ import xbird.storage.DbException;
 import xbird.storage.index.BTreeCallback;
 import xbird.storage.index.Value;
 import xbird.util.collections.FixedArrayList;
+import xbird.util.collections.LRUMap;
 import xbird.util.csv.CsvUtils;
 import xbird.util.io.FastByteArrayOutputStream;
-import xbird.util.io.IOUtils;
 import xbird.util.primitive.MutableInt;
 import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
@@ -97,32 +92,34 @@ public final class CsvHashPartitioningJob extends
         final DBPartitioningJobConf jobConf = ops.getJobConf();
 
         // partitioning resources
-        final String actualTableName;
-        final PartitionKey primaryPartitionKey;
-        final List<PartitionKey> foreignPartitionKeys;
-        final int pkeyPartitionNo;
+        final PrimaryKey primaryKey;
+        final Collection<ForeignKey> foreignKeys;
         final int[] pkeyIndicies;
         final String[] parentTableFkIndexNames;
+        final boolean hasParentTableExportedKey;
+        final int numForeignKeys;
+        final String[] fkIdxNames;
+        final int[][] fkPositions;
+        final LRUMap<String, List<GridNode>>[] fkCaches;
         {
-            DistributionCatalog catalog = registry.getDistributionCatalog();
-            actualTableName = jobConf.getTableName();
-            String baseTableName = jobConf.getBaseTableName();
-            Pair<PartitionKey, List<PartitionKey>> partitioningKeys = catalog.bindPartitioningKeyPositions(baseTableName, actualTableName);
-            primaryPartitionKey = partitioningKeys.getFirst();
-            foreignPartitionKeys = partitioningKeys.getSecond();
-            pkeyPartitionNo = primaryPartitionKey.getPartitionNo();
-            PrimaryKey primaryKey = primaryPartitionKey.getKey();
+            Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys = ops.getPrimaryForeignKeys();
+            primaryKey = primaryForeignKeys.getFirst();
+            foreignKeys = primaryForeignKeys.getSecond();
             pkeyIndicies = primaryKey.getColumnPositions(true);
             parentTableFkIndexNames = getParentTableFkIndexNames(primaryKey);
+            hasParentTableExportedKey = ops.hasParentTableExportedKey();
+            numForeignKeys = foreignKeys.size();
+            fkIdxNames = getFkIndexNames(foreignKeys, numForeignKeys);
+            fkPositions = getFkPositions(foreignKeys, numForeignKeys);
+            fkCaches = getFkIndexCaches(numForeignKeys);
         }
 
         // COPY INTO control resources 
-        final boolean insertHiddenField = jobConf.insertHiddenField();
         final char filedSeparator = jobConf.getFieldSeparator();
         final char quoteChar = jobConf.getStringQuote();
         // working resources
         final ILocalDirectory index = registry.getDirectory();
-        final String[] fields = new String[getMaxColumnCount(primaryPartitionKey, foreignPartitionKeys)];
+        final String[] fields = new String[getMaxColumnCount(primaryKey, foreignKeys)];
         assert (fields.length > 0);
         final FixedArrayList<String> fieldList = new FixedArrayList<String>(fields);
         final Charset charset = Charset.forName("UTF-8");
@@ -131,58 +128,55 @@ public final class CsvHashPartitioningJob extends
 
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new HashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
-        final Map<GridNode, MutableInt> mappedNodes = new HashMap<GridNode, MutableInt>(numNodes);
-        final int numDerived = foreignPartitionKeys.size();
-        final GridNode[] derivedNodes = new GridNode[numDerived];
-        final byte[][] fkKeys = new byte[numDerived][];
-        final String[] fkIdxNames = getFkIndexNames(foreignPartitionKeys);
+        final Map<GridNode, MutableInt> mappedNodes = hasParentTableExportedKey ? new HashMap<GridNode, MutableInt>(numNodes)
+                : null;
         for(int i = 0; i < totalRecords; i++) {
-            int bitShift = 0;
             String line = lines[i];
             lines[i] = null;
             final byte[] lineBytes = line.getBytes(charset);
             final GridNode pkMappedNode;
-            {//primary mapping
+            {
                 CsvUtils.retrieveFields(line, pkeyIndicies, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
                 String pkeysField = combineFields(fields, strBuf);
                 byte[] distkey = StringUtils.getBytes(pkeysField);
                 pkMappedNode = router.selectNode(distkey);
-                MutableInt hiddenValue = decideRecordMapping(pkMappedNode, mappedNodes, pkeyPartitionNo);
-                if(parentTableFkIndexNames != null) {
-                    for(String idxName : parentTableFkIndexNames) {
-                        mapBasedOnDrivedFragmentation(distkey, hiddenValue, mappedNodes, pkMappedNode, index, idxName);
+                if(hasParentTableExportedKey) {
+                    // derived fragment mapping
+                    for(int kk = 0; kk < numForeignKeys; kk++) {
+                        String idxName = parentTableFkIndexNames[kk];
+                        int partitionNo = kk + 1;
+                        mapBasedOnDrivedFragmentation(distkey, partitionNo, mappedNodes, index, idxName);
+                    }
+                    if(mappedNodes.isEmpty()) {
+                        throw new IllegalStateException("Could not map records by derived fragmentation: '"
+                                + jobConf.getTableName() + '\'');
+                    }
+                    mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, mappedNodes, filedSeparator);
+                    mappedNodes.clear();
+                } else {
+                    // primary fragment mapping
+                    mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, pkMappedNode, filedSeparator);
+                }
+            }
+            {// store information for derived fragment mapping
+                final byte[] mappedNodeBytes = pkMappedNode.toBytes();
+                for(int jj = 0; jj < numForeignKeys; jj++) {
+                    CsvUtils.retrieveFields(line, fkPositions[jj], fieldList, filedSeparator, quoteChar);
+                    fieldList.trimToZero();
+                    String fkeysField = combineFields(fields, strBuf);
+                    LRUMap<String, List<GridNode>> fkCache = fkCaches[jj];
+                    List<GridNode> storedNodes = fkCache.get(fkeysField);
+                    if(storedNodes == null) {
+                        storedNodes = new ArrayList<GridNode>(8);
+                        fkCache.put(fkeysField, storedNodes);
+                    }
+                    if(!storedNodes.contains(pkMappedNode)) {
+                        storedNodes.add(pkMappedNode);
+                        storeDerivedFragmentationInfo(fkeysField, mappedNodeBytes, index, fkIdxNames[jj]);
                     }
                 }
-                bitShift++;
             }
-            // derived mapping
-            for(int jj = 0; jj < numDerived; jj++) {
-                PartitionKey partkey = foreignPartitionKeys.get(jj);
-                ForeignKey fk = partkey.getKey();
-                int[] fkeyIndicies = fk.getFkColumnPositions(true);
-                CsvUtils.retrieveFields(line, fkeyIndicies, fieldList, filedSeparator, quoteChar);
-                fieldList.trimToZero();
-                int partNo = partkey.getPartitionNo();
-                String fkeysField = combineFields(fields, strBuf);
-                byte[] distkey = StringUtils.getBytes(fkeysField);
-                fkKeys[jj] = distkey;
-                GridNode node = router.selectNode(distkey);
-                decideRecordMapping(node, mappedNodes, partNo);
-                derivedNodes[jj] = node;
-            }
-            if(mappedNodes.isEmpty()) {
-                throw new IllegalStateException("Could not map records because there is neither PK nor FK in the template table of '"
-                        + actualTableName + '\'');
-            }
-            for(int kk = 0; kk < numDerived; kk++) {
-                String fkIdxName = fkIdxNames[kk];
-                byte[] distkey = fkKeys[kk];
-                GridNode derivedNode = derivedNodes[kk];
-                storeDerivedFragmentationInfo(distkey, derivedNode, kk, pkMappedNode, index, fkIdxName);
-            }
-            mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, mappedNodes, insertHiddenField, filedSeparator);
-            mappedNodes.clear();
         }
 
         final Map<GridTask, GridNode> taskmap = new IdentityHashMap<GridTask, GridNode>(numNodes);
@@ -208,42 +202,30 @@ public final class CsvHashPartitioningJob extends
         return taskmap;
     }
 
-    private static MutableInt decideRecordMapping(final GridNode node, final Map<GridNode, MutableInt> mappedNodes, final int partitionNo)
+    private static void storeDerivedFragmentationInfo(final String fkeysField, final byte[] mappedNodeBytes, final ILocalDirectory index, final String idxName)
             throws GridException {
-        if(node == null) {
-            throw new GridException("Could not find any node in cluster.");
-        }
-        final MutableInt hiddenValue = mappedNodes.get(node);
-        if(hiddenValue == null) {
-            MutableInt newHidden = new MutableInt(partitionNo);
-            mappedNodes.put(node, newHidden);
-            return newHidden;
-        }
-        int newValue = hiddenValue.intValue() | partitionNo;
-        hiddenValue.setValue(newValue);
-        return hiddenValue;
-    }
-
-    private static void storeDerivedFragmentationInfo(final byte[] distkey, final GridNode derivedNode, final int ith, final GridNode pkMappedNode, final ILocalDirectory index, final String idxName)
-            throws GridException {
-        if(pkMappedNode != derivedNode) {
-            final byte[] v = pkMappedNode.toBytes();
-            try {
-                index.addMapping(idxName, distkey, v);
-            } catch (DbException e) {
-                throw new GridException(e);
-            }
+        final byte[] distkey = StringUtils.getBytes(fkeysField);
+        try {
+            index.addMapping(idxName, distkey, mappedNodeBytes);
+        } catch (DbException e) {
+            throw new GridException(e);
         }
     }
 
-    private static void mapBasedOnDrivedFragmentation(final byte[] distkey, final MutableInt hiddenValue, final Map<GridNode, MutableInt> mappedNodes, final GridNode pkNode, final ILocalDirectory index, final String parentTableFkIndex)
+    private static void mapBasedOnDrivedFragmentation(final byte[] distkey, final int partitionNo, final Map<GridNode, MutableInt> mappedNodes, final ILocalDirectory index, final String parentTableFkIndex)
             throws GridException {
         final BTreeCallback handler = new BTreeCallback() {
             public boolean indexInfo(Value key, byte[] value) {
                 GridNode node = GridNodeInfo.fromBytes(value);
-                if(!node.equals(pkNode)) {
-                    if(!mappedNodes.containsKey(node)) {
-                        mappedNodes.put(node, hiddenValue);
+                final MutableInt hiddenValue = mappedNodes.get(node);
+                if(hiddenValue == null) {
+                    MutableInt newHidden = new MutableInt(partitionNo);
+                    mappedNodes.put(node, newHidden);
+                } else {
+                    final int oldValue = hiddenValue.intValue();
+                    if(oldValue != partitionNo) {
+                        int newValue = oldValue | partitionNo;
+                        hiddenValue.setValue(newValue);
                     }
                 }
                 return true;
@@ -260,7 +242,29 @@ public final class CsvHashPartitioningJob extends
         }
     }
 
-    private static void mapRecord(final byte[] line, final int totalRecords, final int numNodes, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final Map<GridNode, MutableInt> mappedNodes, final boolean insertHiddenField, final char filedSeparator) {
+    private static void mapRecord(final byte[] line, final int totalRecords, final int numNodes, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final GridNode mappedNode, final char filedSeparator) {
+        final int lineSize = line.length;
+        final FastByteArrayOutputStream rowsBuf;
+        final Pair<MutableInt, FastByteArrayOutputStream> pair = nodeAssignMap.get(mappedNode);
+        if(pair == null) {
+            int expected = (int) ((lineSize * (totalRecords / numNodes)) * 1.3f);
+            if(expected > 209715200) {
+                LOG.warn("Expected record buffer for shuffling is too large: " + expected
+                        + " bytes");
+            }
+            rowsBuf = new FastByteArrayOutputStream(Math.min(expected, 209715200)); //max 200MB
+            Pair<MutableInt, FastByteArrayOutputStream> newPair = new Pair<MutableInt, FastByteArrayOutputStream>(new MutableInt(1), rowsBuf);
+            nodeAssignMap.put(mappedNode, newPair);
+        } else {
+            rowsBuf = pair.second;
+            MutableInt cnt = pair.first;
+            cnt.increment();
+        }
+        rowsBuf.write(line, 0, lineSize);
+        rowsBuf.write('\n'); // TODO FIXME support other record separator 
+    }
+
+    private static void mapRecord(final byte[] line, final int totalRecords, final int numNodes, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final Map<GridNode, MutableInt> mappedNodes, final char filedSeparator) {
         final int lineSize = line.length;
         for(Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
             final GridNode node = e.getKey();
@@ -283,8 +287,7 @@ public final class CsvHashPartitioningJob extends
                 cnt.increment();
             }
             rowsBuf.write(line, 0, lineSize);
-            if(insertHiddenField) {
-                // FIXME workaround for MonetDB 
+            if(hiddenValue != 0) {
                 final String str = Integer.toString(hiddenValue);
                 final int strlen = str.length();
                 for(int i = 0; i < strlen; i++) {
@@ -297,29 +300,25 @@ public final class CsvHashPartitioningJob extends
         }
     }
 
-    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
-        return GridTaskResultPolicy.CONTINUE;
-    }
-
     public Map<GridNode, MutableInt> reduce() throws GridException {
         return assignedRecMap;
     }
 
-    static final class JobConf implements Externalizable {
+    static final class JobConf {
 
-        private String[] lines;
-        private String fileName;
-        private boolean isFirst;
-        private DBPartitioningJobConf jobConf;
+        private final String[] lines;
+        private final String fileName;
+        private final boolean isFirst;
+        private final Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys;
+        private final boolean hasParentTableExportedKey;
+        private final DBPartitioningJobConf jobConf;
 
-        public JobConf() {//for Externalizable
-            super();
-        }
-
-        public JobConf(@Nonnull String[] lines, @Nonnull String fileName, boolean isFirst, @Nonnull DBPartitioningJobConf jobConf) {
+        public JobConf(@Nonnull String[] lines, @Nonnull String fileName, boolean isFirst, @Nonnull Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys, boolean hasParentTableExportedKey, @Nonnull DBPartitioningJobConf jobConf) {
             this.lines = lines;
             this.fileName = fileName;
             this.isFirst = isFirst;
+            this.primaryForeignKeys = primaryForeignKeys;
+            this.hasParentTableExportedKey = hasParentTableExportedKey;
             this.jobConf = jobConf;
         }
 
@@ -335,39 +334,24 @@ public final class CsvHashPartitioningJob extends
             return isFirst;
         }
 
+        Pair<PrimaryKey, Collection<ForeignKey>> getPrimaryForeignKeys() {
+            return primaryForeignKeys;
+        }
+
+        boolean hasParentTableExportedKey() {
+            return hasParentTableExportedKey;
+        }
+
         DBPartitioningJobConf getJobConf() {
             return jobConf;
         }
 
-        public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
-            final int num = in.readInt();
-            final String[] ary = new String[num];
-            for(int i = 0; i < num; i++) {
-                ary[i] = IOUtils.readString(in);
-            }
-            this.lines = ary;
-            this.fileName = IOUtils.readString(in);
-            this.isFirst = in.readBoolean();
-            this.jobConf = (DBPartitioningJobConf) in.readObject();
-        }
-
-        public void writeExternal(final ObjectOutput out) throws IOException {
-            final String[] ary = lines;
-            final int num = ary.length;
-            out.writeInt(num);
-            for(int i = 0; i < num; i++) {
-                IOUtils.writeString(ary[i], out);
-            }
-            IOUtils.writeString(fileName, out);
-            out.writeBoolean(isFirst);
-            out.writeObject(jobConf);
-        }
     }
 
-    private static int getMaxColumnCount(@Nonnull final PartitionKey primaryPartitionKey, @Nonnull final List<PartitionKey> foreignPartitionKeys) {
-        int max = primaryPartitionKey.getKey().getColumnNames().size();
-        for(final PartitionKey key : foreignPartitionKeys) {
-            int size = key.getKey().getColumnNames().size();
+    private static int getMaxColumnCount(@Nonnull final PrimaryKey pkey, @Nonnull final Collection<ForeignKey> fkeys) {
+        int max = pkey.getColumnNames().size();
+        for(final ForeignKey fkey : fkeys) {
+            int size = fkey.getColumnNames().size();
             max = Math.max(size, max);
         }
         return max;
@@ -390,17 +374,39 @@ public final class CsvHashPartitioningJob extends
         return buf.toString();
     }
 
-    private static String[] getFkIndexNames(final List<PartitionKey> foreignPartitionKeys) {
-        final int numKeys = foreignPartitionKeys.size();
-        final String[] idxNames = new String[numKeys];
-        for(int i = 0; i < numKeys; i++) {
-            PartitionKey partKey = foreignPartitionKeys.get(i);
-            ForeignKey fk = partKey.getKey();
+    private static String[] getFkIndexNames(final Collection<ForeignKey> fkeys, final int numFkeys) {
+        final String[] idxNames = new String[numFkeys];
+        final Iterator<ForeignKey> itor = fkeys.iterator();
+        for(int i = 0; i < numFkeys; i++) {
+            ForeignKey fk = itor.next();
             String fkTable = fk.getFkTableName();
             List<String> fkColumns = fk.getFkColumnNames();
             idxNames[i] = getIndexName(fkTable, fkColumns);
         }
         return idxNames;
+    }
+
+    private static int[][] getFkPositions(final Collection<ForeignKey> fkeys, final int numFkeys) {
+        final int[][] positions = new int[numFkeys][];
+        final Iterator<ForeignKey> itor = fkeys.iterator();
+        for(int i = 0; i < numFkeys; i++) {
+            ForeignKey fk = itor.next();
+            int[] fkeyPos = fk.getFkColumnPositions(true);
+            positions[i] = fkeyPos;
+        }
+        return positions;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static LRUMap<String, List<GridNode>>[] getFkIndexCaches(final int numFks) {
+        if(numFks == 0) {
+            return null;
+        }
+        final LRUMap<String, List<GridNode>>[] caches = new LRUMap[numFks];
+        for(int i = 0; i < numFks; i++) {
+            caches[i] = new LRUMap<String, List<GridNode>>(1000);
+        }
+        return caches;
     }
 
     private static String[] getParentTableFkIndexNames(final PrimaryKey childTablePkey) {

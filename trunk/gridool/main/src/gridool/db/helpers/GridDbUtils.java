@@ -40,6 +40,9 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import xbird.util.jdbc.JDBCUtils;
+import xbird.util.struct.Pair;
+
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -67,6 +70,28 @@ public final class GridDbUtils {
                     + dba.getPrimaryDbName());
         }
         return conn;
+    }
+
+    @Nonnull
+    public static Pair<PrimaryKey, Collection<ForeignKey>> getPrimaryForeignKeys(@Nonnull final DBAccessor dba, @Nonnull final String templateTableName)
+            throws GridException {
+        final PrimaryKey pkey;
+        final Collection<ForeignKey> fkeys;
+        final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, false);
+        try {
+            pkey = GridDbUtils.getPrimaryKey(conn, templateTableName, true);
+            fkeys = GridDbUtils.getForeignKeys(conn, templateTableName, true);
+        } catch (SQLException e) {
+            LOG.error(e);
+            throw new GridException(e);
+        } finally {
+            JDBCUtils.closeQuietly(conn);
+        }
+        if(pkey == null) {
+            throw new IllegalStateException("Primary key is not defined on table: "
+                    + templateTableName);
+        }
+        return new Pair<PrimaryKey, Collection<ForeignKey>>(pkey, fkeys);
     }
 
     @Nullable
@@ -164,6 +189,27 @@ public final class GridDbUtils {
         } finally {
             rs.close();
         }
+    }
+
+    public static boolean hasParentTableExportedKey(@Nonnull final DBAccessor dba, @Nonnull final PrimaryKey childTablePk)
+            throws GridException {
+        List<ForeignKey> fkeys = childTablePk.getExportedKeys();
+        if(fkeys == null || fkeys.isEmpty()) {
+            return false;
+        }
+        ForeignKey fk = fkeys.get(0);
+        String parentTable = fk.getTableName();
+        final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, false);
+        final boolean hasParent;
+        try {
+            hasParent = GridDbUtils.hasParentTable(conn, parentTable);
+        } catch (SQLException e) {
+            LOG.error("Failed to find parent table: " + parentTable, e);
+            throw new GridException(e);
+        } finally {
+            JDBCUtils.closeQuietly(conn);
+        }
+        return hasParent;
     }
 
     /**

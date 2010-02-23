@@ -20,8 +20,11 @@
  */
 package gridool.construct;
 
+import gridool.GridException;
 import gridool.GridJob;
 import gridool.GridNode;
+import gridool.GridTaskResult;
+import gridool.GridTaskResultPolicy;
 import gridool.util.GridUtils;
 
 /**
@@ -68,5 +71,15 @@ public abstract class GridJobBase<A, R> implements GridJob<A, R> {
 
     public boolean injectResources() {
         return false;
+    }
+
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
+        GridException err = result.getException();
+        if(err != null) {
+            GridNode node = result.getExecutedNode();
+            String errmsg = getClass().getSimpleName() + " failed on node: " + node;
+            throw new GridException(errmsg, err);
+        }
+        return GridTaskResultPolicy.CONTINUE;
     }
 }

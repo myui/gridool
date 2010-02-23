@@ -60,10 +60,11 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
         String connectUrl = jobConf.getConnectUrl();
         String tableName = jobConf.getTableName();
         String createTableDDL = jobConf.getCreateTableDDL();
+        boolean addHiddenField = hasParentTableExportedKey;
         String copyIntoQuery = generateCopyIntoQuery(tableName, jobConf);
         String alterTableDDL = jobConf.getAlterTableDDL();
 
-        MonetDBParallelLoadOperation ops = new MonetDBParallelLoadOperation(connectUrl, tableName, csvFileName, createTableDDL, copyIntoQuery, alterTableDDL);
+        MonetDBParallelLoadOperation ops = new MonetDBParallelLoadOperation(connectUrl, tableName, csvFileName, createTableDDL, addHiddenField, copyIntoQuery, alterTableDDL);
         ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
         final Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>> pair = new Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>>(ops, assignMap);
 
