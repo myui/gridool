@@ -237,6 +237,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         this.tableName = IOUtils.readString(in);
         this.csvFileName = IOUtils.readString(in);
         this.createTableDDL = IOUtils.readString(in);
+        this.addHiddenField = in.readBoolean();
         this.copyIntoQuery = IOUtils.readString(in);
         this.alterTableDDL = IOUtils.readString(in);
     }
@@ -253,6 +254,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             IOUtils.writeString(altered, out);
         }
         IOUtils.writeString(createTableDDL, out);
+        out.writeBoolean(addHiddenField);
         IOUtils.writeString(copyIntoQuery, out);
         IOUtils.writeString(alterTableDDL, out);
     }
