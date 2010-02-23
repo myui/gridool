@@ -68,7 +68,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import xbird.storage.DbCollection;
 import xbird.util.concurrent.ExecutorFactory;
 import xbird.util.concurrent.ExecutorUtils;
 import xbird.util.csv.CsvWriter;
@@ -440,8 +439,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         if(fileName == null) {
             throw new IllegalStateException();
         }
-        DbCollection rootCol = DbCollection.getRootCollection();
-        File colDir = rootCol.getDirectory();
+        File colDir = GridUtils.getWorkDir(true);
         File file = new File(colDir, fileName);
         if(!file.exists()) {
             throw new IllegalStateException("File does not exist: " + file.getAbsolutePath());
@@ -543,9 +541,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         if(outputMethod != OutputMethod.csvFile) {
             throw new IllegalArgumentException("Unexpected OutputMethod: " + outputMethod);
         }
-        DbCollection rootCol = DbCollection.getRootCollection();
-        File colDir = rootCol.getDirectory();
-
+        File colDir = GridUtils.getWorkDir(true);
         final File outFile = new File(colDir, outputTableName + ".csv");
         final CsvWriter writer = new CsvWriter(outFile);
         final ResultSetHandler rsh = new ResultSetHandler() {

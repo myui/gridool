@@ -21,13 +21,13 @@
 package gridool.metrics.runtime;
 
 import gridool.GridNodeMetrics;
+import gridool.util.GridUtils;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
 
-import xbird.storage.DbCollection;
 import xbird.util.system.SystemUtils;
 
 /**
@@ -45,15 +45,7 @@ public final class GridNodeRuntimeMetrics implements GridNodeMetrics {
 
     public GridNodeRuntimeMetrics(@Nonnull AtomicReference<GridTaskMetricsCounter> taskMetrics) {
         this.taskMetrics = taskMetrics;
-        this.databaseDir = getDatabaseDir();
-    }
-
-    private static File getDatabaseDir() {
-        DbCollection rootColl = DbCollection.getRootCollection();
-        File colDir = rootColl.getDirectory();
-        assert (colDir.exists());
-        assert (colDir.isDirectory());
-        return colDir;
+        this.databaseDir = GridUtils.getWorkDir(true);
     }
 
     // -------------------------------

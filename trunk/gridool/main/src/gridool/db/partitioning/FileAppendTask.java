@@ -41,7 +41,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import xbird.storage.DbCollection;
 import xbird.util.io.IOUtils;
 
 /**
@@ -98,12 +97,7 @@ public final class FileAppendTask extends GridTaskAdapter {
     }
 
     private static File appendToFile(final String fileName, final byte[] data, final boolean append, final LockManager lockMgr) {
-        DbCollection rootColl = DbCollection.getRootCollection();
-        final File colDir = rootColl.getDirectory();
-        if(!colDir.exists()) {
-            throw new IllegalStateException("Database directory not found: "
-                    + colDir.getAbsoluteFile());
-        }
+        final File colDir = GridUtils.getWorkDir(true);
         final File file = new File(colDir, fileName);
         String filepath = file.getAbsolutePath();
         ReadWriteLock lock = lockMgr.obtainLock(filepath);

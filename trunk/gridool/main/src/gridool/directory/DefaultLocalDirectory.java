@@ -21,6 +21,7 @@
 package gridool.directory;
 
 import gridool.locking.LockManager;
+import gridool.util.GridUtils;
 
 import java.io.File;
 import java.util.Collection;
@@ -34,7 +35,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import xbird.storage.DbCollection;
 import xbird.storage.DbException;
 import xbird.storage.index.BIndexFile;
 import xbird.storage.index.BTreeCallback;
@@ -240,11 +240,7 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory {
 
     private static BIndexFile createIndex(final String name, final boolean create)
             throws DbException {
-        DbCollection rootColl = DbCollection.getRootCollection();
-        File colDir = rootColl.getDirectory();
-        if(!colDir.exists()) {
-            throw new DbException("Database directory not found: " + colDir.getAbsoluteFile());
-        }
+        File colDir = GridUtils.getWorkDir(true);
         File idxFile = new File(colDir, name + IDX_SUFFIX_NAME);
         BIndexFile btree = new BIndexFile(idxFile, true);
         if(DELETE_IDX_ON_EXIT) {

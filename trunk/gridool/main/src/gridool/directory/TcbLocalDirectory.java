@@ -21,6 +21,7 @@
 package gridool.directory;
 
 import gridool.locking.LockManager;
+import gridool.util.GridUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -37,7 +38,6 @@ import org.apache.commons.logging.LogFactory;
 
 import tokyocabinet.BDB;
 import tokyocabinet.BDBCUR;
-import xbird.storage.DbCollection;
 import xbird.storage.DbException;
 import xbird.storage.index.BTreeCallback;
 import xbird.storage.index.Value;
@@ -311,11 +311,7 @@ public final class TcbLocalDirectory extends AbstractLocalDirectory {
     }
 
     private static BDB createIndex(final String name) throws DbException {
-        DbCollection rootColl = DbCollection.getRootCollection();
-        File colDir = rootColl.getDirectory();
-        if(!colDir.exists()) {
-            throw new DbException("Database directory not found: " + colDir.getAbsoluteFile());
-        }
+        File colDir = GridUtils.getWorkDir(true);
         File idxFile = new File(colDir, name + IDX_SUFFIX_NAME);
         if(DELETE_IDX_ON_EXIT) {
             if(idxFile.exists()) {

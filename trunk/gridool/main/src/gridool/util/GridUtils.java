@@ -379,9 +379,13 @@ public final class GridUtils {
         }
     }
 
-    public static File getWorkDir() {
+    public static File getWorkDir(boolean verify) {
         DbCollection rootCol = DbCollection.getRootCollection();
         File colDir = rootCol.getDirectory();
+        if(verify && !colDir.exists()) {
+            throw new IllegalStateException("Database directory not found: "
+                    + colDir.getAbsoluteFile());
+        }
         return colDir;
     }
 

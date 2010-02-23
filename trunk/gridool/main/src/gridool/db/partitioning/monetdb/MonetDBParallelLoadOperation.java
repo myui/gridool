@@ -38,7 +38,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import xbird.storage.DbCollection;
 import xbird.util.datetime.StopWatch;
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
@@ -60,7 +59,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     @Nonnull
     private/* final */String csvFileName;
     @Nonnull
-    private/* final */String createTableDDL;    
+    private/* final */String createTableDDL;
     private/* final */boolean addHiddenField;
     @Nullable
     private/* final */String copyIntoQuery;
@@ -206,12 +205,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     }
 
     private static File prepareLoadFile(final String fileName) {
-        DbCollection rootColl = DbCollection.getRootCollection();
-        File colDir = rootColl.getDirectory();
-        if(!colDir.exists()) {
-            throw new IllegalStateException("Database directory not found: "
-                    + colDir.getAbsoluteFile());
-        }
+        File colDir = GridUtils.getWorkDir(true);
         final File file = new File(colDir, fileName);
         if(!file.exists()) {
             LOG.info("Wait for FileAppend task completed: " + file.getAbsolutePath());

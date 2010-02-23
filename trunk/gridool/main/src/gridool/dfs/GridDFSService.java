@@ -23,6 +23,7 @@ package gridool.dfs;
 import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.GridService;
+import gridool.util.GridUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +33,6 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 import xbird.config.Settings;
-import xbird.storage.DbCollection;
 import xbird.util.concurrent.ExecutorFactory;
 import xbird.util.xfer.RecievedFileWriter;
 import xbird.util.xfer.TransferRequestListener;
@@ -82,8 +82,7 @@ public final class GridDFSService implements GridService {
     }
 
     private static TransferServer createTransferServer(@Nonnegative int concurrency) {
-        DbCollection rootCol = DbCollection.getRootCollection();
-        File colDir = rootCol.getDirectory();
+        File colDir = GridUtils.getWorkDir(true);
         TransferRequestListener listener = new RecievedFileWriter(colDir, true);
         return new TransferServer(concurrency, listener);
     }

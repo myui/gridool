@@ -185,7 +185,7 @@ public final class SQLTranslator {
         } else {
             final List<String> partByColumns = new ArrayList<String>(4);
             partByColumns.add(fieldName);
-            int partitionKey = catalog.getPartitioningKey(tableName);
+            int partitionKey = 0; // FIXME catalog.getPartitioningKey(tableName);
             bitset |= partitionKey;
             int lastTT;
             while((lastTT = tokenizer.nextToken()) == TT_COMMA) {
@@ -194,7 +194,7 @@ public final class SQLTranslator {
                 }
                 fieldName = tokenizer.sval;
                 partByColumns.add(fieldName);
-                partitionKey = catalog.getPartitioningKey(tableName);
+                partitionKey = 0; // FIXME catalog.getPartitioningKey(tableName);
                 bitset |= partitionKey;
             }
             if(lastTT != TT_RPAR) {
@@ -219,19 +219,6 @@ public final class SQLTranslator {
         queryBuf.append(bitset);
         queryBuf.append(") = ");
         queryBuf.append(bitset);
-    }
-
-    private static int getPartitionKey(final List<String> partByColumns) {
-        final int numColumns = partByColumns.size();
-        if(numColumns == 0) {
-            throw new IllegalArgumentException();
-        }
-        int bitset = 0;
-        final int last = numColumns - 1;
-        for(int i = 0; i < numColumns; i++) {
-            List<String> sublist = partByColumns.subList(i, numColumns);
-        }
-        return -1;
     }
 
     @Nonnull
