@@ -96,7 +96,7 @@ public final class CsvHashPartitioningJob extends
         final Collection<ForeignKey> foreignKeys;
         final int[] pkeyIndicies;
         final String[] parentTableFkIndexNames;
-        final boolean hasParentTableExportedKey;
+        final boolean hasParentTable;
         final int numForeignKeys;
         final String[] fkIdxNames;
         final int[][] fkPositions;
@@ -107,7 +107,7 @@ public final class CsvHashPartitioningJob extends
             foreignKeys = primaryForeignKeys.getSecond();
             pkeyIndicies = primaryKey.getColumnPositions(true);
             parentTableFkIndexNames = getParentTableFkIndexNames(primaryKey);
-            hasParentTableExportedKey = ops.hasParentTableExportedKey();
+            hasParentTable = (parentTableFkIndexNames != null);
             numForeignKeys = foreignKeys.size();
             fkIdxNames = getFkIndexNames(foreignKeys, numForeignKeys);
             fkPositions = getFkPositions(foreignKeys, numForeignKeys);
@@ -128,7 +128,7 @@ public final class CsvHashPartitioningJob extends
 
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new HashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
-        final Map<GridNode, MutableInt> mappedNodes = hasParentTableExportedKey ? new HashMap<GridNode, MutableInt>(numNodes)
+        final Map<GridNode, MutableInt> mappedNodes = hasParentTable ? new HashMap<GridNode, MutableInt>(numNodes)
                 : null;
         for(int i = 0; i < totalRecords; i++) {
             String line = lines[i];
@@ -141,7 +141,7 @@ public final class CsvHashPartitioningJob extends
                 String pkeysField = combineFields(fields, strBuf);
                 byte[] distkey = StringUtils.getBytes(pkeysField);
                 pkMappedNode = router.selectNode(distkey);
-                if(hasParentTableExportedKey) {
+                if(hasParentTable) {
                     // derived fragment mapping
                     for(int kk = 0; kk < numForeignKeys; kk++) {
                         String idxName = parentTableFkIndexNames[kk];
@@ -170,10 +170,13 @@ public final class CsvHashPartitioningJob extends
                     if(storedNodes == null) {
                         storedNodes = new ArrayList<GridNode>(8);
                         fkCache.put(fkeysField, storedNodes);
-                    }
-                    if(!storedNodes.contains(pkMappedNode)) {
                         storedNodes.add(pkMappedNode);
                         storeDerivedFragmentationInfo(fkeysField, mappedNodeBytes, index, fkIdxNames[jj]);
+                    } else {
+                        if(!storedNodes.contains(pkMappedNode)) {
+                            storedNodes.add(pkMappedNode);
+                            storeDerivedFragmentationInfo(fkeysField, mappedNodeBytes, index, fkIdxNames[jj]);
+                        }
                     }
                 }
             }
@@ -310,15 +313,13 @@ public final class CsvHashPartitioningJob extends
         private final String fileName;
         private final boolean isFirst;
         private final Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys;
-        private final boolean hasParentTableExportedKey;
         private final DBPartitioningJobConf jobConf;
 
-        public JobConf(@Nonnull String[] lines, @Nonnull String fileName, boolean isFirst, @Nonnull Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys, boolean hasParentTableExportedKey, @Nonnull DBPartitioningJobConf jobConf) {
+        public JobConf(@Nonnull String[] lines, @Nonnull String fileName, boolean isFirst, @Nonnull Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys, @Nonnull DBPartitioningJobConf jobConf) {
             this.lines = lines;
             this.fileName = fileName;
             this.isFirst = isFirst;
             this.primaryForeignKeys = primaryForeignKeys;
-            this.hasParentTableExportedKey = hasParentTableExportedKey;
             this.jobConf = jobConf;
         }
 
@@ -336,10 +337,6 @@ public final class CsvHashPartitioningJob extends
 
         Pair<PrimaryKey, Collection<ForeignKey>> getPrimaryForeignKeys() {
             return primaryForeignKeys;
-        }
-
-        boolean hasParentTableExportedKey() {
-            return hasParentTableExportedKey;
         }
 
         DBPartitioningJobConf getJobConf() {
