@@ -138,8 +138,8 @@ public final class CsvHashPartitioningJob extends
             {
                 CsvUtils.retrieveFields(line, pkeyIndicies, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
-                String pkeysField = combineFields(fields, strBuf);
-                byte[] distkey = StringUtils.getBytes(pkeysField);
+                String pkeysField = combineFields(fields, pkeyIndicies.length, strBuf);
+                final byte[] distkey = StringUtils.getBytes(pkeysField);
                 pkMappedNode = router.selectNode(distkey);
                 if(hasParentTable) {
                     // derived fragment mapping
@@ -162,9 +162,10 @@ public final class CsvHashPartitioningJob extends
             {// store information for derived fragment mapping
                 final byte[] mappedNodeBytes = pkMappedNode.toBytes();
                 for(int jj = 0; jj < numForeignKeys; jj++) {
-                    CsvUtils.retrieveFields(line, fkPositions[jj], fieldList, filedSeparator, quoteChar);
+                    int[] pos = fkPositions[jj];
+                    CsvUtils.retrieveFields(line, pos, fieldList, filedSeparator, quoteChar);
                     fieldList.trimToZero();
-                    String fkeysField = combineFields(fields, strBuf);
+                    String fkeysField = combineFields(fields, pos.length, strBuf);
                     LRUMap<String, List<GridNode>> fkCache = fkCaches[jj];
                     List<GridNode> storedNodes = fkCache.get(fkeysField);
                     if(storedNodes == null) {
@@ -354,10 +355,9 @@ public final class CsvHashPartitioningJob extends
         return max;
     }
 
-    private static String combineFields(@Nonnull final String[] fields, @Nonnull final StringBuilder buf) {
-        final int numFields = fields.length;
-        if(numFields == 0) {
-            throw new IllegalArgumentException();
+    private static String combineFields(@Nonnull final String[] fields, final int numFields, @Nonnull final StringBuilder buf) {
+        if(numFields < 1) {
+            throw new IllegalArgumentException("Illegal numField: " + numFields);
         }
         if(numFields == 1) {
             return fields[0];
