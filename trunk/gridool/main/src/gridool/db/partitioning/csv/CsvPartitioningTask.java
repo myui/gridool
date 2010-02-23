@@ -116,7 +116,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     protected transient String csvFileName;
     private transient boolean isFirstShuffle = true;
     private transient Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys;
-    protected transient boolean hasParentTable;
+    protected transient boolean addHiddenField;
 
     @SuppressWarnings("unchecked")
     public CsvPartitioningTask(GridJob job, DBPartitioningJobConf jobConf) {
@@ -146,7 +146,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         this.shuffleThreads = shuffleThreads;
     }
 
-    protected final ConcurrentHashMap<GridNode, MutableInt> execute() throws GridException {
+    protected ConcurrentHashMap<GridNode, MutableInt> execute() throws GridException {
         int numShuffleThreads = shuffleThreads();
         this.shuffleExecPool = (numShuffleThreads <= 0) ? new DirectExecutorService()
                 : ExecutorFactory.newBoundedWorkQueueFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
@@ -157,7 +157,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         DBAccessor dba = registry.getDbAccessor();
         String tableName = jobConf.getBaseTableName();
         this.primaryForeignKeys = GridDbUtils.getPrimaryForeignKeys(dba, tableName);
-        this.hasParentTable = GridDbUtils.hasPArentTable(primaryForeignKeys.getFirst());
+        this.addHiddenField = GridDbUtils.getNumberOfParentTables(primaryForeignKeys.getFirst()) > 1;
 
         // parse and shuffle a CSV file
         final CvsReader reader = getCsvReader(jobConf);

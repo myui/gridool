@@ -303,7 +303,6 @@ public final class CsvHashPartitioningJob extends
             cnt.increment();
         }
         rowsBuf.write(line, 0, lineSize);
-        rowsBuf.write(filedSeparator);
         rowsBuf.write('\n'); // TODO FIXME support other record separator 
     }
 
@@ -339,7 +338,7 @@ public final class CsvHashPartitioningJob extends
                 char c = str.charAt(i);
                 rowsBuf.write(c);
             }
-            rowsBuf.write(filedSeparator);
+            rowsBuf.write(filedSeparator); // REVIEWME this is monetdb workaround
             rowsBuf.write('\n'); // TODO FIXME support other record separator 
         }
     }

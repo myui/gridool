@@ -191,12 +191,21 @@ public final class GridDbUtils {
         }
     }
 
-    public static boolean hasPArentTable(@Nonnull final PrimaryKey childTablePk) {
+    public static boolean hasParentTable(@Nonnull final PrimaryKey childTablePk) {
         List<ForeignKey> fkeys = childTablePk.getExportedKeys();
         if(fkeys == null || fkeys.isEmpty()) {
             return false;
         }
         return true;
+    }
+
+    public static int getNumberOfParentTables(final PrimaryKey childTablePkey) {
+        final List<ForeignKey> parentFkeys = childTablePkey.getExportedKeys();
+        if(parentFkeys == null) {
+            return 0;
+        }
+        final int numParents = parentFkeys.size();
+        return numParents;
     }
 
     public static boolean hasParentTableExportedKey(@Nonnull final DBAccessor dba, @Nonnull final PrimaryKey childTablePk)
