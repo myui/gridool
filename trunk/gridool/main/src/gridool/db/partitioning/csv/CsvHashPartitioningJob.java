@@ -145,14 +145,18 @@ public final class CsvHashPartitioningJob extends
                     // derived fragment mapping
                     if(numForeignKeys == 1) {
                         final List<GridNode> nodelist = mapBasedOnDrivedFragmentation(distkey, index, parentTableFkIndexNames[0]);
-                        for(GridNode node: nodelist) {
+                        if(nodelist.isEmpty()) {
+                            throw new IllegalStateException("Could not map records by derived fragmentation: '"
+                                    + jobConf.getTableName() + '\'');
+                        }
+                        for(GridNode node : nodelist) {
                             mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, node, filedSeparator);
                         }
                     } else {
                         assert (numForeignKeys != 0);
                         for(int kk = 0; kk < numForeignKeys; kk++) {
                             String idxName = parentTableFkIndexNames[kk];
-                            int partitionNo = kk + 1;   // TODO
+                            int partitionNo = kk + 1; // TODO
                             mapBasedOnDrivedFragmentation(distkey, partitionNo, mappedNodes, index, idxName);
                         }
                         if(mappedNodes.isEmpty()) {
@@ -230,7 +234,7 @@ public final class CsvHashPartitioningJob extends
         final BTreeCallback handler = new BTreeCallback() {
             public boolean indexInfo(Value key, byte[] value) {
                 GridNode node = GridNodeInfo.fromBytes(value);
-                if(mappedNodes.contains(node)) {
+                if(!mappedNodes.contains(node)) {
                     mappedNodes.add(node);
                 }
                 return true;
