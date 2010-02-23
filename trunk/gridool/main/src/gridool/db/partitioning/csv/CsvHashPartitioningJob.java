@@ -96,6 +96,7 @@ public final class CsvHashPartitioningJob extends
         final Collection<ForeignKey> foreignKeys;
         final int[] pkeyIndicies;
         final String[] parentTableFkIndexNames;
+        final int numParentForeignKeys;
         final boolean hasParentTable;
         final int numForeignKeys;
         final String[] fkIdxNames;
@@ -108,6 +109,7 @@ public final class CsvHashPartitioningJob extends
             pkeyIndicies = primaryKey.getColumnPositions(true);
             parentTableFkIndexNames = getParentTableFkIndexNames(primaryKey);
             hasParentTable = (parentTableFkIndexNames != null);
+            numParentForeignKeys = hasParentTable ? parentTableFkIndexNames.length : 0;
             numForeignKeys = foreignKeys.size();
             fkIdxNames = getFkIndexNames(foreignKeys, numForeignKeys);
             fkPositions = getFkPositions(foreignKeys, numForeignKeys);
@@ -143,7 +145,7 @@ public final class CsvHashPartitioningJob extends
                 pkMappedNode = router.selectNode(distkey);
                 if(hasParentTable) {
                     // derived fragment mapping
-                    if(numForeignKeys == 1) {
+                    if(numParentForeignKeys == 1) {
                         final List<GridNode> nodelist = mapBasedOnDrivedFragmentation(distkey, index, parentTableFkIndexNames[0]);
                         if(nodelist.isEmpty()) {
                             throw new IllegalStateException("Could not map records by derived fragmentation: '"
@@ -153,8 +155,8 @@ public final class CsvHashPartitioningJob extends
                             mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, node, filedSeparator);
                         }
                     } else {
-                        assert (numForeignKeys != 0);
-                        for(int kk = 0; kk < numForeignKeys; kk++) {
+                        assert (numParentForeignKeys != 0);
+                        for(int kk = 0; kk < numParentForeignKeys; kk++) {
                             String idxName = parentTableFkIndexNames[kk];
                             int partitionNo = kk + 1; // TODO
                             mapBasedOnDrivedFragmentation(distkey, partitionNo, mappedNodes, index, idxName);
