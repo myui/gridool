@@ -326,12 +326,18 @@ public final class DistributionCatalog {
                     }
                 };
                 final Integer res;
-                final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, true);
+                final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, false); // REVIEWME why select returns 0?
                 try {
                     JDBCUtils.update(conn, insertQuery, tableName);
                     res = (Integer) JDBCUtils.query(conn, selectQuery, tableName, rsh);
+                    conn.commit();
                 } catch (SQLException e) {
                     LOG.error(e);
+                    try {
+                        conn.rollback();
+                    } catch (SQLException rbe) {
+                        LOG.warn("rollback failed", rbe);
+                    }
                     throw new GridException(e);
                 } finally {
                     JDBCUtils.closeQuietly(conn);
