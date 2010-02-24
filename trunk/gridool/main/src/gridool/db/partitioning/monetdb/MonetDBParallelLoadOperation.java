@@ -196,10 +196,10 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         LockManager lockMgr = registry.getLockManager();
         String filepath = loadFile.getAbsolutePath();
         ReadWriteLock rwlock = lockMgr.obtainLock(filepath);
-        final Lock rlock = rwlock.readLock();
+        final Lock lock = rwlock.writeLock(); // REVIEWME bulkload should be exclusively locked?
         final int ret;
         try {
-            rlock.lock();
+            lock.lock();
             ret = JDBCUtils.update(conn, query);
             conn.commit();
         } catch (SQLException e) {
@@ -207,7 +207,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             conn.rollback();
             throw e;
         } finally {
-            rlock.unlock();
+            lock.unlock();
             if(!loadFile.delete()) {
                 LOG.warn("Could not remove a tempolary file: " + loadFile.getAbsolutePath());
             }
