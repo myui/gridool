@@ -321,26 +321,27 @@ public final class DistributionCatalog {
                         + "\" WHERE tablename = ?";
                 final ResultSetHandler rsh = new ResultSetHandler() {
                     public Integer handle(ResultSet rs) throws SQLException {
+                        if(!rs.next()) {
+                            return null;
+                        }
                         int key = rs.getInt(1);
+                        assert (!rs.next());
                         return key;
                     }
                 };
                 final Integer res;
-                final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, false); // REVIEWME why select returns 0?
+                final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, true);
                 try {
                     JDBCUtils.update(conn, insertQuery, tableName);
                     res = (Integer) JDBCUtils.query(conn, selectQuery, tableName, rsh);
-                    conn.commit();
                 } catch (SQLException e) {
                     LOG.error(e);
-                    try {
-                        conn.rollback();
-                    } catch (SQLException rbe) {
-                        LOG.warn("rollback failed", rbe);
-                    }
                     throw new GridException(e);
                 } finally {
                     JDBCUtils.closeQuietly(conn);
+                }
+                if(res == null) {
+                    throw new IllegalStateException();
                 }
                 tableIdMap.put(tableName, res);
                 tableId = res.intValue();
