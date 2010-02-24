@@ -26,14 +26,19 @@ import gridool.db.sql.ParallelSQLExecJob;
 import gridool.db.sql.ParallelSQLExecJob.OutputMethod;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.rmi.RemoteException;
 
 import xbird.util.cmdline.CommandBase;
 import xbird.util.cmdline.CommandException;
+import xbird.util.cmdline.Option.BooleanOption;
 import xbird.util.cmdline.Option.IntOption;
 import xbird.util.cmdline.Option.StringOption;
 import xbird.util.datetime.StopWatch;
 import xbird.util.io.FileUtils;
+import xbird.util.io.IOUtils;
 
 /**
  * -mapquery FILENAME -reducequery FILENAME -outputTable NAME [-asview true] [-waitSPE SECONDS] execute sql
@@ -50,6 +55,7 @@ public final class ParallelSQLExecCommand extends CommandBase {
         addOption(new StringOption("outputTable", null, false));
         addOption(new StringOption("outputMethod", "csvfile", false));
         addOption(new IntOption("waitSPE", -1, false));
+        addOption(new BooleanOption("showOutput", false, false));
     }
 
     public boolean match(String[] args) {
@@ -91,14 +97,28 @@ public final class ParallelSQLExecCommand extends CommandBase {
 
         final StopWatch sw = new StopWatch();
         final Grid grid = new GridClient();
-        final String actualOuputTable;
+        final String outputName;
         try {
-            actualOuputTable = grid.execute(ParallelSQLExecJob.class, jobConf);
+            outputName = grid.execute(ParallelSQLExecJob.class, jobConf);
         } catch (RemoteException e) {
             throw new CommandException(e);
         }
-        System.out.println("ParallelSQLExecJob [outputName=" + actualOuputTable + ", outputType="
-                + outputMethod + "] finished in " + sw);
+        System.out.println("ParallelSQLExecJob [outputName=" + outputName + ", outputType="
+                + outputMethod + "] finished in " + sw + '\n');
+
+        Boolean showOutput = getOption("showOutput");
+        if(showOutput.booleanValue()) {
+            if(outputMethod == OutputMethod.csvFile) {
+                try {
+                    IOUtils.copy(new FileInputStream(outputName), System.out);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                System.out.println();
+            }
+        }        
         return true;
     }
 
