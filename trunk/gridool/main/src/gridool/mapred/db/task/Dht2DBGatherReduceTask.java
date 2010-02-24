@@ -20,6 +20,7 @@
  */
 package gridool.mapred.db.task;
 
+import gridool.GridException;
 import gridool.GridJob;
 import gridool.db.DBInsertOperation;
 import gridool.db.record.DBRecord;
@@ -86,8 +87,12 @@ public abstract class Dht2DBGatherReduceTask<IN_TYPE> extends
                 ops.setAuth(getUserName(), getPassword());
                 try {
                     ops.execute();
-                } catch (SQLException e) {
-                    LogFactory.getLog(getClass()).error(e);
+                } catch (SQLException sqle) {
+                    LogFactory.getLog(getClass()).error(sqle);
+                } catch (GridException ge) {
+                    LogFactory.getLog(getClass()).error(ge);
+                } catch (Throwable te) {
+                    LogFactory.getLog(getClass()).error(te);
                 }
             }
         });
