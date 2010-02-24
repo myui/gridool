@@ -56,6 +56,7 @@ import xbird.util.collections.FixedArrayList;
 import xbird.util.collections.LRUMap;
 import xbird.util.csv.CsvUtils;
 import xbird.util.io.FastByteArrayOutputStream;
+import xbird.util.primitive.MutableBoolean;
 import xbird.util.primitive.MutableInt;
 import xbird.util.primitive.Primitives;
 import xbird.util.string.StringUtils;
@@ -150,8 +151,8 @@ public final class CsvHashPartitioningJob extends
                 fieldList.trimToZero();
                 String pkeysField = combineFields(fields, pkeyIndicies.length, strBuf);
                 final byte[] distkey = StringUtils.getBytes(pkeysField);
+                // primary fragment mapping
                 GridNode pkMappedNode = router.selectNode(distkey);
-                // primary fragment mapping                
                 mapPrimaryFragment(pkMappedNode, mappedNodes, tablePartitionNo);
                 if(hasParentTable) {
                     // derived fragment mapping
@@ -230,8 +231,10 @@ public final class CsvHashPartitioningJob extends
 
     private static void mapDerivedFragment(final byte[] distkey, final Map<GridNode, MutableInt> mappedNodes, final ILocalDirectory index, final String parentTableFkIndex)
             throws GridException {
+        final MutableBoolean found = new MutableBoolean(false);
         final BTreeCallback handler = new BTreeCallback() {
             public boolean indexInfo(Value key, byte[] value) {
+                found.setBoolean(true);
                 int partitionNo = deserializePartitionNo(value);
                 GridNode node = deserializeGridNode(value);
 
@@ -257,6 +260,10 @@ public final class CsvHashPartitioningJob extends
             index.exactSearch(parentTableFkIndex, distkey, handler);
         } catch (DbException e) {
             throw new GridException(e);
+        }
+        if(!found.getBoolean()) {
+            throw new GridException("Derived node is not resolved for distkey: "
+                    + StringUtils.toString(distkey));
         }
     }
 
