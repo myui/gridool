@@ -64,10 +64,12 @@ public final class DistributionCatalog {
     public static final String hiddenFieldName;
     private static final String distributionTableName;
     private static final String partitionkeyTableName;
+    private static final String tableIdSQLDataType;
     static {
         hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
         distributionTableName = Settings.get("gridool.db.partitioning.distribution_tbl", "_distribution");
         partitionkeyTableName = Settings.get("gridool.db.partitioning.partitionkey_tbl", "_partitionkey");
+        tableIdSQLDataType = Settings.get("gridool.db.partitioning.tableid_sqldatatype", "SMALLINT"); // 16 bit signed integer
     }
 
     @Nonnull
@@ -398,7 +400,7 @@ public final class DistributionCatalog {
         if(tableId < 1) {
             throw new IllegalArgumentException("Illegal tableId: " + tableId);
         }
-        return 1 << (tableId - 1);
+        return 1 << (tableId - 1); // REVIEWME
     }
 
     private static final class NodeWithState {
@@ -521,9 +523,10 @@ public final class DistributionCatalog {
     private static boolean prepareTables(@Nonnull final Connection conn, final String distributionTableName, final boolean autoCommit) {
         final String ddl = "CREATE TABLE \""
                 + distributionTableName
-                + "\"(distkey varchar(50) NOT NULL, node varchar(50) NOT NULL, masternode varchar(50), state TINYINT NOT NULL);\n"
+                + "\"(distkey varchar(50) NOT NULL, node varchar(50) NOT NULL, masternode varchar(50), state SMALLINT NOT NULL);\n"
                 + "CREATE TABLE \"" + partitionkeyTableName
-                + "\"(tablename varchar(30) PRIMARY KEY, id TINYINT auto_increment);";
+                + "\"(tablename varchar(30) PRIMARY KEY, id " + tableIdSQLDataType
+                + " auto_increment);";
         try {
             JDBCUtils.update(conn, ddl);
             if(!autoCommit) {
