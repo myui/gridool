@@ -45,8 +45,8 @@ import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
@@ -103,7 +103,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
 
     // ------------------------
 
-    protected transient final ConcurrentHashMap<GridNode, MutableInt> assignMap;
+    protected transient final HashMap<GridNode, MutableInt> assignMap;
 
     // ------------------------
     // working resources
@@ -123,7 +123,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     public CsvPartitioningTask(GridJob job, DBPartitioningJobConf jobConf) {
         super(job, false);
         this.jobConf = jobConf;
-        this.assignMap = new ConcurrentHashMap<GridNode, MutableInt>(64);
+        this.assignMap = new HashMap<GridNode, MutableInt>(64);
     }
 
     @Override
@@ -147,7 +147,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         this.shuffleThreads = shuffleThreads;
     }
 
-    protected ConcurrentHashMap<GridNode, MutableInt> execute() throws GridException {
+    protected HashMap<GridNode, MutableInt> execute() throws GridException {
         int numShuffleThreads = shuffleThreads();
         this.shuffleExecPool = (numShuffleThreads <= 0) ? new DirectExecutorService()
                 : ExecutorFactory.newBoundedWorkQueueFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
@@ -236,13 +236,17 @@ public class CsvPartitioningTask extends GridTaskAdapter {
                     LOG.error(ee.getMessage(), ee);
                     throw new IllegalStateException(ee);
                 }
-                final ConcurrentHashMap<GridNode, MutableInt> recMap = assignMap;
-                for(Map.Entry<GridNode, MutableInt> e : map.entrySet()) {
-                    GridNode node = e.getKey();
-                    MutableInt assigned = e.getValue();
-                    final MutableInt prev = recMap.putIfAbsent(node, assigned);
-                    if(prev != null) {
-                        prev.add(assigned.intValue());
+                synchronized(assignMap) {
+                    final HashMap<GridNode, MutableInt> recMap = assignMap;
+                    for(Map.Entry<GridNode, MutableInt> e : map.entrySet()) {
+                        GridNode node = e.getKey();
+                        MutableInt assigned = e.getValue();
+                        final MutableInt prev = recMap.get(node);
+                        if(prev == null) {
+                            recMap.put(node, assigned);
+                        } else {
+                            prev.add(assigned.intValue());
+                        }
                     }
                 }
             }

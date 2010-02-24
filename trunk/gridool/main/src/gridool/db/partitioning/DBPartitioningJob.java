@@ -29,9 +29,9 @@ import gridool.construct.GridJobBase;
 import gridool.db.partitioning.csv.CsvPartitioningTask;
 import gridool.routing.GridTaskRouter;
 
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -66,8 +66,9 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
         return map;
     }
 
+    @Override
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
-        final ConcurrentHashMap<GridNode, MutableInt> processed = result.getResult();
+        final HashMap<GridNode, MutableInt> processed = result.getResult();
         if(processed == null || processed.isEmpty()) {
             Exception err = result.getException();
             if(err == null) {
