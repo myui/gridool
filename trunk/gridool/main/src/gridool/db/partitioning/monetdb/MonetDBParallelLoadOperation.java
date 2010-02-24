@@ -146,7 +146,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
                 numInserted = invokeCopyInto(conn, copyIntoQuery, csvFileName, registry);
                 if(numInserted != expectedNumRecords) {
                     String errmsg = "Expected records (" + expectedNumRecords
-                            + ") != Actual records (" + numInserted + ')';
+                            + ") != Actual records (" + numInserted + "): \n" + copyIntoQuery;
                     LOG.error(errmsg);
                     throw new GridException(errmsg);
                 }
