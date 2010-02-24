@@ -184,12 +184,11 @@ public final class CsvHashPartitioningJob extends
                             fkCache.put(fkeysField, storedNodes);
                         } else if(storedNodes.contains(node)) {// Note that node has unique hiddenValue to persist
                             continue;
-                        } else {
-                            storedNodes.add(node);
-                            int hiddenValue = e.getValue().intValue();
-                            byte[] value = serialize(node, hiddenValue);
-                            storeDerivedFragmentationInfo(fkeysField, value, index, fkIdxNames[jj]);
                         }
+                        storedNodes.add(node);
+                        int hiddenValue = e.getValue().intValue();
+                        byte[] value = serialize(node, hiddenValue);
+                        storeDerivedFragmentationInfo(fkeysField, value, index, fkIdxNames[jj]);
                     }
                 }
             }
