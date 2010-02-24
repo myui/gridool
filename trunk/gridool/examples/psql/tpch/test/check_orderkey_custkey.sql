@@ -1,5 +1,5 @@
 select 
-    count(1) as C1
+    count(1)
 from
     lineitem,
     orders,

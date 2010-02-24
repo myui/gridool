@@ -171,10 +171,12 @@ public final class CsvHashPartitioningJob extends
             {
                 // store information for derived fragment mapping
                 for(int jj = 0; jj < numForeignKeys; jj++) {
-                    int[] pos = fkPositions[jj];
+                    final String fkIdxName = fkIdxNames[jj];
+                    final int[] pos = fkPositions[jj];
                     CsvUtils.retrieveFields(line, pos, fieldList, filedSeparator, quoteChar);
                     fieldList.trimToZero();
-                    String fkeysField = combineFields(fields, pos.length, strBuf);
+                    final String fkeysField = combineFields(fields, pos.length, strBuf);
+                    final byte[] distkey = StringUtils.getBytes(fkeysField);
                     LRUMap<String, List<NodeWithPartitionNo>> fkCache = fkCaches[jj];
                     List<NodeWithPartitionNo> storedNodeInfo = fkCache.get(fkeysField);
                     for(Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
@@ -189,7 +191,7 @@ public final class CsvHashPartitioningJob extends
                         }
                         storedNodeInfo.add(nodeInfo);
                         byte[] value = serialize(node, hiddenValue);
-                        storeDerivedFragmentationInfo(fkeysField, value, index, fkIdxNames[jj]);
+                        storeDerivedFragmentationInfo(distkey, value, index, fkIdxName);
                     }
                 }
             }
@@ -298,9 +300,8 @@ public final class CsvHashPartitioningJob extends
         }
     }
 
-    private static void storeDerivedFragmentationInfo(final String fkeysField, final byte[] nodeWithPartitionNo, final ILocalDirectory index, final String idxName)
+    private static void storeDerivedFragmentationInfo(final byte[] distkey, final byte[] nodeWithPartitionNo, final ILocalDirectory index, final String idxName)
             throws GridException {
-        final byte[] distkey = StringUtils.getBytes(fkeysField);
         try {
             index.addMapping(idxName, distkey, nodeWithPartitionNo);
         } catch (DbException e) {

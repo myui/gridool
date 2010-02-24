@@ -1,21 +1,24 @@
+-- [SF=0.01] 2333 is expected result
 select 
     count(1)
 from
-    part,
-    partsupp,
-    supplier,
-    nation,
     lineitem,
+    partsupp,
+    part,
+    supplier,
+    orders,
     customer,
-    region,
-    orders
+    nation,
+    region
 where
-    p_partkey = ps_partkey
-    and ps_partkey = l_partkey
-    and ps_suppkey = s_suppkey
-    and ps_suppkey = l_suppkey
-    and s_nationkey = n_nationkey
-    and n_nationkey = c_nationkey
+    l_partkey = ps_partkey
+    and l_suppkey = ps_suppkey
+    and l_partkey = p_partkey
+    and l_suppkey = s_suppkey    
     and l_orderkey = o_orderkey
-    and c_custkey = o_custkey
-    and r_regionkey = n_regionkey
+    and ps_partkey = p_partkey
+    and ps_suppkey = s_suppkey
+    and o_custkey = c_custkey
+    and s_nationkey = n_nationkey
+    and c_nationkey = n_nationkey
+    and n_regionkey = r_regionkey
