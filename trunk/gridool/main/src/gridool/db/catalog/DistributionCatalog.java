@@ -340,8 +340,8 @@ public final class DistributionCatalog {
                 } finally {
                     JDBCUtils.closeQuietly(conn);
                 }
-                if(res == null) {
-                    throw new IllegalStateException();
+                if(res == null || res < 1) {
+                    throw new IllegalStateException("Illegal id for table: " + res);
                 }
                 tableIdMap.put(tableName, res);
                 tableId = res.intValue();
@@ -377,10 +377,10 @@ public final class DistributionCatalog {
     }
 
     public static int getTablePartitionNo(final int tableId) {
-        if(tableId < 0) {
+        if(tableId < 1) {
             throw new IllegalArgumentException("Illegal tableId: " + tableId);
         }
-        return 1 << tableId;
+        return 1 << (tableId - 1);
     }
 
     private static final class NodeWithState {
