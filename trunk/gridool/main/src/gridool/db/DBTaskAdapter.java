@@ -46,7 +46,6 @@ public final class DBTaskAdapter extends GridTaskAdapter {
     @Nonnull
     private final DBOperation opr;
 
-    private boolean injectResources = false;
     @GridRegistryResource
     private transient GridResourceRegistry registry;
 
@@ -61,7 +60,7 @@ public final class DBTaskAdapter extends GridTaskAdapter {
 
     @Override
     public boolean injectResources() {
-        return injectResources;
+        return true;    // TODO REVIEWME
     }
 
     @Override
@@ -72,18 +71,15 @@ public final class DBTaskAdapter extends GridTaskAdapter {
     @Override
     public void setTransferToReplica(GridNode masterNode) {
         opr.setTransferToReplica(masterNode);
-        this.injectResources = true;
     }
 
     protected Serializable execute() throws GridException {
-        if(injectResources) {
-            assert (registry != null);
-            opr.setResourceRegistry(registry);
-        }
+        assert (registry != null);
+        opr.setResourceRegistry(registry);
         try {
             return opr.execute();
         } catch (SQLException e) {
-            throw new GridException(e.getMessage());
+            throw new GridException(e);
         }
     }
 

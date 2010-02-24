@@ -56,11 +56,12 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     @Nonnull
     private/* final */String tableName;
+
+    private/* final */int tableId;
     @Nonnull
     private/* final */String csvFileName;
     @Nonnull
     private/* final */String createTableDDL;
-    private/* final */boolean addHiddenField;
     @Nullable
     private/* final */String copyIntoQuery;
     @Nullable
@@ -68,12 +69,12 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     public MonetDBParallelLoadOperation() {}
 
-    public MonetDBParallelLoadOperation(@Nonnull String connectUrl, @Nonnull String tableName, @Nonnull String csvFileName, @Nonnull String createTableDDL, boolean addHiddenField, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
+    public MonetDBParallelLoadOperation(@Nonnull String connectUrl, @Nonnull String tableName, int tableId, @Nonnull String csvFileName, @Nonnull String createTableDDL, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
         super(driverClassName, connectUrl);
         this.tableName = tableName;
+        this.tableId = tableId;
         this.csvFileName = csvFileName;
         this.createTableDDL = createTableDDL;
-        this.addHiddenField = addHiddenField;
         this.copyIntoQuery = copyIntoQuery;
         this.alterTableDDL = alterTableDDL;
     }
@@ -81,9 +82,9 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     public MonetDBParallelLoadOperation(@Nonnull MonetDBParallelLoadOperation ops, @Nullable String copyIntoQuery) {
         super(driverClassName, ops.connectUrl);
         this.tableName = ops.tableName;
+        this.tableId = ops.tableId;
         this.csvFileName = ops.csvFileName;
         this.createTableDDL = ops.createTableDDL;
-        this.addHiddenField = ops.addHiddenField;
         this.copyIntoQuery = copyIntoQuery;
         this.alterTableDDL = ops.alterTableDDL;
         this.userName = ops.userName;
@@ -92,6 +93,10 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     public String getTableName() {
         return tableName;
+    }
+
+    public int getTableId() {
+        return tableId;
     }
 
     public String getCsvFileName() {
@@ -119,12 +124,12 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             conn = getConnection();
         } catch (ClassNotFoundException e) {
             LOG.error(e);
-            throw new SQLException(e.getMessage());
+            throw new SQLException(e);
         }
         int numInserted = 0;
         try {
             // #1 create table
-            prepareTable(conn, createTableDDL, tableName, addHiddenField);
+            prepareTable(conn, createTableDDL, tableName);
             // #2 invoke COPY INTO
             final StopWatch sw = new StopWatch();
             if(copyIntoQuery != null) {
@@ -140,20 +145,20 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
                         + "': " + sw.toString());
             }
         } finally {
-            try {
-                conn.close();
-            } catch (SQLException e) {
-                LOG.debug(e);
-            }
+            JDBCUtils.closeQuietly(conn);
         }
+
+        // # 4 register table id
+        DistributionCatalog catalog = registry.getDistributionCatalog();
+        catalog.registerTableId(tableName, tableId);
+
         return numInserted;
     }
 
-    private static void prepareTable(final Connection conn, final String createTableDDL, final String tableName, final boolean addHiddenField)
+    private static void prepareTable(final Connection conn, final String createTableDDL, final String tableName)
             throws SQLException {
-        final String sql = addHiddenField ? (createTableDDL + "; ALTER TABLE \"" + tableName
-                + "\" ADD \"" + DistributionCatalog.hiddenFieldName + "\" TINYINT;")
-                : createTableDDL;
+        final String sql = createTableDDL + "; ALTER TABLE \"" + tableName + "\" ADD \""
+                + DistributionCatalog.hiddenFieldName + "\" TINYINT;";
         try {
             JDBCUtils.update(conn, sql);
             conn.commit();
@@ -235,9 +240,9 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
         this.tableName = IOUtils.readString(in);
+        this.tableId = in.readInt();
         this.csvFileName = IOUtils.readString(in);
         this.createTableDDL = IOUtils.readString(in);
-        this.addHiddenField = in.readBoolean();
         this.copyIntoQuery = IOUtils.readString(in);
         this.alterTableDDL = IOUtils.readString(in);
     }
@@ -246,6 +251,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
         IOUtils.writeString(tableName, out);
+        out.writeInt(tableId);
         GridNode masterNode = getMasterNode();
         if(masterNode == null) {
             IOUtils.writeString(csvFileName, out);
@@ -254,7 +260,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             IOUtils.writeString(altered, out);
         }
         IOUtils.writeString(createTableDDL, out);
-        out.writeBoolean(addHiddenField);
         IOUtils.writeString(copyIntoQuery, out);
         IOUtils.writeString(alterTableDDL, out);
     }

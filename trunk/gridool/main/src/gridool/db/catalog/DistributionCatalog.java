@@ -62,10 +62,12 @@ public final class DistributionCatalog {
     public static final String defaultDistributionKey = "";
     public static final String DummyFieldNameForPrimaryKey = "";
     public static final String hiddenFieldName;
-    public static final String distributionTableName;
+    private static final String distributionTableName;
+    private static final String partitionkeyTableName;
     static {
         hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
         distributionTableName = Settings.get("gridool.db.partitioning.distribution_tbl", "_distribution");
+        partitionkeyTableName = Settings.get("gridool.db.partitioning.partitionkey_tbl", "_partitionkey");
     }
 
     @Nonnull
@@ -77,6 +79,9 @@ public final class DistributionCatalog {
     @GuardedBy("lock")
     private final Map<String, NodeWithState> nodeStateMap;
 
+    @GuardedBy("partitionKeyMap")
+    private final Map<String, Integer> tableIdMap;
+
     public DistributionCatalog(@CheckForNull DBAccessor dbAccessor) {
         if(dbAccessor == null) {
             throw new IllegalArgumentException();
@@ -84,6 +89,7 @@ public final class DistributionCatalog {
         this.dbAccessor = dbAccessor;
         this.distributionMap = new HashMap<String, Map<NodeWithState, List<NodeWithState>>>(12);
         this.nodeStateMap = new HashMap<String, NodeWithState>(64);
+        this.tableIdMap = new HashMap<String, Integer>(12);
     }
 
     public void start() throws GridException {
@@ -91,6 +97,7 @@ public final class DistributionCatalog {
         try {
             if(!prepareTables(conn, distributionTableName, true)) {
                 inquireDistributionTable(conn);
+                inquirePartitionKeyTable(conn);
             }
         } catch (SQLException e) {
             LOG.fatal("Failed to setup DistributionCatalog", e);
@@ -132,6 +139,22 @@ public final class DistributionCatalog {
                         }
                         slaves.add(nodeWS);
                     }
+                }
+                return null;
+            }
+        };
+        JDBCUtils.query(conn, sql, rsh);
+    }
+
+    private void inquirePartitionKeyTable(final Connection conn) throws SQLException {
+        final String sql = "SELECT tablename, id FROM \"" + partitionkeyTableName + '"';
+        final ResultSetHandler rsh = new ResultSetHandler() {
+            public Object handle(ResultSet rs) throws SQLException {
+                while(rs.next()) {
+                    String tableName = rs.getString(1);
+                    int partitionNo = rs.getInt(2);
+                    assert (tableName != null);
+                    tableIdMap.put(tableName, partitionNo);
                 }
                 return null;
             }
@@ -287,6 +310,72 @@ public final class DistributionCatalog {
         return prevState;
     }
 
+    public int getTableId(@Nonnull final String tableName) throws GridException {
+        final int tableId;
+        synchronized(tableIdMap) {
+            final Integer cachedTableId = tableIdMap.get(tableName);
+            if(cachedTableId == null) {
+                final String insertQuery = "INSERT INTO \"" + partitionkeyTableName
+                        + "\"(tablename) VALUES(?)";
+                final String selectQUery = "SELECT id FROM \"" + partitionkeyTableName
+                        + "\" WHERE tablename = ?";
+                final ResultSetHandler rsh = new ResultSetHandler() {
+                    public Integer handle(ResultSet rs) throws SQLException {
+                        Integer key = rs.getInt(1);
+                        return key;
+                    }
+                };
+                final Integer res;
+                final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, true);
+                try {
+                    JDBCUtils.update(conn, insertQuery, tableName);
+                    res = (Integer) JDBCUtils.query(conn, selectQUery, tableName, rsh);
+                } catch (SQLException e) {
+                    LOG.error(e);
+                    throw new GridException(e);
+                } finally {
+                    JDBCUtils.closeQuietly(conn);
+                }
+                tableIdMap.put(tableName, res);
+                tableId = res.intValue();
+            } else {
+                tableId = cachedTableId.intValue();
+            }
+        }
+        if(tableId < 1) {
+            throw new IllegalStateException("Illegal tableId is found: " + tableId);
+        }
+        return tableId;
+    }
+
+    public void registerTableId(@Nonnull final String tableName, final int tableId)
+            throws SQLException {
+        final Integer tableIdObj = tableId;
+        synchronized(tableIdMap) {
+            if(tableIdMap.put(tableName, tableIdObj) == null) {
+                final String insertQuery = "INSERT INTO \"" + partitionkeyTableName
+                        + "\" VALUES(?, ?)";
+                final Connection conn = dbAccessor.getPrimaryDbConnection();
+                try {
+                    JDBCUtils.update(conn, insertQuery, new Object[] { tableName, tableIdObj });
+                } catch (SQLException e) {
+                    String errmsg = "failed to execute a query: " + insertQuery;
+                    LOG.error(errmsg, e);
+                    throw e;
+                } finally {
+                    JDBCUtils.closeQuietly(conn);
+                }
+            }
+        }
+    }
+
+    public static int getTablePartitionNo(final int tableId) {
+        if(tableId < 1) {
+            throw new IllegalArgumentException("Illegal tableId: " + tableId);
+        }
+        return 1 << (tableId - 1);
+    }
+
     private static final class NodeWithState {
 
         @Nonnull
@@ -407,7 +496,9 @@ public final class DistributionCatalog {
     private static boolean prepareTables(@Nonnull final Connection conn, final String distributionTableName, final boolean autoCommit) {
         final String ddl = "CREATE TABLE \""
                 + distributionTableName
-                + "\"(distkey varchar(50) NOT NULL, node varchar(50) NOT NULL, masternode varchar(50), state TINYINT NOT NULL)";
+                + "\"(distkey varchar(50) NOT NULL, node varchar(50) NOT NULL, masternode varchar(50), state TINYINT NOT NULL);\n"
+                + "CREATE TABLE \"" + partitionkeyTableName
+                + "\"(tablename varchar(30) PRIMARY KEY, id TINYINT auto_increment);";
         try {
             JDBCUtils.update(conn, ddl);
             if(!autoCommit) {

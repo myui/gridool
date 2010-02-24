@@ -63,7 +63,7 @@ public abstract class DBOperation implements Externalizable {
     private boolean transferredForReplica = false;
 
     @Nullable
-    private transient GridResourceRegistry registry;
+    protected transient GridResourceRegistry registry;
 
     public DBOperation() {}// Externalizable
 

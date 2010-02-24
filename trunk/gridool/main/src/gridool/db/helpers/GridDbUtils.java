@@ -199,6 +199,7 @@ public final class GridDbUtils {
         return true;
     }
 
+    @Deprecated
     public static int getNumberOfParentTables(final PrimaryKey childTablePkey) {
         final List<ForeignKey> parentFkeys = childTablePkey.getExportedKeys();
         if(parentFkeys == null) {

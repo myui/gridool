@@ -29,6 +29,7 @@ import gridool.GridResourceRegistry;
 import gridool.annotation.GridKernelResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridTaskAdapter;
+import gridool.db.catalog.DistributionCatalog;
 import gridool.db.helpers.DBAccessor;
 import gridool.db.helpers.ForeignKey;
 import gridool.db.helpers.GridDbUtils;
@@ -116,7 +117,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     protected transient String csvFileName;
     private transient boolean isFirstShuffle = true;
     private transient Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys;
-    protected transient boolean addHiddenField;
+    protected transient int tableId;
 
     @SuppressWarnings("unchecked")
     public CsvPartitioningTask(GridJob job, DBPartitioningJobConf jobConf) {
@@ -157,7 +158,8 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         DBAccessor dba = registry.getDbAccessor();
         String tableName = jobConf.getBaseTableName();
         this.primaryForeignKeys = GridDbUtils.getPrimaryForeignKeys(dba, tableName);
-        this.addHiddenField = GridDbUtils.getNumberOfParentTables(primaryForeignKeys.getFirst()) > 1;
+        DistributionCatalog catalog = registry.getDistributionCatalog();
+        this.tableId = catalog.getTableId(tableName);
 
         // parse and shuffle a CSV file
         final CvsReader reader = getCsvReader(jobConf);
