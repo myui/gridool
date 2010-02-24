@@ -85,7 +85,7 @@ public final class MonetDBInvokeParallelLoadJob extends
             GridNode node = e.getKey();
             int numRecords = e.getValue().intValue();
             String copyIntoQuery = (numRecords == 0) ? null : ops.getCopyIntoQuery(numRecords);
-            MonetDBParallelLoadOperation shrinkedOps = new MonetDBParallelLoadOperation(ops, copyIntoQuery);
+            MonetDBParallelLoadOperation shrinkedOps = new MonetDBParallelLoadOperation(ops, copyIntoQuery, numRecords);
             GridTask task = new DBTaskAdapter(this, shrinkedOps);
             map.put(task, node);
         }

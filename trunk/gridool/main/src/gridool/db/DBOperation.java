@@ -20,6 +20,7 @@
  */
 package gridool.db;
 
+import gridool.GridException;
 import gridool.GridNode;
 import gridool.GridResourceRegistry;
 import gridool.replication.ReplicationManager;
@@ -153,7 +154,7 @@ public abstract class DBOperation implements Externalizable {
         return replicaConn;
     }
 
-    public abstract Serializable execute() throws SQLException;
+    public abstract Serializable execute() throws SQLException, GridException;
 
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeString(driverClassName, out);

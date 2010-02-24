@@ -20,6 +20,7 @@
  */
 package gridool.db;
 
+import gridool.GridException;
 import gridool.db.record.DBRecord;
 
 import java.io.IOException;
@@ -98,7 +99,7 @@ public final class DBInsertOperation extends DBOperation {
         return (T[]) records;
     }
 
-    public Serializable execute() throws SQLException {
+    public Serializable execute() throws SQLException, GridException {
         final Connection conn;
         try {
             conn = getConnection();

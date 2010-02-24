@@ -20,6 +20,7 @@
  */
 package gridool.db.partitioning.monetdb;
 
+import gridool.GridException;
 import gridool.GridNode;
 import gridool.db.DBOperation;
 import gridool.db.catalog.DistributionCatalog;
@@ -56,7 +57,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     @Nonnull
     private/* final */String tableName;
-
     private/* final */int tableId;
     @Nonnull
     private/* final */String csvFileName;
@@ -64,6 +64,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     private/* final */String createTableDDL;
     @Nullable
     private/* final */String copyIntoQuery;
+    private/* final */int expectedNumRecords = -1;
     @Nullable
     private/* final */String alterTableDDL;
 
@@ -79,13 +80,14 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         this.alterTableDDL = alterTableDDL;
     }
 
-    public MonetDBParallelLoadOperation(@Nonnull MonetDBParallelLoadOperation ops, @Nullable String copyIntoQuery) {
+    public MonetDBParallelLoadOperation(@Nonnull MonetDBParallelLoadOperation ops, @Nullable String copyIntoQuery, int numRecords) {
         super(driverClassName, ops.connectUrl);
         this.tableName = ops.tableName;
         this.tableId = ops.tableId;
         this.csvFileName = ops.csvFileName;
         this.createTableDDL = ops.createTableDDL;
         this.copyIntoQuery = copyIntoQuery;
+        this.expectedNumRecords = expectedNumRecords;
         this.alterTableDDL = ops.alterTableDDL;
         this.userName = ops.userName;
         this.password = ops.password;
@@ -118,7 +120,11 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     }
 
     @Override
-    public Integer execute() throws SQLException {
+    public Integer execute() throws SQLException, GridException {
+        if(expectedNumRecords == -1) {
+            throw new IllegalStateException();
+        }
+
         final Connection conn;
         try {
             conn = getConnection();
@@ -134,6 +140,12 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             final StopWatch sw = new StopWatch();
             if(copyIntoQuery != null) {
                 numInserted = invokeCopyInto(conn, copyIntoQuery, csvFileName);
+                if(numInserted != expectedNumRecords) {
+                    String errmsg = "Expected records (" + expectedNumRecords
+                            + ") != Actual records (" + numInserted + ')';
+                    LOG.error(errmsg);
+                    throw new GridException(errmsg);
+                }
                 LOG.info("Elapsed time for COPY " + numInserted + " RECORDS INTO " + tableName
                         + ": " + sw.toString());
             }

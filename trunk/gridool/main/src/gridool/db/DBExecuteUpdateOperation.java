@@ -20,6 +20,8 @@
  */
 package gridool.db;
 
+import gridool.GridException;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -58,7 +60,7 @@ public final class DBExecuteUpdateOperation extends DBOperation {
     }
 
     @Override
-    public Serializable execute() throws SQLException {
+    public Serializable execute() throws SQLException, GridException {
         final Connection conn;
         try {
             conn = getConnection();
