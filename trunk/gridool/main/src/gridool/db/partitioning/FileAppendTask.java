@@ -106,7 +106,7 @@ public final class FileAppendTask extends GridTaskAdapter {
         try {
             fileLock.lock();
             fos = new FileOutputStream(file, append); // note that FileOutputStream takes exclusive lock            
-            fos.write(data, 0, data.length); // REVIEWME atomic writes in UNIX?
+            fos.write(data, 0, data.length); // REVIEWME 
             fos.flush();
         } catch (IOException e) {
             throw new IllegalStateException("Failed to write data into file: "
