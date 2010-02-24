@@ -317,11 +317,11 @@ public final class DistributionCatalog {
             if(cachedTableId == null) {
                 final String insertQuery = "INSERT INTO \"" + partitionkeyTableName
                         + "\"(tablename) VALUES(?)";
-                final String selectQUery = "SELECT id FROM \"" + partitionkeyTableName
+                final String selectQuery = "SELECT id FROM \"" + partitionkeyTableName
                         + "\" WHERE tablename = ?";
                 final ResultSetHandler rsh = new ResultSetHandler() {
                     public Integer handle(ResultSet rs) throws SQLException {
-                        Integer key = rs.getInt(1);
+                        int key = rs.getInt(1);
                         return key;
                     }
                 };
@@ -329,7 +329,7 @@ public final class DistributionCatalog {
                 final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, true);
                 try {
                     JDBCUtils.update(conn, insertQuery, tableName);
-                    res = (Integer) JDBCUtils.query(conn, selectQUery, tableName, rsh);
+                    res = (Integer) JDBCUtils.query(conn, selectQuery, tableName, rsh);
                 } catch (SQLException e) {
                     LOG.error(e);
                     throw new GridException(e);
@@ -370,10 +370,10 @@ public final class DistributionCatalog {
     }
 
     public static int getTablePartitionNo(final int tableId) {
-        if(tableId < 1) {
+        if(tableId < 0) {
             throw new IllegalArgumentException("Illegal tableId: " + tableId);
         }
-        return 1 << (tableId - 1);
+        return 1 << tableId;
     }
 
     private static final class NodeWithState {

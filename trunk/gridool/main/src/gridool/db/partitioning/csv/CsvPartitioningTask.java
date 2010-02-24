@@ -156,10 +156,11 @@ public class CsvPartitioningTask extends GridTaskAdapter {
 
         // inquire primary foreign keys of the partitioning table
         DBAccessor dba = registry.getDbAccessor();
-        String tableName = jobConf.getBaseTableName();
-        this.primaryForeignKeys = GridDbUtils.getPrimaryForeignKeys(dba, tableName);
+        String templateTableName = jobConf.getBaseTableName();
+        this.primaryForeignKeys = GridDbUtils.getPrimaryForeignKeys(dba, templateTableName);
         DistributionCatalog catalog = registry.getDistributionCatalog();
-        this.tableId = catalog.getTableId(tableName);
+        String actualTableName = jobConf.getTableName();
+        this.tableId = catalog.getTableId(actualTableName);
 
         // parse and shuffle a CSV file
         final CvsReader reader = getCsvReader(jobConf);
