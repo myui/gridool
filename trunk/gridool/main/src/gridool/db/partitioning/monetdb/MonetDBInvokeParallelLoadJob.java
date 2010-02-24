@@ -55,7 +55,6 @@ public final class MonetDBInvokeParallelLoadJob extends
     private static final long serialVersionUID = 3356783271521697124L;
 
     private transient long numProcessed = 0L;
-    //private transient String tableName;
     private transient List<Pair<GridNode, List<GridNode>>> masterSlaves;
 
     @GridKernelResource
@@ -90,7 +89,6 @@ public final class MonetDBInvokeParallelLoadJob extends
             map.put(task, node);
         }
 
-        //this.tableName = tableName;
         this.masterSlaves = new ArrayList<Pair<GridNode, List<GridNode>>>(mapsize);
         return map;
     }
