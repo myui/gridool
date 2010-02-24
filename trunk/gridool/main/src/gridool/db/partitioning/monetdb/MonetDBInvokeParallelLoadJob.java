@@ -39,8 +39,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import xbird.util.primitive.MutableInt;
 import xbird.util.struct.Pair;
 
 /**
@@ -51,7 +51,7 @@ import xbird.util.struct.Pair;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class MonetDBInvokeParallelLoadJob extends
-        GridJobBase<Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>>, Long> {
+        GridJobBase<Pair<MonetDBParallelLoadOperation, Map<GridNode, AtomicInteger>>, Long> {
     private static final long serialVersionUID = 3356783271521697124L;
 
     private transient long numProcessed = 0L;
@@ -67,20 +67,20 @@ public final class MonetDBInvokeParallelLoadJob extends
         return true;
     }
 
-    public Map<GridTask, GridNode> map(GridTaskRouter router, Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>> args)
+    public Map<GridTask, GridNode> map(GridTaskRouter router, Pair<MonetDBParallelLoadOperation, Map<GridNode, AtomicInteger>> args)
             throws GridException {
         final MonetDBParallelLoadOperation ops = args.getFirst();
 
-        final Map<GridNode, MutableInt> assigned = args.getSecond();
+        final Map<GridNode, AtomicInteger> assigned = args.getSecond();
         final GridNode[] allNodes = router.getAllNodes();
         for(GridNode node : allNodes) {// create empty table
             if(!assigned.containsKey(node)) {
-                assigned.put(node, new MutableInt(0));
+                assigned.put(node, new AtomicInteger(0));
             }
         }
         final int mapsize = assigned.size();
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(mapsize);
-        for(final Map.Entry<GridNode, MutableInt> e : assigned.entrySet()) {
+        for(final Map.Entry<GridNode, AtomicInteger> e : assigned.entrySet()) {
             GridNode node = e.getKey();
             int numRecords = e.getValue().intValue();
             String copyIntoQuery = (numRecords == 0) ? null : ops.getCopyIntoQuery(numRecords);

@@ -28,12 +28,12 @@ import gridool.db.partitioning.csv.CsvPartitioningTask;
 
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import xbird.util.datetime.StopWatch;
-import xbird.util.primitive.MutableInt;
 import xbird.util.struct.Pair;
 
 /**
@@ -65,7 +65,7 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
 
         MonetDBParallelLoadOperation ops = new MonetDBParallelLoadOperation(connectUrl, tableName, tableId, csvFileName, createTableDDL, copyIntoQuery, alterTableDDL);
         ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
-        final Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>> pair = new Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>>(ops, assignMap);
+        final Pair<MonetDBParallelLoadOperation, Map<GridNode, AtomicInteger>> pair = new Pair<MonetDBParallelLoadOperation, Map<GridNode, AtomicInteger>>(ops, assignMap);
 
         final StopWatch sw = new StopWatch();
         final GridJobFuture<Long> future = kernel.execute(MonetDBInvokeParallelLoadJob.class, pair);
