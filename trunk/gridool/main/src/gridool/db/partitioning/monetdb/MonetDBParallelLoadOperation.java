@@ -22,8 +22,10 @@ package gridool.db.partitioning.monetdb;
 
 import gridool.GridException;
 import gridool.GridNode;
+import gridool.GridResourceRegistry;
 import gridool.db.DBOperation;
 import gridool.db.catalog.DistributionCatalog;
+import gridool.locking.LockManager;
 import gridool.util.GridUtils;
 
 import java.io.File;
@@ -32,6 +34,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -139,7 +143,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             // #2 invoke COPY INTO
             final StopWatch sw = new StopWatch();
             if(copyIntoQuery != null) {
-                numInserted = invokeCopyInto(conn, copyIntoQuery, csvFileName);
+                numInserted = invokeCopyInto(conn, copyIntoQuery, csvFileName, registry);
                 if(numInserted != expectedNumRecords) {
                     String errmsg = "Expected records (" + expectedNumRecords
                             + ") != Actual records (" + numInserted + ')';
@@ -185,12 +189,17 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         }
     }
 
-    private static int invokeCopyInto(Connection conn, String copyIntoQuery, String fileName)
+    private static int invokeCopyInto(final Connection conn, final String copyIntoQuery, final String fileName, final GridResourceRegistry registry)
             throws SQLException {
         final File loadFile = prepareLoadFile(fileName);
+        LockManager lockMgr = registry.getLockManager();
+        String filepath = loadFile.getAbsolutePath();
+        ReadWriteLock rwlock = lockMgr.obtainLock(filepath);
+        final Lock rlock = rwlock.readLock();
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
         final int ret;
         try {
+            rlock.lock();
             ret = JDBCUtils.update(conn, query);
             conn.commit();
         } catch (SQLException e) {
@@ -198,6 +207,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             conn.rollback();
             throw e;
         } finally {
+            rlock.unlock();
             if(!loadFile.delete()) {
                 LOG.warn("Could not remove a tempolary file: " + loadFile.getAbsolutePath());
             }
