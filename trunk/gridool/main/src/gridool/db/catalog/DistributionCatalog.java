@@ -64,7 +64,7 @@ public final class DistributionCatalog {
     public static final String hiddenFieldName;
     private static final String distributionTableName;
     private static final String partitionkeyTableName;
-    private static final String tableIdSQLDataType;
+    public static final String tableIdSQLDataType;
     static {
         hiddenFieldName = Settings.get("gridool.db.hidden_fieldnam", "_hidden");
         distributionTableName = Settings.get("gridool.db.partitioning.distribution_tbl", "_distribution");
