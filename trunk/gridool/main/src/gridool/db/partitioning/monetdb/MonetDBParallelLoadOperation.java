@@ -87,7 +87,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         this.csvFileName = ops.csvFileName;
         this.createTableDDL = ops.createTableDDL;
         this.copyIntoQuery = copyIntoQuery;
-        this.expectedNumRecords = expectedNumRecords;
+        this.expectedNumRecords = numRecords;
         this.alterTableDDL = ops.alterTableDDL;
         this.userName = ops.userName;
         this.password = ops.password;
