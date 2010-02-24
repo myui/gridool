@@ -154,8 +154,7 @@ public final class CsvHashPartitioningJob extends
                 String pkeysField = combineFields(fields, pkeyIndicies.length, strBuf);
                 final byte[] distkey = StringUtils.getBytes(pkeysField);
                 pkMappedNode = router.selectNode(distkey);
-                // primary fragment mapping
-                assert (mappedNodes.isEmpty());
+                // primary fragment mapping                
                 mapPrimaryFragment(pkMappedNode, mappedNodes, tablePartitionNo);
                 if(hasParentTable) {
                     // derived fragment mapping
@@ -222,6 +221,7 @@ public final class CsvHashPartitioningJob extends
 
     private static void mapPrimaryFragment(final GridNode node, final Map<GridNode, MutableInt> mappedNodes, final int partitionNo)
             throws GridException {
+        assert (mappedNodes.isEmpty());
         if(node == null) {
             throw new GridException("Could not find any node in cluster.");
         }
