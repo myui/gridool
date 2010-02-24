@@ -107,7 +107,7 @@ public final class CsvHashPartitioningJob extends
         final int numForeignKeys;
         final String[] fkIdxNames;
         final int[][] fkPositions;
-        final LRUMap<String, List<GridNode>>[] fkCaches;
+        final LRUMap<String, List<NodeWithPartitionNo>>[] fkCaches;
         {
             tableName = jobConf.getTableName();
             DistributionCatalog catalog = registry.getDistributionCatalog();
@@ -175,18 +175,19 @@ public final class CsvHashPartitioningJob extends
                     CsvUtils.retrieveFields(line, pos, fieldList, filedSeparator, quoteChar);
                     fieldList.trimToZero();
                     String fkeysField = combineFields(fields, pos.length, strBuf);
-                    LRUMap<String, List<GridNode>> fkCache = fkCaches[jj];
-                    List<GridNode> storedNodes = fkCache.get(fkeysField);
+                    LRUMap<String, List<NodeWithPartitionNo>> fkCache = fkCaches[jj];
+                    List<NodeWithPartitionNo> storedNodeInfo = fkCache.get(fkeysField);
                     for(Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
                         final GridNode node = e.getKey();
-                        if(storedNodes == null) {
-                            storedNodes = new ArrayList<GridNode>(8);
-                            fkCache.put(fkeysField, storedNodes);
-                        } else if(storedNodes.contains(node)) {// Note that node has unique hiddenValue to persist
+                        int hiddenValue = e.getValue().intValue();
+                        NodeWithPartitionNo nodeInfo = new NodeWithPartitionNo(node, hiddenValue);
+                        if(storedNodeInfo == null) {
+                            storedNodeInfo = new ArrayList<NodeWithPartitionNo>(8);
+                            fkCache.put(fkeysField, storedNodeInfo);
+                        } else if(storedNodeInfo.contains(nodeInfo)) {// Note that node has unique hiddenValue to persist
                             continue;
                         }
-                        storedNodes.add(node);
-                        int hiddenValue = e.getValue().intValue();
+                        storedNodeInfo.add(nodeInfo);
                         byte[] value = serialize(node, hiddenValue);
                         storeDerivedFragmentationInfo(fkeysField, value, index, fkIdxNames[jj]);
                     }
@@ -399,13 +400,13 @@ public final class CsvHashPartitioningJob extends
 
     @SuppressWarnings("unchecked")
     @Nullable
-    private static LRUMap<String, List<GridNode>>[] getFkIndexCaches(final int numFks) {
+    private static LRUMap<String, List<NodeWithPartitionNo>>[] getFkIndexCaches(final int numFks) {
         if(numFks == 0) {
             return null;
         }
-        final LRUMap<String, List<GridNode>>[] caches = new LRUMap[numFks];
+        final LRUMap<String, List<NodeWithPartitionNo>>[] caches = new LRUMap[numFks];
         for(int i = 0; i < numFks; i++) {
-            caches[i] = new LRUMap<String, List<GridNode>>(1000);
+            caches[i] = new LRUMap<String, List<NodeWithPartitionNo>>(1000);
         }
         return caches;
     }
@@ -478,4 +479,50 @@ public final class CsvHashPartitioningJob extends
         return node;
     }
 
+    private static final class NodeWithPartitionNo {
+
+        final GridNode node;
+        final int partitionNo;
+
+        NodeWithPartitionNo(@Nonnull GridNode node, int partitionNo) {
+            assert (node != null);
+            this.node = node;
+            this.partitionNo = partitionNo;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + node.hashCode();
+            result = prime * result + partitionNo;
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if(this == obj) {
+                return true;
+            }
+            if(obj == null) {
+                return false;
+            }
+            if(getClass() != obj.getClass()) {
+                return false;
+            }
+            final NodeWithPartitionNo other = (NodeWithPartitionNo) obj;
+            if(partitionNo != other.partitionNo) {
+                return false;
+            }
+            if(!node.equals(other.node)) {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return node.toString() + " [partitionNo=" + partitionNo + "]";
+        }
+    }
 }
