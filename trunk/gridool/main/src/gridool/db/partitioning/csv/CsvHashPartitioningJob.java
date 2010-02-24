@@ -141,8 +141,7 @@ public final class CsvHashPartitioningJob extends
 
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new HashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
-        final Map<GridNode, MutableInt> mappedNodes = hasParentTable ? new HashMap<GridNode, MutableInt>(numNodes)
-                : null;
+        final Map<GridNode, MutableInt> mappedNodes = new HashMap<GridNode, MutableInt>(numNodes);
         for(int i = 0; i < totalRecords; i++) {
             String line = lines[i];
             lines[i] = null;
