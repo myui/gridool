@@ -43,7 +43,6 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
 
@@ -57,6 +56,7 @@ import xbird.util.collections.FixedArrayList;
 import xbird.util.collections.LRUMap;
 import xbird.util.csv.CsvUtils;
 import xbird.util.io.FastByteArrayOutputStream;
+import xbird.util.primitive.MutableInt;
 import xbird.util.primitive.Primitives;
 import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
@@ -71,11 +71,11 @@ import com.sun.istack.internal.Nullable;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class CsvHashPartitioningJob extends
-        GridJobBase<CsvHashPartitioningJob.JobConf, Map<GridNode, AtomicInteger>> {
+        GridJobBase<CsvHashPartitioningJob.JobConf, Map<GridNode, MutableInt>> {
     private static final long serialVersionUID = 149683992715077498L;
     private static final Log LOG = LogFactory.getLog(CsvHashPartitioningJob.class);
 
-    private transient Map<GridNode, AtomicInteger> assignedRecMap;
+    private transient Map<GridNode, MutableInt> assignedRecMap;
 
     @GridRegistryResource
     private transient GridResourceRegistry registry;
@@ -139,8 +139,8 @@ public final class CsvHashPartitioningJob extends
         final int totalRecords = lines.length;
 
         final int numNodes = router.getGridSize();
-        final Map<GridNode, Pair<AtomicInteger, FastByteArrayOutputStream>> nodeAssignMap = new HashMap<GridNode, Pair<AtomicInteger, FastByteArrayOutputStream>>(numNodes);
-        final Map<GridNode, AtomicInteger> mappedNodes = new HashMap<GridNode, AtomicInteger>(numNodes);
+        final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new HashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
+        final Map<GridNode, MutableInt> mappedNodes = new HashMap<GridNode, MutableInt>(numNodes);
         for(int i = 0; i < totalRecords; i++) {
             String line = lines[i];
             lines[i] = null;
@@ -179,7 +179,7 @@ public final class CsvHashPartitioningJob extends
                     final byte[] distkey = StringUtils.getBytes(fkeysField);
                     LRUMap<String, List<NodeWithPartitionNo>> fkCache = fkCaches[jj];
                     List<NodeWithPartitionNo> storedNodeInfo = fkCache.get(fkeysField);
-                    for(Map.Entry<GridNode, AtomicInteger> e : mappedNodes.entrySet()) {
+                    for(Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
                         final GridNode node = e.getKey();
                         int hiddenValue = e.getValue().intValue();
                         NodeWithPartitionNo nodeInfo = new NodeWithPartitionNo(node, hiddenValue);
@@ -199,11 +199,11 @@ public final class CsvHashPartitioningJob extends
         }
 
         final Map<GridTask, GridNode> taskmap = new IdentityHashMap<GridTask, GridNode>(numNodes);
-        final Map<GridNode, AtomicInteger> assignedRecMap = new HashMap<GridNode, AtomicInteger>(numNodes);
-        for(final Map.Entry<GridNode, Pair<AtomicInteger, FastByteArrayOutputStream>> e : nodeAssignMap.entrySet()) {
+        final Map<GridNode, MutableInt> assignedRecMap = new HashMap<GridNode, MutableInt>(numNodes);
+        for(final Map.Entry<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> e : nodeAssignMap.entrySet()) {
             GridNode node = e.getKey();
-            Pair<AtomicInteger, FastByteArrayOutputStream> pair = e.getValue();
-            AtomicInteger numRecords = pair.first;
+            Pair<MutableInt, FastByteArrayOutputStream> pair = e.getValue();
+            MutableInt numRecords = pair.first;
             assignedRecMap.put(node, numRecords);
             FastByteArrayOutputStream rows = pair.second;
             byte[] b = rows.toByteArray();
@@ -214,39 +214,39 @@ public final class CsvHashPartitioningJob extends
 
         for(final GridNode node : router.getAllNodes()) {
             if(!assignedRecMap.containsKey(node)) {
-                assignedRecMap.put(node, new AtomicInteger(0));
+                assignedRecMap.put(node, new MutableInt(0));
             }
         }
         this.assignedRecMap = assignedRecMap;
         return taskmap;
     }
 
-    private static void mapPrimaryFragment(final GridNode node, final Map<GridNode, AtomicInteger> mappedNodes, final int partitionNo)
+    private static void mapPrimaryFragment(final GridNode node, final Map<GridNode, MutableInt> mappedNodes, final int partitionNo)
             throws GridException {
         assert (mappedNodes.isEmpty());
         if(node == null) {
             throw new GridException("Could not find any node in cluster.");
         }
-        AtomicInteger newHidden = new AtomicInteger(partitionNo);
+        MutableInt newHidden = new MutableInt(partitionNo);
         mappedNodes.put(node, newHidden);
     }
 
-    private static void mapDerivedFragment(final byte[] distkey, final Map<GridNode, AtomicInteger> mappedNodes, final ILocalDirectory index, final String parentTableFkIndex)
+    private static void mapDerivedFragment(final byte[] distkey, final Map<GridNode, MutableInt> mappedNodes, final ILocalDirectory index, final String parentTableFkIndex)
             throws GridException {
         final BTreeCallback handler = new BTreeCallback() {
             public boolean indexInfo(Value key, byte[] value) {
                 int partitionNo = deserializePartitionNo(value);
                 GridNode node = deserializeGridNode(value);
 
-                final AtomicInteger hiddenValue = mappedNodes.get(node);
+                final MutableInt hiddenValue = mappedNodes.get(node);
                 if(hiddenValue == null) {
-                    AtomicInteger newHidden = new AtomicInteger(partitionNo);
+                    MutableInt newHidden = new MutableInt(partitionNo);
                     mappedNodes.put(node, newHidden);
                 } else {
                     final int oldValue = hiddenValue.intValue();
                     if(oldValue != partitionNo) {
                         int newValue = oldValue | partitionNo;
-                        hiddenValue.set(newValue);
+                        hiddenValue.setValue(newValue);
                     }
                 }
                 return true;
@@ -263,14 +263,14 @@ public final class CsvHashPartitioningJob extends
         }
     }
 
-    private static void mapRecord(final byte[] line, final int totalRecords, final int numNodes, final Map<GridNode, Pair<AtomicInteger, FastByteArrayOutputStream>> nodeAssignMap, final Map<GridNode, AtomicInteger> mappedNodes, final char filedSeparator) {
+    private static void mapRecord(final byte[] line, final int totalRecords, final int numNodes, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final Map<GridNode, MutableInt> mappedNodes, final char filedSeparator) {
         final int lineSize = line.length;
-        for(Map.Entry<GridNode, AtomicInteger> e : mappedNodes.entrySet()) {
+        for(Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
             final GridNode node = e.getKey();
             final int hiddenValue = e.getValue().intValue();
 
             final FastByteArrayOutputStream rowsBuf;
-            final Pair<AtomicInteger, FastByteArrayOutputStream> pair = nodeAssignMap.get(node);
+            final Pair<MutableInt, FastByteArrayOutputStream> pair = nodeAssignMap.get(node);
             if(pair == null) {
                 int expected = (int) ((lineSize * (totalRecords / numNodes)) * 1.3f);
                 if(expected > 209715200) {
@@ -278,12 +278,12 @@ public final class CsvHashPartitioningJob extends
                             + " bytes");
                 }
                 rowsBuf = new FastByteArrayOutputStream(Math.min(expected, 209715200)); //max 200MB
-                Pair<AtomicInteger, FastByteArrayOutputStream> newPair = new Pair<AtomicInteger, FastByteArrayOutputStream>(new AtomicInteger(1), rowsBuf);
+                Pair<MutableInt, FastByteArrayOutputStream> newPair = new Pair<MutableInt, FastByteArrayOutputStream>(new MutableInt(1), rowsBuf);
                 nodeAssignMap.put(node, newPair);
             } else {
                 rowsBuf = pair.second;
-                AtomicInteger cnt = pair.first;
-                cnt.incrementAndGet();
+                MutableInt cnt = pair.first;
+                cnt.increment();
             }
             rowsBuf.write(line, 0, lineSize);
             if(hiddenValue == 0) {
@@ -309,7 +309,7 @@ public final class CsvHashPartitioningJob extends
         }
     }
 
-    public Map<GridNode, AtomicInteger> reduce() throws GridException {
+    public Map<GridNode, MutableInt> reduce() throws GridException {
         return assignedRecMap;
     }
 
