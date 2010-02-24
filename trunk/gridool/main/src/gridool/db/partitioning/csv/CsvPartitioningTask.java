@@ -236,14 +236,15 @@ public class CsvPartitioningTask extends GridTaskAdapter {
                     LOG.error(ee.getMessage(), ee);
                     throw new IllegalStateException(ee);
                 }
-                final ConcurrentHashMap<GridNode, MutableInt> recMap = assignMap;
-                synchronized(recMap) {
+                synchronized(assignMap) {
+                    final ConcurrentHashMap<GridNode, MutableInt> recMap = assignMap;
                     for(Map.Entry<GridNode, MutableInt> e : map.entrySet()) {
                         GridNode node = e.getKey();
                         MutableInt assigned = e.getValue();
                         final MutableInt prev = recMap.putIfAbsent(node, assigned);
                         if(prev != null) {
-                            prev.add(assigned.intValue()); // here is race condition
+                            int v = assigned.intValue();
+                            prev.add(v);
                         }
                     }
                 }

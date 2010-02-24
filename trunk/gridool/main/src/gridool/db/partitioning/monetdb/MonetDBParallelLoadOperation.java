@@ -192,11 +192,11 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     private static int invokeCopyInto(final Connection conn, final String copyIntoQuery, final String fileName, final GridResourceRegistry registry)
             throws SQLException {
         final File loadFile = prepareLoadFile(fileName);
+        final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
         LockManager lockMgr = registry.getLockManager();
         String filepath = loadFile.getAbsolutePath();
         ReadWriteLock rwlock = lockMgr.obtainLock(filepath);
         final Lock rlock = rwlock.readLock();
-        final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
         final int ret;
         try {
             rlock.lock();
