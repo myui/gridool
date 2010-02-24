@@ -160,7 +160,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         this.primaryForeignKeys = GridDbUtils.getPrimaryForeignKeys(dba, templateTableName);
         DistributionCatalog catalog = registry.getDistributionCatalog();
         String actualTableName = jobConf.getTableName();
-        this.tableId = catalog.getTableId(actualTableName);
+        this.tableId = catalog.bindTableId(actualTableName, templateTableName);
 
         // parse and shuffle a CSV file
         final CvsReader reader = getCsvReader(jobConf);

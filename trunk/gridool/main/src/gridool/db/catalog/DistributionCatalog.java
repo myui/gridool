@@ -310,7 +310,24 @@ public final class DistributionCatalog {
         return prevState;
     }
 
-    public int getTableId(@Nonnull final String tableName) throws GridException {
+    public int getTableId(@Nonnull final String tableName, final boolean failFast) {
+        final Integer cachedTableId;
+        synchronized(tableIdMap) {
+            cachedTableId = tableIdMap.get(tableName);
+        }
+        if(cachedTableId == null) {
+            if(failFast) {
+                throw new IllegalArgumentException("TableId is not resolved: " + tableName);
+            } else {
+                return -1;
+            }
+        } else {
+            return cachedTableId.intValue();
+        }
+    }
+
+    public int bindTableId(@Nonnull final String tableName, @Nonnull final String templateTableName)
+            throws GridException {
         final int tableId;
         synchronized(tableIdMap) {
             final Integer cachedTableId = tableIdMap.get(tableName);
@@ -344,6 +361,7 @@ public final class DistributionCatalog {
                     throw new IllegalStateException("Illegal id for table: " + res);
                 }
                 tableIdMap.put(tableName, res);
+                tableIdMap.put(templateTableName, res);
                 tableId = res.intValue();
             } else {
                 tableId = cachedTableId.intValue();

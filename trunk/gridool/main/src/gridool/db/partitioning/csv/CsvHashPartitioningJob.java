@@ -111,7 +111,7 @@ public final class CsvHashPartitioningJob extends
         {
             tableName = jobConf.getTableName();
             DistributionCatalog catalog = registry.getDistributionCatalog();
-            int tableId = catalog.getTableId(tableName);
+            int tableId = catalog.getTableId(tableName, true);
             tablePartitionNo = DistributionCatalog.getTablePartitionNo(tableId);
             Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys = ops.getPrimaryForeignKeys();
             primaryKey = primaryForeignKeys.getFirst();
@@ -444,7 +444,7 @@ public final class CsvHashPartitioningJob extends
         for(int i = 0; i < numParents; i++) {
             ForeignKey parentFkey = parentFkeys.get(i);
             String table = parentFkey.getFkTableName();
-            int tableId = catalog.getTableId(table);
+            int tableId = catalog.getTableId(table, true);
             int partitionNo = DistributionCatalog.getTablePartitionNo(tableId);
             partitionNumbers[i] = partitionNo;
         }
