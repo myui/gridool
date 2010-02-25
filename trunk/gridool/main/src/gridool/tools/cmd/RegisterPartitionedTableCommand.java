@@ -28,7 +28,9 @@ import java.rmi.RemoteException;
 
 import xbird.util.cmdline.CommandBase;
 import xbird.util.cmdline.CommandException;
+import xbird.util.cmdline.Option.StringOption;
 import xbird.util.lang.ArrayUtils;
+import xbird.util.struct.Pair;
 
 /**
  * register partitioned table <tableName>+
@@ -39,7 +41,9 @@ import xbird.util.lang.ArrayUtils;
  */
 public final class RegisterPartitionedTableCommand extends CommandBase {
 
-    public RegisterPartitionedTableCommand() {}
+    public RegisterPartitionedTableCommand() {
+        addOption(new StringOption("tpltblPrefix", true));
+    }
 
     public boolean match(String[] args) {
         if(args.length < 4) {
@@ -59,10 +63,13 @@ public final class RegisterPartitionedTableCommand extends CommandBase {
 
     public boolean process(String[] args) throws CommandException {
         final String[] tableNames = ArrayUtils.copyOfRange(args, 3, args.length);
+        final String templateTableNamePredix = getOption("tpltblPrefix");
+
+        final Pair<String[], String> jobParams = new Pair<String[], String>(tableNames, templateTableNamePredix);
         final Grid grid = new GridClient();
         final int[] partitionIds;
         try {
-            partitionIds = grid.execute(RegisterPartitionedTableJob.class, tableNames);
+            partitionIds = grid.execute(RegisterPartitionedTableJob.class, jobParams);
         } catch (RemoteException e) {
             throw new CommandException(e);
         }

@@ -30,6 +30,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -328,49 +329,59 @@ public final class DistributionCatalog {
         }
     }
 
-    public int bindTableId(@Nonnull final String tableName) throws GridException {
-        final int tableId;
-        synchronized(tableIdMap) {
-            final Integer cachedTableId = tableIdMap.get(tableName);
-            if(cachedTableId == null) {
-                final String insertQuery = "INSERT INTO \"" + partitionkeyTableName
-                        + "\"(tablename) VALUES(?)";
-                final String selectQuery = "SELECT id FROM \"" + partitionkeyTableName
-                        + "\" WHERE tablename = ?";
-                final ResultSetHandler rsh = new ResultSetHandler() {
-                    public Integer handle(ResultSet rs) throws SQLException {
-                        if(!rs.next()) {
-                            return null;
-                        }
-                        int key = rs.getInt(1);
-                        assert (!rs.next());
-                        return key;
+    @Nonnull
+    public int[] bindTableId(@Nonnull final String[] tableNames, @Nonnull final String templateTableNamePrefix)
+            throws GridException {
+        final int numTableNames = tableNames.length;
+        if(numTableNames == 0) {
+            return new int[0];
+        }
+
+        final int[] tableIds = new int[numTableNames];
+        Arrays.fill(tableIds, -1);
+        final String insertQuery = "INSERT INTO \"" + partitionkeyTableName
+                + "\"(tablename) VALUES(?)";
+        final String selectQuery = "SELECT tablename, id FROM \"" + partitionkeyTableName + '"';
+        final ResultSetHandler rsh = new ResultSetHandler() {
+            public Object handle(final ResultSet rs) throws SQLException {
+                for(int i = 0; rs.next(); i++) {
+                    String tblname = rs.getString(1);
+                    int pos = Arrays.binarySearch(tableNames, tblname);
+                    if(pos >= 0) {
+                        int key = rs.getInt(2);
+                        tableIds[pos] = key;
                     }
-                };
-                final Integer res;
-                final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, true);
-                try {
-                    JDBCUtils.update(conn, insertQuery, tableName);
-                    res = (Integer) JDBCUtils.query(conn, selectQuery, tableName, rsh);
-                } catch (SQLException e) {
-                    LOG.error(e);
-                    throw new GridException(e);
-                } finally {
-                    JDBCUtils.closeQuietly(conn);
                 }
-                if(res == null || res < 1) {
-                    throw new IllegalStateException("Illegal id for table: " + res);
-                }
-                tableIdMap.put(tableName, res);
-                tableId = res.intValue();
-            } else {
-                tableId = cachedTableId.intValue();
+                return null;
             }
+        };
+        final Object[][] params = new Object[numTableNames][];
+        for(int i = 0; i < numTableNames; i++) {
+            params[i] = new Object[] { tableNames[i] };
         }
-        if(tableId < 1) {
-            throw new IllegalStateException("Illegal tableId is found: " + tableId);
+        synchronized(tableIdMap) {
+            final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, true);
+            try {
+                JDBCUtils.batch(conn, insertQuery, params);
+                JDBCUtils.query(conn, selectQuery, rsh);
+            } catch (SQLException e) {
+                LOG.error(e);
+                throw new GridException(e);
+            } finally {
+                JDBCUtils.closeQuietly(conn);
+            }
+            for(int i = 0; i < numTableNames; i++) {
+                String tblname = tableNames[i];
+                int tid = tableIds[i];
+                if(tid == -1) {
+                    throw new IllegalStateException("Table ID is not registered for table: "
+                            + tblname);
+                }
+                tableIdMap.put(tblname, tid);
+            }
+
         }
-        return tableId;
+        return tableIds;
     }
 
     public void registerTableId(@Nonnull final String tableName, final int tableId)

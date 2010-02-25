@@ -26,14 +26,19 @@ import gridool.GridJob;
 import gridool.GridNode;
 import gridool.GridResourceRegistry;
 import gridool.GridTask;
+import gridool.GridTaskResult;
+import gridool.GridTaskResultPolicy;
 import gridool.annotation.GridConfigResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridJobBase;
 import gridool.construct.GridTaskAdapter;
 import gridool.routing.GridTaskRouter;
 
+import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Map;
+
+import xbird.util.struct.Pair;
 
 /**
  * 
@@ -42,7 +47,7 @@ import java.util.Map;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class RegisterPartitionedTableJob extends GridJobBase<String[], int[]> {
+public final class RegisterPartitionedTableJob extends GridJobBase<Pair<String[], String>, int[]> {
     private static final long serialVersionUID = -261878420856912614L;
 
     @GridConfigResource
@@ -61,16 +66,18 @@ public final class RegisterPartitionedTableJob extends GridJobBase<String[], int
         return true;
     }
 
-    public Map<GridTask, GridNode> map(GridTaskRouter router, String[] tableNames)
+    public Map<GridTask, GridNode> map(GridTaskRouter router, Pair<String[], String> jobArgs)
             throws GridException {
-        final int[] partitionIds = registerTables(tableNames, registry);
+        String[] tableNames = jobArgs.getFirst();
+        String templateTableNamePrefix = jobArgs.getSecond();
+        final int[] partitionIds = registerTables(tableNames, templateTableNamePrefix, registry);
 
         final GridNode localNode = config.getLocalNode();
         final GridNode[] nodes = router.getAllNodes();
         final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(nodes.length);
         for(final GridNode node : nodes) {
             if(!node.equals(localNode)) {
-                GridTask task = new RegisterPartitionedTableTask(this, tableNames);
+                GridTask task = new RegisterPartitionedTableTask(this, tableNames, templateTableNamePrefix);
                 map.put(task, node);
             }
         }
@@ -79,19 +86,32 @@ public final class RegisterPartitionedTableJob extends GridJobBase<String[], int
         return map;
     }
 
+    @Override
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
+        final int[] registeredTids = result.getResult();
+        if(registeredTids == null) {
+            GridNode node = result.getExecutedNode();
+            String errmsg = getClass().getSimpleName() + " failed on node: " + node;
+            GridException err = result.getException();
+            throw new GridException(errmsg, err);
+        } else {
+            if(!Arrays.equals(partitionIds, registeredTids)) {
+                GridNode node = result.getExecutedNode();
+                throw new GridException("Registered partitionIds "
+                        + Arrays.toString(registeredTids) + " differ on node: " + node);
+            }
+        }
+        return GridTaskResultPolicy.CONTINUE;
+    }
+
     public int[] reduce() throws GridException {
         return partitionIds;
     }
 
-    private static int[] registerTables(final String[] tableNames, final GridResourceRegistry registry)
+    private static int[] registerTables(final String[] tableNames, final String templateTableNamePrefix, final GridResourceRegistry registry)
             throws GridException {
-        final int numTables = tableNames.length;
-        final int[] partitionIds = new int[numTables];
         final DistributionCatalog catalog = registry.getDistributionCatalog();
-        for(int i = 0; i < numTables; i++) {
-            String tblname = tableNames[i];
-            partitionIds[i] = catalog.bindTableId(tblname);
-        }
+        int[] partitionIds = catalog.bindTableId(tableNames, templateTableNamePrefix);
         return partitionIds;
     }
 
@@ -99,14 +119,16 @@ public final class RegisterPartitionedTableJob extends GridJobBase<String[], int
         private static final long serialVersionUID = -7531450358494583759L;
 
         private final String[] tableNames;
+        private final String templateTableNamePrefix;
 
         @GridRegistryResource
         private transient GridResourceRegistry registry;
 
         @SuppressWarnings("unchecked")
-        protected RegisterPartitionedTableTask(GridJob job, String[] tableNames) {
+        protected RegisterPartitionedTableTask(GridJob job, String[] tableNames, String templateTableNamePrefix) {
             super(job, false);
             this.tableNames = tableNames;
+            this.templateTableNamePrefix = templateTableNamePrefix;
         }
 
         @Override
@@ -116,7 +138,7 @@ public final class RegisterPartitionedTableJob extends GridJobBase<String[], int
 
         @Override
         protected int[] execute() throws GridException {
-            int[] paritionIds = registerTables(tableNames, registry);
+            int[] paritionIds = registerTables(tableNames, templateTableNamePrefix, registry);
             return paritionIds;
         }
 
