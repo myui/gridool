@@ -328,8 +328,7 @@ public final class DistributionCatalog {
         }
     }
 
-    public int bindTableId(@Nonnull final String tableName, @Nonnull final String templateTableName)
-            throws GridException {
+    public int bindTableId(@Nonnull final String tableName) throws GridException {
         final int tableId;
         synchronized(tableIdMap) {
             final Integer cachedTableId = tableIdMap.get(tableName);
@@ -363,7 +362,6 @@ public final class DistributionCatalog {
                     throw new IllegalStateException("Illegal id for table: " + res);
                 }
                 tableIdMap.put(tableName, res);
-                tableIdMap.put(templateTableName, res);
                 tableId = res.intValue();
             } else {
                 tableId = cachedTableId.intValue();

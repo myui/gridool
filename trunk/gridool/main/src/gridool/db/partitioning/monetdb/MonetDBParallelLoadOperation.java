@@ -61,7 +61,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     @Nonnull
     private/* final */String tableName;
-    private/* final */int tableId;
     @Nonnull
     private/* final */String csvFileName;
     @Nonnull
@@ -74,10 +73,9 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     public MonetDBParallelLoadOperation() {}
 
-    public MonetDBParallelLoadOperation(@Nonnull String connectUrl, @Nonnull String tableName, int tableId, @Nonnull String csvFileName, @Nonnull String createTableDDL, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
+    public MonetDBParallelLoadOperation(@Nonnull String connectUrl, @Nonnull String tableName, @Nonnull String csvFileName, @Nonnull String createTableDDL, @Nullable String copyIntoQuery, @Nullable String alterTableDDL) {
         super(driverClassName, connectUrl);
         this.tableName = tableName;
-        this.tableId = tableId;
         this.csvFileName = csvFileName;
         this.createTableDDL = createTableDDL;
         this.copyIntoQuery = copyIntoQuery;
@@ -87,7 +85,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     public MonetDBParallelLoadOperation(@Nonnull MonetDBParallelLoadOperation ops, @Nullable String copyIntoQuery, int numRecords) {
         super(driverClassName, ops.connectUrl);
         this.tableName = ops.tableName;
-        this.tableId = ops.tableId;
         this.csvFileName = ops.csvFileName;
         this.createTableDDL = ops.createTableDDL;
         this.copyIntoQuery = copyIntoQuery;
@@ -99,10 +96,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
     public String getTableName() {
         return tableName;
-    }
-
-    public int getTableId() {
-        return tableId;
     }
 
     public String getCsvFileName() {
@@ -163,10 +156,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         } finally {
             JDBCUtils.closeQuietly(conn);
         }
-
-        // # 4 register table id
-        DistributionCatalog catalog = registry.getDistributionCatalog();
-        catalog.registerTableId(tableName, tableId);
 
         return numInserted;
     }
@@ -263,7 +252,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
         this.tableName = IOUtils.readString(in);
-        this.tableId = in.readInt();
         this.csvFileName = IOUtils.readString(in);
         this.createTableDDL = IOUtils.readString(in);
         this.copyIntoQuery = IOUtils.readString(in);
@@ -275,7 +263,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
         IOUtils.writeString(tableName, out);
-        out.writeInt(tableId);
         GridNode masterNode = getMasterNode();
         if(masterNode == null) {
             IOUtils.writeString(csvFileName, out);
