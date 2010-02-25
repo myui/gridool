@@ -141,6 +141,7 @@ public final class CsvHashPartitioningJob extends
         final int totalRecords = lines.length;
         final String[] fkeysFields = new String[numForeignKeys];
         final byte[][] distkeys = new byte[numForeignKeys][];
+        final GridNode[] fkMappedNodes = new GridNode[numForeignKeys];
 
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new HashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
@@ -172,7 +173,7 @@ public final class CsvHashPartitioningJob extends
                     fieldList.trimToZero();
                     String fkeysField = combineFields(fields, pos.length, strBuf);
                     byte[] distkey = StringUtils.getBytes(fkeysField);
-                    mapFragment(distkey, mappedNodes, childTablesPartitionNo[jj], router);
+                    fkMappedNodes[jj] = mapFragment(distkey, mappedNodes, childTablesPartitionNo[jj], router);
                     fkeysFields[jj] = fkeysField;
                     distkeys[jj] = distkey;
                 }
@@ -181,10 +182,14 @@ public final class CsvHashPartitioningJob extends
                     final String fkIdxName = fkIdxNames[kk];
                     final String fkeysField = fkeysFields[kk];
                     final byte[] distkey = distkeys[kk];
+                    final GridNode fkMappedNode = fkMappedNodes[kk];
                     final LRUMap<String, List<NodeWithPartitionNo>> fkCache = fkCaches[kk];
                     List<NodeWithPartitionNo> storedNodeInfo = fkCache.get(fkeysField);
                     for(Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
                         final GridNode node = e.getKey();
+                        if(node.equals(fkMappedNode)) {
+                            continue; // no need to map
+                        }
                         int hiddenValue = e.getValue().intValue();
                         NodeWithPartitionNo nodeInfo = new NodeWithPartitionNo(node, hiddenValue);
                         if(storedNodeInfo == null) {
@@ -231,7 +236,7 @@ public final class CsvHashPartitioningJob extends
         return taskmap;
     }
 
-    private static void mapFragment(final byte[] distkey, final Map<GridNode, MutableInt> mappedNodes, final int tablePartitionNo, final GridTaskRouter router)
+    private static GridNode mapFragment(final byte[] distkey, final Map<GridNode, MutableInt> mappedNodes, final int tablePartitionNo, final GridTaskRouter router)
             throws GridException {
         assert (mappedNodes.isEmpty());
         GridNode mappedNode = router.selectNode(distkey);
@@ -240,6 +245,7 @@ public final class CsvHashPartitioningJob extends
         }
         MutableInt newHidden = new MutableInt(tablePartitionNo);
         mappedNodes.put(mappedNode, newHidden);
+        return mappedNode;
     }
 
     private static void mapDerivedByParentFragment(final byte[] distkey, final Map<GridNode, MutableInt> mappedNodes, final ILocalDirectory index, final String parentTableFkIndex)
