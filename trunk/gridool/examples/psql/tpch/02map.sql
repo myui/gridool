@@ -15,6 +15,10 @@ from
 	region
 where
 	(partsupp._hidden & 4) = 4
+	and (part._hidden & 4) = 4
+	and (supplier._hidden & 4) = 4
+	and (nation._hidden & 4) = 4
+	and (region._hidden & 4) = 4
 	and p_partkey = ps_partkey
 	and s_suppkey = ps_suppkey
 	and p_size = 15
@@ -37,4 +41,3 @@ where
 			and n_regionkey = r_regionkey
 			and r_name = 'EUROPE'
 	)
-

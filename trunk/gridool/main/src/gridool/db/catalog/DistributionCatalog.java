@@ -396,7 +396,13 @@ public final class DistributionCatalog {
         }
     }
 
-    public static int getTablePartitionNo(final int tableId) {
+    public int getTablePartitionNo(final String tableName, final boolean failFast) {
+        int tableId = getTableId(tableName, failFast);
+        int partitionNo = getTablePartitionNo(tableId);
+        return partitionNo;
+    }
+
+    private static int getTablePartitionNo(final int tableId) {
         if(tableId < 1) {
             throw new IllegalArgumentException("Illegal tableId: " + tableId);
         }

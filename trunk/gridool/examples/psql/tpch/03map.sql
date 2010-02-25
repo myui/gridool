@@ -8,8 +8,7 @@ from
 	orders,
 	lineitem 
 where
-	(lineitem._hidden & 1) = 1
-	and c_mktsegment = 'BUILDING'
+	c_mktsegment = 'BUILDING'
 	and c_custkey = o_custkey
 	and l_orderkey = o_orderkey
 	and o_orderdate < date '1995-03-15'
