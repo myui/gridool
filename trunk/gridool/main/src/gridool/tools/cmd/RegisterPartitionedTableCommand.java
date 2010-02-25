@@ -28,6 +28,7 @@ import java.rmi.RemoteException;
 
 import xbird.util.cmdline.CommandBase;
 import xbird.util.cmdline.CommandException;
+import xbird.util.lang.ArrayUtils;
 
 /**
  * register partitioned table <tableName>+
@@ -57,18 +58,16 @@ public final class RegisterPartitionedTableCommand extends CommandBase {
     }
 
     public boolean process(String[] args) throws CommandException {
-        if(args.length == 0) {
-            throw new IllegalArgumentException();
-        }
+        final String[] tableNames = ArrayUtils.copyOfRange(args, 3, args.length);
         final Grid grid = new GridClient();
         final int[] partitionIds;
         try {
-            partitionIds = grid.execute(RegisterPartitionedTableJob.class, args);
+            partitionIds = grid.execute(RegisterPartitionedTableJob.class, tableNames);
         } catch (RemoteException e) {
             throw new CommandException(e);
         }
-        for(int i = 0; i < args.length; i++) {
-            System.out.println("Table: " + args[i] + ", PartitionNo: " + partitionIds[i]);
+        for(int i = 0; i < tableNames.length; i++) {
+            System.out.println("Table: " + tableNames[i] + ", PartitionNo: " + partitionIds[i]);
         }
         return true;
     }
