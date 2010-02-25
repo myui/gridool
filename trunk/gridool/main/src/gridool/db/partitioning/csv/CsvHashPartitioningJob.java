@@ -156,7 +156,7 @@ public final class CsvHashPartitioningJob extends
                 String pkeysField = combineFields(fields, pkeyIndicies.length, strBuf);
                 // "primary" fragment mapping
                 final byte[] distkey = StringUtils.getBytes(pkeysField);
-                mapFragment(distkey, mappedNodes, tablePartitionNo, router);
+                mapPrimaryFragment(distkey, mappedNodes, tablePartitionNo, router);
                 if(hasParentTable) {
                     // "derived by parent" fragment mapping                   
                     for(int kk = 0; kk < numParentForeignKeys; kk++) {
@@ -165,7 +165,7 @@ public final class CsvHashPartitioningJob extends
                     }
                 }
             }
-            {
+            if(numForeignKeys > 0) {
                 // "derived by child" fragment mapping
                 for(int jj = 0; jj < numForeignKeys; jj++) {
                     int[] pos = fkPositions[jj];
@@ -173,7 +173,7 @@ public final class CsvHashPartitioningJob extends
                     fieldList.trimToZero();
                     String fkeysField = combineFields(fields, pos.length, strBuf);
                     byte[] distkey = StringUtils.getBytes(fkeysField);
-                    fkMappedNodes[jj] = mapFragment(distkey, mappedNodes, childTablesPartitionNo[jj], router);
+                    fkMappedNodes[jj] = mapDerivedByChildFragment(distkey, mappedNodes, childTablesPartitionNo[jj], router);
                     fkeysFields[jj] = fkeysField;
                     distkeys[jj] = distkey;
                 }
@@ -236,7 +236,7 @@ public final class CsvHashPartitioningJob extends
         return taskmap;
     }
 
-    private static GridNode mapFragment(final byte[] distkey, final Map<GridNode, MutableInt> mappedNodes, final int tablePartitionNo, final GridTaskRouter router)
+    private static GridNode mapPrimaryFragment(final byte[] distkey, final Map<GridNode, MutableInt> mappedNodes, final int tablePartitionNo, final GridTaskRouter router)
             throws GridException {
         assert (mappedNodes.isEmpty());
         GridNode mappedNode = router.selectNode(distkey);
@@ -245,6 +245,25 @@ public final class CsvHashPartitioningJob extends
         }
         MutableInt newHidden = new MutableInt(tablePartitionNo);
         mappedNodes.put(mappedNode, newHidden);
+        return mappedNode;
+    }
+
+    private static GridNode mapDerivedByChildFragment(final byte[] distkey, final Map<GridNode, MutableInt> mappedNodes, final int tablePartitionNo, final GridTaskRouter router)
+            throws GridException {
+        GridNode mappedNode = router.selectNode(distkey);
+        if(mappedNode == null) {
+            throw new GridException("Could not find any node in cluster.");
+        }
+        final MutableInt hiddenValue = mappedNodes.get(mappedNode);
+        if(hiddenValue == null) {
+            mappedNodes.put(mappedNode, new MutableInt(tablePartitionNo));
+        } else {
+            final int oldValue = hiddenValue.intValue();
+            if(oldValue != tablePartitionNo) {
+                int newValue = oldValue | tablePartitionNo;
+                hiddenValue.setValue(newValue);
+            }
+        }
         return mappedNode;
     }
 
