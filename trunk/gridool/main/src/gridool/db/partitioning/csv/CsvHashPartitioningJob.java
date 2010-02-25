@@ -121,6 +121,7 @@ public final class CsvHashPartitioningJob extends
             hasParentTable = (parentTableFkIndexNames != null);
             numParentForeignKeys = hasParentTable ? parentTableFkIndexNames.length : 0;
             numForeignKeys = foreignKeys.size();
+            assert (numParentForeignKeys != 0);
             fkIdxNames = getFkIndexNames(foreignKeys, numForeignKeys);
             fkPositions = getFkPositions(foreignKeys, numForeignKeys);
             childTablesPartitionNo = getChildTablesPartitionNo(foreignKeys, numForeignKeys, catalog);
@@ -138,6 +139,8 @@ public final class CsvHashPartitioningJob extends
         final Charset charset = Charset.forName("UTF-8");
         final StringBuilder strBuf = new StringBuilder(64);
         final int totalRecords = lines.length;
+        final String[] fkeysFields = new String[numForeignKeys];
+        final byte[][] distkeys = new byte[numForeignKeys][];
 
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new HashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
@@ -150,12 +153,11 @@ public final class CsvHashPartitioningJob extends
                 CsvUtils.retrieveFields(line, pkeyIndicies, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
                 String pkeysField = combineFields(fields, pkeyIndicies.length, strBuf);
-                final byte[] distkey = StringUtils.getBytes(pkeysField);
                 // "primary" fragment mapping
+                final byte[] distkey = StringUtils.getBytes(pkeysField);
                 mapFragment(distkey, mappedNodes, tablePartitionNo, router);
                 if(hasParentTable) {
-                    // "derived by parent" fragment mapping
-                    assert (numParentForeignKeys != 0);
+                    // "derived by parent" fragment mapping                   
                     for(int kk = 0; kk < numParentForeignKeys; kk++) {
                         String idxName = parentTableFkIndexNames[kk];
                         mapDerivedByParentFragment(distkey, mappedNodes, index, idxName);
@@ -163,17 +165,23 @@ public final class CsvHashPartitioningJob extends
                 }
             }
             {
+                // "derived by child" fragment mapping
                 for(int jj = 0; jj < numForeignKeys; jj++) {
-                    final String fkIdxName = fkIdxNames[jj];
-                    final int[] pos = fkPositions[jj];
+                    int[] pos = fkPositions[jj];
                     CsvUtils.retrieveFields(line, pos, fieldList, filedSeparator, quoteChar);
                     fieldList.trimToZero();
-                    final String fkeysField = combineFields(fields, pos.length, strBuf);
-                    final byte[] distkey = StringUtils.getBytes(fkeysField);
-                    // "derived by child" fragment mapping
+                    String fkeysField = combineFields(fields, pos.length, strBuf);
+                    byte[] distkey = StringUtils.getBytes(fkeysField);
                     mapFragment(distkey, mappedNodes, childTablesPartitionNo[jj], router);
-                    // store information for derived fragment mapping
-                    LRUMap<String, List<NodeWithPartitionNo>> fkCache = fkCaches[jj];
+                    fkeysFields[jj] = fkeysField;
+                    distkeys[jj] = distkey;
+                }
+                // store information for derived fragment mapping
+                for(int kk = 0; kk < numForeignKeys; kk++) {
+                    final String fkIdxName = fkIdxNames[kk];
+                    final String fkeysField = fkeysFields[kk];
+                    final byte[] distkey = distkeys[kk];
+                    final LRUMap<String, List<NodeWithPartitionNo>> fkCache = fkCaches[kk];
                     List<NodeWithPartitionNo> storedNodeInfo = fkCache.get(fkeysField);
                     for(Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
                         final GridNode node = e.getKey();
