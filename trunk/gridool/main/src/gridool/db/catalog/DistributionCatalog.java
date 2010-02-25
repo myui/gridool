@@ -346,8 +346,8 @@ public final class DistributionCatalog {
             public Object handle(final ResultSet rs) throws SQLException {
                 for(int i = 0; rs.next(); i++) {
                     String tblname = rs.getString(1);
-                    int pos = Arrays.binarySearch(tableNames, tblname);
-                    if(pos >= 0) {
+                    int pos = ArrayUtils.indexOf(tableNames, tblname);
+                    if(pos != -1) {
                         int key = rs.getInt(2);
                         tableIds[pos] = key;
                     }
