@@ -438,7 +438,7 @@ public final class CsvHashPartitioningJob extends
         final Iterator<ForeignKey> itor = fkeys.iterator();
         for(int i = 0; i < numFkeys; i++) {
             ForeignKey fk = itor.next();
-            String tblname = fk.getFkTableName();
+            String tblname = fk.getPkTableName();
             int n = catalog.getTablePartitionNo(tblname, true);
             partitionNo[i] = n;
         }
