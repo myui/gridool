@@ -378,6 +378,8 @@ public final class DistributionCatalog {
                             + tblname);
                 }
                 tableIdMap.put(tblname, tid);
+                String templateTableName = templateTableNamePrefix + tblname;
+                tableIdMap.put(templateTableName, tid);
             }
 
         }
