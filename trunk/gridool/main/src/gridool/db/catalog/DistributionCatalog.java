@@ -360,12 +360,18 @@ public final class DistributionCatalog {
             params[i] = new Object[] { tableNames[i] };
         }
         synchronized(tableIdMap) {
-            final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, true);
+            final Connection conn = GridDbUtils.getPrimaryDbConnection(dbAccessor, false);
             try {
                 JDBCUtils.batch(conn, insertQuery, params);
                 JDBCUtils.query(conn, selectQuery, rsh);
+                conn.commit();
             } catch (SQLException e) {
                 LOG.error(e);
+                try {
+                    conn.rollback();
+                } catch (SQLException rbe) {
+                    LOG.warn("Rollback failed", rbe);
+                }
                 throw new GridException(e);
             } finally {
                 JDBCUtils.closeQuietly(conn);
@@ -381,7 +387,6 @@ public final class DistributionCatalog {
                 String templateTableName = templateTableNamePrefix + tblname;
                 tableIdMap.put(templateTableName, tid);
             }
-
         }
         return tableIds;
     }
