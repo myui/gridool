@@ -258,11 +258,9 @@ public final class CsvHashPartitioningJob extends
         if(hiddenValue == null) {
             mappedNodes.put(mappedNode, new MutableInt(tablePartitionNo));
         } else {
-            final int oldValue = hiddenValue.intValue();
-            if(oldValue != tablePartitionNo) {
-                int newValue = oldValue | tablePartitionNo;
-                hiddenValue.setValue(newValue);
-            }
+            int oldValue = hiddenValue.intValue();
+            int newValue = oldValue | tablePartitionNo;
+            hiddenValue.setValue(newValue);
         }
         return mappedNode;
     }
