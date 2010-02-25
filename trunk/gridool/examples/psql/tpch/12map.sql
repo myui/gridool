@@ -16,8 +16,7 @@ from
 	orders,
 	lineitem
 where
-	orders partitioned by (o_orderkey)
-	and lineitem partitioned by (l_orderkey)
+	(orders._hidden & 1) = 1
 	and o_orderkey = l_orderkey
 	and l_shipmode in ('MAIL', 'SHIP')
 	and l_commitdate < l_receiptdate
@@ -26,5 +25,3 @@ where
 	and l_receiptdate < date '1994-01-01' + interval '1' year
 group by
 	l_shipmode
-
-

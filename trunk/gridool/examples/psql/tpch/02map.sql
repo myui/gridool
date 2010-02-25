@@ -14,11 +14,7 @@ from
 	nation,
 	region
 where
-	part partitioned by (p_partkey) 
-	and supplier partitioned by (s_suppkey, s_nationkey) 
-	and partsupp partitioned by (ps_partkey, ps_suppkey) 
-	and nation partitioned by (n_nationkey, n_regionkey) 
- 	and region partitioned by (r_regionkey) 
+	(partsupp._hidden & 4) = 4
 	and p_partkey = ps_partkey
 	and s_suppkey = ps_suppkey
 	and p_size = 15
@@ -35,11 +31,7 @@ where
 			nation,
 			region
 		where
-			partsupp partitioned by (ps_partkey, ps_suppkey)
-			and supplier partitioned by (s_suppkey, s_nationkey)
-			and nation partitioned by (n_nationkey, n_regionkey)
-			and region partitioned by (r_regionkey)
-			and p_partkey = ps_partkey
+			p_partkey = ps_partkey
 			and s_suppkey = ps_suppkey
 			and s_nationkey = n_nationkey
 			and n_regionkey = r_regionkey

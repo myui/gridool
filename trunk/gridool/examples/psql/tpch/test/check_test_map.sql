@@ -1,10 +1,10 @@
 select 
     count(1) as C1
 from 
-    lineitem 
-         inner join 
-    orders 
-        on l_orderkey = o_orderkey
-    inner join
+    lineitem,
+    orders,
     customer
-        on o_custkey = c_custkey
+where	
+	(lineitem._hidden & 1 = 1)
+	and l_orderkey = o_orderkey
+	and o_custkey = c_custkey

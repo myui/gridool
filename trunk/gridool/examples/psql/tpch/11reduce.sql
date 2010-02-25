@@ -15,9 +15,7 @@ having
 			supplier,
 			nation
 		where
-			partsupp partitioned by (ps_suppkey)
-			and supplier partitioned by (s_suppkey, s_nationkey)
-			and nation partitioned by (n_nationkey)
+			(partsupp._hidden & 4) = 4
 			and ps_suppkey = s_suppkey
 			and s_nationkey = n_nationkey
 			and n_name = 'GERMANY'

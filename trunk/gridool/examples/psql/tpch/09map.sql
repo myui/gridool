@@ -16,13 +16,7 @@ from
 			orders,
 			nation
 		where
-			part partitioned by (p_partkey)
-			and supplier partitioned by (s_suppkey, s_nationkey)
-			and lineitem partitioned by (l_suppkey, l_partkey, l_orderkey)
-			and partsupp partitioned by (ps_suppkey)
-			and orders partitioned by (o_orderkey)
-			and nation partitioned by (n_nationkey)
-			and s_suppkey = l_suppkey
+			s_suppkey = l_suppkey
 			and ps_suppkey = l_suppkey
 			and ps_partkey = l_partkey
 			and p_partkey = l_partkey

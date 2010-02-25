@@ -18,13 +18,7 @@ from
 			nation n1,
 			nation n2
 		where
-			supplier partitioned by (s_suppkey,s_nationkey)
-			and lineitem partitioned by (l_suppkey, l_orderkey)
-			and orders partitioned by (o_orderkey, o_custkey)
-			and customer partitioned by (c_custkey, c_nationkey)
-			and nation partitioned by (n_nationkey) alias n1
-			and nation partitioned by (n_nationkey) alias n2
-			and s_suppkey = l_suppkey
+			s_suppkey = l_suppkey
 			and o_orderkey = l_orderkey
 			and c_custkey = o_custkey
 			and s_nationkey = n1.n_nationkey

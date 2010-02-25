@@ -1,4 +1,4 @@
-select
+select 
 	o_orderpriority,
 	sum(C2) as order_count
 from

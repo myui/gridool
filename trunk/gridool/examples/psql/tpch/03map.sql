@@ -8,9 +8,7 @@ from
 	orders,
 	lineitem 
 where
-	customer partitioned by (c_custkey)
-	and orders partitioned by (o_custkey, o_orderkey)
-	and lineitem partitioned by (l_orderkey)
+	(lineitem._hidden & 1) = 1
 	and c_mktsegment = 'BUILDING'
 	and c_custkey = o_custkey
 	and l_orderkey = o_orderkey

@@ -10,15 +10,9 @@ from
     nation,
     region
 where
-	--part partitioned by (p_partkey)
-	--and partsupp partitioned by (ps_partkey,ps_suppkey)
-	--and supplier partitioned by (s_suppkey,s_nationkey)
-	--and nation partitioned by (n_nationkey,n_regionkey)
-	--and lineitem partitioned by (l_orderkey,l_partkey,l_suppkey)	
-	--and customer partitioned by (c_custkey,c_nationkey)
-	--and region partitioned by (r_regionkey)
-	--and orders partitioned by (o_orderkey,o_custkey)
-    l_partkey = ps_partkey
+	(lineitem._hidden & 1 = 1)
+	and (customer._hidden & 1 = 1)
+    and l_partkey = ps_partkey
     and l_suppkey = ps_suppkey
     and l_partkey = p_partkey
     and l_suppkey = s_suppkey    

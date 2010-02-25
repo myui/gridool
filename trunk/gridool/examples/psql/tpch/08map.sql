@@ -21,15 +21,11 @@ from
 			nation n2,
 			region
 		where
-			part partitioned by (p_partkey)
-			and supplier partitioned by (s_suppkey, s_nationkey)
-			and lineitem partitioned by (l_partkey, l_suppkey, l_orderkey)
-			and orders partitioned by (o_orderkey, o_custkey)
-			and customer partitioned by (c_custkey, c_nationkey)
-			and nation partitioned by (n_nationkey, n_regionkey) alias n1
-			and nation partitioned by (n_nationkey) alias n2
-			and region partitioned by (r_regionkey)
-			and p_partkey = l_partkey
+			-- (part._hidden & 1) = 1 and
+			-- (supplier._hidden & 1) = 1 and
+			-- (n1._hidden & 16) = 16 and
+			-- (n2._hidden & 32) = 32 and
+			p_partkey = l_partkey
 			and s_suppkey = l_suppkey
 			and l_orderkey = o_orderkey
 			and o_custkey = c_custkey
