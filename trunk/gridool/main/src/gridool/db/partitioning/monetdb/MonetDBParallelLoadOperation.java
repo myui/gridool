@@ -212,6 +212,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         final Lock tableWriteLock = tableLock.writeLock();
         final int ret;
         try {
+            tableWriteLock.lock();
             ret = JDBCUtils.update(conn, query);
             conn.commit();
         } catch (SQLException e) {
