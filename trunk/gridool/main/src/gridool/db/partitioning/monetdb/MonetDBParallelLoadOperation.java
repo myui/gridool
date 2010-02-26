@@ -57,6 +57,7 @@ import xbird.util.jdbc.JDBCUtils;
 public final class MonetDBParallelLoadOperation extends DBOperation {
     private static final long serialVersionUID = 2815346044185945907L;
     private static final Log LOG = LogFactory.getLog(MonetDBParallelLoadOperation.class);
+    private static final boolean DEBUG_FILE_LOCK = true;
     private static final String driverClassName = "nl.cwi.monetdb.jdbc.MonetDriver";
 
     @Nonnull
@@ -194,11 +195,23 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         final File loadFile = prepareLoadFile(fileName);
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
 
-        ReadWriteLock rwlock = lockMgr.obtainLock(tableName);
-        final Lock lock = rwlock.writeLock();
+        // have to take a file read lock because 
+        if(DEBUG_FILE_LOCK) {
+            String filepath = loadFile.getAbsolutePath();
+            ReadWriteLock fileLock = lockMgr.obtainLock(filepath);
+            final Lock fileReadLock = fileLock.readLock();
+            if(fileReadLock.tryLock()) {
+                fileReadLock.unlock();
+            } else {
+                throw new IllegalStateException("Illegal condition was detected that file is exclusively locked: "
+                        + filepath);
+            }
+        }
+
+        ReadWriteLock tableLock = lockMgr.obtainLock(tableName);
+        final Lock tableWriteLock = tableLock.writeLock();
         final int ret;
         try {
-            lock.lock();
             ret = JDBCUtils.update(conn, query);
             conn.commit();
         } catch (SQLException e) {
@@ -206,7 +219,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             conn.rollback();
             throw e;
         } finally {
-            lock.unlock();
+            tableWriteLock.unlock();
             if(!loadFile.delete()) {
                 LOG.warn("Could not remove a tempolary file: " + loadFile.getAbsolutePath());
             }
