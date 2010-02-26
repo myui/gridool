@@ -195,17 +195,12 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         final File loadFile = prepareLoadFile(fileName);
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
 
-        if(DEBUG_FILE_LOCK) {
-            String filepath = loadFile.getAbsolutePath();
-            ReadWriteLock rwlock = lockMgr.obtainLock(filepath);
-            Lock lock = rwlock.readLock();
-            if(lock.tryLock()) {
-                lock.unlock();
-            } else {
-                throw new IllegalStateException("Loading file is exclusively locked: " + filepath);
-            }
+        String filepath = loadFile.getAbsolutePath();
+        ReadWriteLock rwlock = lockMgr.obtainLock(filepath);
+        Lock lock = rwlock.readLock();
+        if(!lock.tryLock()) {
+            throw new IllegalStateException("Loading file is exclusively locked: " + filepath);
         }
-        
         final int ret;
         try {
             ret = JDBCUtils.update(conn, query);
@@ -215,6 +210,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             conn.rollback();
             throw e;
         } finally {
+            lock.unlock();
             if(!loadFile.delete()) {
                 LOG.warn("Could not remove a tempolary file: " + loadFile.getAbsolutePath());
             }
