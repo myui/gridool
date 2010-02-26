@@ -196,7 +196,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
 
         // TODO REVIEWME Why MonetDB bulkloader shows a wrong behavior (not all of records are inserted) when lock is not accquired?
         ReadWriteLock rwlock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
-        final Lock lock = rwlock.readLock();
+        final Lock lock = rwlock.writeLock();
         final int ret;
         try {
             lock.lock();
