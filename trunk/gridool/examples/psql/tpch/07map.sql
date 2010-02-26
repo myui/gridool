@@ -18,7 +18,11 @@ from
 			nation n1,
 			nation n2
 		where
-			s_suppkey = l_suppkey
+			lineitem._hidden & 34 <> 0
+			and supplier._hidden & 32 = 32
+			-- and n1._hidden & 32 = 32
+			-- and n2._hidden & 16 = 16
+			and s_suppkey = l_suppkey
 			and o_orderkey = l_orderkey
 			and c_custkey = o_custkey
 			and s_nationkey = n1.n_nationkey

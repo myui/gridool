@@ -21,11 +21,11 @@ from
 	nation,
 	region
 where
-	(partsupp._hidden & 8) = 8	-- partitioned by partkey
-	and (part._hidden & 8) = 8  -- partitioned by partkey
-	and (supplier._hidden & 40) <> 0 -- partitioned by partkey or suppkey
-	and (nation._hidden & 40) <> 0  -- partitioned by partkey or suppkey
-	and (region._hidden & 40) <> 0  -- partitioned by partkey or suppkey
+	(partsupp._hidden & 40) <> 0
+	and (part._hidden & 8) = 8  
+	and (supplier._hidden & 36) <> 0
+	and (nation._hidden & 32) = 32
+	--and (region._hidden & 32) = 32
 	and p_partkey = ps_partkey
 	and s_suppkey = ps_suppkey
 	and p_size = 15

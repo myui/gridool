@@ -1,3 +1,4 @@
+
 select
 	nation,
 	o_year,
@@ -16,7 +17,11 @@ from
 			orders,
 			nation
 		where
-			s_suppkey = l_suppkey
+			lineitem._hidden & 46 <> 0
+			and part._hidden & 8 = 8
+			and supplier._hidden & 40 <> 0
+			and nation._hidden & 96 <> 0
+			and s_suppkey = l_suppkey
 			and ps_suppkey = l_suppkey
 			and ps_partkey = l_partkey
 			and p_partkey = l_partkey

@@ -21,11 +21,12 @@ from
 			nation n2,
 			region
 		where
-			-- (part._hidden & 1) = 1 and
-			-- (supplier._hidden & 1) = 1 and
-			-- (n1._hidden & 16) = 16 and
-			-- (n2._hidden & 32) = 32 and
-			p_partkey = l_partkey
+			part._hidden & 8 = 8
+			and supplier._hidden & 32 = 32
+			and lineitem._hidden & 42 <> 0
+			and n1._hidden & 16 = 16
+			and n2._hidden & 32 = 32
+			and p_partkey = l_partkey
 			and s_suppkey = l_suppkey
 			and l_orderkey = o_orderkey
 			and o_custkey = c_custkey
