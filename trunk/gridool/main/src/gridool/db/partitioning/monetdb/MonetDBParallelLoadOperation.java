@@ -57,7 +57,6 @@ import xbird.util.jdbc.JDBCUtils;
 public final class MonetDBParallelLoadOperation extends DBOperation {
     private static final long serialVersionUID = 2815346044185945907L;
     private static final Log LOG = LogFactory.getLog(MonetDBParallelLoadOperation.class);
-    private static final boolean DEBUG_FILE_LOCK = true;
     private static final String driverClassName = "nl.cwi.monetdb.jdbc.MonetDriver";
 
     @Nonnull
@@ -195,12 +194,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         final File loadFile = prepareLoadFile(fileName);
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
 
-        String filepath = loadFile.getAbsolutePath();
-        ReadWriteLock rwlock = lockMgr.obtainLock(filepath);
-        Lock lock = rwlock.readLock();
-        if(!lock.tryLock()) {
-            throw new IllegalStateException("Loading file is exclusively locked: " + filepath);
-        }
         final int ret;
         try {
             ret = JDBCUtils.update(conn, query);
@@ -210,7 +203,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             conn.rollback();
             throw e;
         } finally {
-            lock.unlock();
             if(!loadFile.delete()) {
                 LOG.warn("Could not remove a tempolary file: " + loadFile.getAbsolutePath());
             }
