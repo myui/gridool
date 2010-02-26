@@ -57,7 +57,6 @@ import xbird.util.jdbc.JDBCUtils;
 public final class MonetDBParallelLoadOperation extends DBOperation {
     private static final long serialVersionUID = 2815346044185945907L;
     private static final Log LOG = LogFactory.getLog(MonetDBParallelLoadOperation.class);
-    private static final boolean DEBUG_FILE_LOCK = true;
     private static final String driverClassName = "nl.cwi.monetdb.jdbc.MonetDriver";
 
     @Nonnull
@@ -195,24 +194,12 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         final File loadFile = prepareLoadFile(fileName);
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
 
-        // have to take a file read lock because 
-        if(DEBUG_FILE_LOCK) {
-            String filepath = loadFile.getAbsolutePath();
-            ReadWriteLock fileLock = lockMgr.obtainLock(filepath);
-            final Lock fileReadLock = fileLock.readLock();
-            if(fileReadLock.tryLock()) {
-                fileReadLock.unlock();
-            } else {
-                throw new IllegalStateException("Illegal condition was detected that file is exclusively locked: "
-                        + filepath);
-            }
-        }
-
-        ReadWriteLock tableLock = lockMgr.obtainLock(tableName);
-        final Lock tableWriteLock = tableLock.writeLock();
+        // TODO REVIEWME Why MonetDB bulkloader shows a wrong behavior (not all of records are inserted) when lock is not accquired?
+        ReadWriteLock rwlock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
+        final Lock lock = rwlock.readLock();
         final int ret;
         try {
-            tableWriteLock.lock();
+            lock.lock();
             ret = JDBCUtils.update(conn, query);
             conn.commit();
         } catch (SQLException e) {
@@ -220,7 +207,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             conn.rollback();
             throw e;
         } finally {
-            tableWriteLock.unlock();
+            lock.unlock();
             if(!loadFile.delete()) {
                 LOG.warn("Could not remove a tempolary file: " + loadFile.getAbsolutePath());
             }
