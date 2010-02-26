@@ -24,6 +24,7 @@ import gridool.GridException;
 import gridool.GridNode;
 import gridool.db.DBOperation;
 import gridool.db.catalog.DistributionCatalog;
+import gridool.db.helpers.DBAccessor;
 import gridool.locking.LockManager;
 import gridool.util.GridUtils;
 
@@ -148,7 +149,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             // #3 create indices and constraints
             if(alterTableDDL != null) {
                 sw.start();
-                alterTable(conn, alterTableDDL, tableName, lockMgr);
+                alterTable(conn, alterTableDDL, lockMgr);
                 LOG.info("Elapsed time for creating indices and constraints on table '" + tableName
                         + "': " + sw.toString());
             }
@@ -164,7 +165,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         final String sql = createTableDDL + "; ALTER TABLE \"" + tableName + "\" ADD \""
                 + DistributionCatalog.hiddenFieldName + "\" "
                 + DistributionCatalog.tableIdSQLDataType + ';';
-        ReadWriteLock rwlock = lockMgr.obtainLock(tableName);
+        ReadWriteLock rwlock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
         final Lock lock = rwlock.writeLock(); // exclusive lock for system table in MonetDB
         try {
             lock.lock();
@@ -213,9 +214,9 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         return ret;
     }
 
-    private static void alterTable(final Connection conn, final String sql, final String tableName, final LockManager lockMgr)
+    private static void alterTable(final Connection conn, final String sql, final LockManager lockMgr)
             throws SQLException {
-        ReadWriteLock rwlock = lockMgr.obtainLock(tableName);
+        ReadWriteLock rwlock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
         final Lock lock = rwlock.writeLock(); // exclusive lock for system table in MonetDB
         try {
             lock.lock();

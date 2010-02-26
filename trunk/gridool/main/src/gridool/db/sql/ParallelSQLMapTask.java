@@ -164,15 +164,17 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         final boolean useCreateTableAS = senderNode.equals(localNode);
 
         final int fetchedRows;
+        final LockManager lockMgr = registry.getLockManager();
+        final ReadWriteLock rwlock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
+        final Lock lock = rwlock.writeLock(); // REVIEWME tips: exclusive lock for system table in MonetDB
         final Connection dbConn = getDbConnection(taskMasterNode, registry);
         try {
+            lock.lock();
             if(singleStatement) {
                 // #1 invoke COPY INTO file
                 if(useCreateTableAS) {
                     dbConn.setAutoCommit(true);
-                    LockManager lockMgr = registry.getLockManager();
-                    ReadWriteLock rwlock = lockMgr.obtainLock(localNode);
-                    fetchedRows = executeCreateTableAs(dbConn, selectQuery, taskTableName, rwlock);
+                    fetchedRows = executeCreateTableAs(dbConn, selectQuery, taskTableName);
                 } else {
                     dbConn.setAutoCommit(false);
                     fetchedRows = executeCopyIntoFile(dbConn, selectQuery, taskTableName, tmpFile);
@@ -184,9 +186,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
                 issueDDLBeforeSelect(dbConn, queries);
                 // #1-2 invoke COPY INTO file
                 if(useCreateTableAS) {
-                    LockManager lockMgr = registry.getLockManager();
-                    ReadWriteLock rwlock = lockMgr.obtainLock(localNode);
-                    fetchedRows = executeCreateTableAs(dbConn, selectQuery, taskTableName, rwlock);
+                    fetchedRows = executeCreateTableAs(dbConn, selectQuery, taskTableName);
                 } else {
                     fetchedRows = executeCopyIntoFile(dbConn, selectQuery, taskTableName, tmpFile);
                 }
@@ -209,6 +209,7 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
             }
             throw new GridException(errmsg, e);
         } finally {
+            lock.unlock();
             JDBCUtils.closeQuietly(dbConn);
         }
         assert (fetchedRows != -1);
@@ -265,20 +266,14 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         return affectedRows;
     }
 
-    private static int executeCreateTableAs(@Nonnull final Connection conn, @Nonnull final String mapQuery, @Nonnull final String taskTableName, @Nonnull final ReadWriteLock rwlock)
+    private static int executeCreateTableAs(@Nonnull final Connection conn, @Nonnull final String mapQuery, @Nonnull final String taskTableName)
             throws SQLException {
         assert (mapQuery.indexOf(';') == -1) : mapQuery;
         String ddl = "CREATE TABLE \"" + taskTableName + "\" AS (" + mapQuery + ") WITH DATA";
         if(LOG.isInfoEnabled()) {
             LOG.info("Executing a Map SQL query: \n" + ddl);
         }
-        final Lock lock = rwlock.writeLock();
-        try {
-            lock.lock();
-            JDBCUtils.update(conn, ddl);
-        } finally {
-            lock.unlock();
-        }
+        JDBCUtils.update(conn, ddl);
         return -1;
     }
 

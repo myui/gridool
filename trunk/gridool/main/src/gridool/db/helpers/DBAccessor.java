@@ -38,6 +38,7 @@ import xbird.util.jdbc.JDBCUtils;
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
 public class DBAccessor {
+    public static final String SYS_TABLE_SYMBOL = "__i_am_system_table__";
 
     protected static final String PROP_DRIVER = "gridool.db.driver";
     protected static final String PROP_DBURL = "gridool.db.primarydb.url";

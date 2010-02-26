@@ -143,7 +143,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         DBAccessor dba = registry.getDbAccessor();
         LockManager lockMgr = registry.getLockManager();
         GridNode localNode = config.getLocalNode();
-        ReadWriteLock rwlock = lockMgr.obtainLock(localNode);
+        ReadWriteLock rwlock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
         final String outputName = jobConf.getOutputName();
         runPreparation(dba, mapQuery, masters, localNode, rwlock, outputName);
 
@@ -333,7 +333,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             assert (failedNode != null);
             DistributionCatalog catalog = registry.getDistributionCatalog();
             catalog.setNodeState(failedNode, NodeState.suspected);
-            //finishedNodes.remove(finishedNodes);
 
             if(failedNode.equals(taskMaster)) {
                 return GridTaskResultPolicy.FAILOVER;
@@ -352,8 +351,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         finishedNodes.add(taskMaster);
 
         LockManager lockMgr = registry.getLockManager();
-        GridNode localNode = config.getLocalNode();
-        final ReadWriteLock rwlock = lockMgr.obtainLock(localNode);
+        final ReadWriteLock rwlock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
 
         // # 3 invoke COPY INTO table if needed
         final int numFetchedRows = taskResult.getNumRows();
@@ -413,7 +411,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         try {
             rlock.lock();
             affected = JDBCUtils.update(conn, sql);
-            //conn.commit();
         } catch (SQLException e) {
             LOG.error(e);
             throw new GridException("failed to execute a query: " + sql, e);
@@ -485,8 +482,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         ExecutorUtils.shutdownAndAwaitTermination(copyintoExecs);
 
         LockManager lockMgr = registry.getLockManager();
-        GridNode lockNode = config.getLocalNode();
-        final ReadWriteLock rwlock = lockMgr.obtainLock(lockNode);
+        final ReadWriteLock rwlock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
 
         // #1 Invoke final aggregation query
         final String res;
