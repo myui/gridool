@@ -35,6 +35,7 @@ import gridool.db.catalog.NodeState;
 import gridool.db.helpers.DBAccessor;
 import gridool.db.helpers.GridDbUtils;
 import gridool.db.sql.ParallelSQLMapTask.ParallelSQLMapTaskResult;
+import gridool.db.sql.SQLTranslator.QueryString;
 import gridool.locking.LockManager;
 import gridool.routing.GridTaskRouter;
 import gridool.util.GridUtils;
@@ -75,6 +76,7 @@ import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.jdbc.ResultSetHandler;
 import xbird.util.net.NetUtils;
+import xbird.util.string.StringUtils;
 
 /**
  * 
@@ -215,13 +217,22 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         if(masters.length == 0) {
             throw new IllegalArgumentException();
         }
+        final String selectQuery;
+        if(StringUtils.countMatches(mapQuery, ';') > 1) {
+            QueryString[] queries = SQLTranslator.divideQuery(mapQuery, true);
+            selectQuery = (queries.length == 1) ? mapQuery
+                    : SQLTranslator.selectFirstSelectQuery(queries);
+        } else {
+            selectQuery = mapQuery;
+        }
+
         final String unionViewName = getMergeViewName(outputName);
         final StringBuilder buf = new StringBuilder(512);
         buf.append("CREATE VIEW \"");
         final String mockViewName = getMockTableName(outputName);
         buf.append(mockViewName);
         buf.append("\" AS (\n");
-        buf.append(mapQuery);
+        buf.append(selectQuery);
         buf.append("\n);\n");
         final int numTasks = masters.length;
         for(int i = 0; i < numTasks; i++) {

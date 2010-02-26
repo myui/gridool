@@ -144,19 +144,9 @@ public final class ParallelSQLMapTask extends GridTaskAdapter {
         }
 
         final QueryString[] queries = SQLTranslator.divideQuery(query, true);
-        final String selectQuery;
         final boolean singleStatement = (queries.length == 1);
-        if(singleStatement) {
-            selectQuery = query;
-        } else {
-            for(QueryString qs : queries) {
-                if(qs.isSelect()) {
-                    selectQuery = qs.getQuery();
-                    break;
-                }
-            }
-            throw new IllegalStateException();
-        }
+        final String selectQuery = singleStatement ? query
+                : SQLTranslator.selectFirstSelectQuery(queries);
 
         GridNode localNode = config.getLocalNode();
         GridNode senderNode = getSenderNode();

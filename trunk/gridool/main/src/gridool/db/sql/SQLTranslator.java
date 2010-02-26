@@ -30,6 +30,7 @@ import java.io.StreamTokenizer;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.CheckForNull;
@@ -305,6 +306,21 @@ public final class SQLTranslator {
             }
         }
         return true;
+    }
+
+    public static String selectFirstSelectQuery(final QueryString[] queries) {
+        String selectQuery = null;
+        for(QueryString qs : queries) {
+            if(qs.isSelect()) {
+                selectQuery = qs.getQuery();
+                break;
+            }
+        }
+        if(selectQuery == null) {
+            throw new IllegalStateException("Select query is not found: "
+                    + Arrays.toString(queries));
+        }
+        return selectQuery;
     }
 
     static final class QueryString {
