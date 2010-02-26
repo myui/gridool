@@ -12,8 +12,12 @@ from
 	orders,
 	lineitem,
 	nation
-where	
-	c_custkey = o_custkey
+where
+	lineitem._hidden & 2 = 2
+	and orders._hidden & 2 = 2
+	and customer._hidden & 18 <> 0
+	and nation._hidden & 80 <> 0
+	and c_custkey = o_custkey
 	and l_orderkey = o_orderkey
 	and o_orderdate >= date '1993-10-01'
 	and o_orderdate < date '1993-10-01' + interval '3' month

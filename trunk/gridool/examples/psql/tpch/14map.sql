@@ -9,8 +9,8 @@ from
 	lineitem,
 	part
 where
-	lineitem partitioned by (l_partkey)
-	and part partitioned by (p_partkey)
+	lineitem._hidden & 8 = 8
+	and part._hidden & 8 = 8
 	and l_partkey = p_partkey
 	and l_shipdate >= date '1995-09-01'
-	and l_shipdate < date '1995-09-01' + interval '1' month;
+	and l_shipdate < date '1995-09-01' + interval '1' month

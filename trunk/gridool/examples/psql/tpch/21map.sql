@@ -7,10 +7,10 @@ from
 	orders,
 	nation
 where
-	supplier partitioned by (s_suppkey, s_nationkey)
-	and lineitem partitioned by (l_suppkey, l_orderkey) alias l1
-	and orders partitioned by (o_orderkey)
-	and nation partitioned by (n_nationkey)
+	l1._hidden & 2 = 2
+	and orders._hidden & 2 = 2
+	and supplier._hidden & 34 <> 0
+	and nation._hidden & 98 <> 0
 	and s_suppkey = l1.l_suppkey
 	and o_orderkey = l1.l_orderkey
 	and o_orderstatus = 'F'
@@ -21,8 +21,7 @@ where
 		from
 			lineitem l2 
 		where
-			lineitem partitioned by (l_orderkey) alias l2
-			and l2.l_orderkey = l1.l_orderkey
+			l2.l_orderkey = l1.l_orderkey
 			and l2.l_suppkey <> l1.l_suppkey
 	)
 	and not exists (
@@ -31,8 +30,7 @@ where
 		from
 			lineitem l3 
 		where
-			lineitem partitioned by (l_orderkey) alias l3
-			and l3.l_orderkey = l1.l_orderkey
+			l3.l_orderkey = l1.l_orderkey
 			and l3.l_suppkey <> l1.l_suppkey
 			and l3.l_receiptdate > l3.l_commitdate
 	)

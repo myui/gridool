@@ -13,8 +13,8 @@ from
 				on c_custkey = o_custkey
 				and o_comment not like '%special%requests%'
 		where
-			customer partitioned by (c_custkey)
-			and orders partitioned by (o_custkey)
+			orders._hidden & 16 = 16
+			and customer._hidden & 16 = 16
 		group by
 			c_custkey
 	) as c_orders (c_custkey, c_count)

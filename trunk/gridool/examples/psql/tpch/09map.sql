@@ -1,4 +1,3 @@
-
 select
 	nation,
 	o_year,

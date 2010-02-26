@@ -10,16 +10,16 @@ from
 	orders,
 	lineitem 
 where
-	customer partitioned by (c_custkey)
-	and orders partitioned by (o_orderkey, o_custkey)
-	and lineitem partitioned by (l_orderkey)
+	lineitem._hidden & 2 = 2
+	and orders._hidden & 2 = 2
+	and customer._hidden & 18 <> 0
 	and o_orderkey in (
 		select
 			l_orderkey
 		from
 			lineitem
 		where
-			lineitem partitioned by (l_orderkey)
+			lineitem._hidden & 2  = 2
 		group by
 			l_orderkey 
 		having
@@ -33,4 +33,3 @@ group by
 	o_orderkey,
 	o_orderdate,
 	o_totalprice
-

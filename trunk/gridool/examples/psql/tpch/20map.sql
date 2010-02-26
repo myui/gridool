@@ -5,23 +5,21 @@ from
 	supplier,
 	nation
 where
-	supplier partitioned by (s_suppkey, s_suppkey)
-	and nation partitioned by (n_nationkey)
+	supplier._hidden & 64 = 64
+	and nation._hidden & 64 = 64
 	and s_suppkey in (
 		select
 			ps_suppkey
 		from
 			partsupp
 		where
-			partsupp partitioned by (ps_partkey, ps_suppkey)
-			and ps_partkey in (
+			ps_partkey in (
 				select
 					p_partkey
 				from
 					part
 				where
-					part partitioned by (p_partkey)
-					and p_name like 'forest%'
+					p_name like 'forest%'
 			)
 			and ps_availqty > (
 				select
@@ -29,8 +27,7 @@ where
 				from
 					lineitem 
 				where
-					lineitem partitioned by (l_partkey, l_suppkey)
-					and l_partkey = ps_partkey
+					l_partkey = ps_partkey
 					and l_suppkey = ps_suppkey
 					and l_shipdate >= date '1994-01-01'
 					and l_shipdate < date '1994-01-01' + interval '1' year

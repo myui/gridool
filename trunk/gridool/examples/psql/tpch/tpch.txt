@@ -3,20 +3,20 @@
  Q3 - ok
  Q4 - ok
  Q5 - ok
- Q6 - 
- Q7 - 
- Q8 - 
- Q9 - 
-Q10 - 
-Q11 - 
-Q12 - 
-Q13 - 
-Q14 - 
-Q15 - 
-Q16 - 
-Q17 - 
-Q18 - 
-Q19 - 
-Q20 - 
-Q21 - 
-Q22 - 
+ Q6 - ok
+ Q7 - ok
+ Q8 - ok
+ Q9 - ok
+Q10 - ok
+Q11 - ng (two-pass)
+Q12 - ok
+Q13 - ng (two-pass)
+Q14 - ok
+Q15 - ng (create view failes)
+Q16 - ok
+Q17 - ng (two-pass)
+Q18 - ok
+Q19 - ok
+Q20 - ok
+Q21 - ok
+Q22 - ng (two-pass)

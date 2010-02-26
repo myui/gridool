@@ -2,13 +2,13 @@ select
 	p_brand,
 	p_type,
 	p_size,
-	count(distinct ps_suppkey) as supplier_cnt
+	count(distinct ps_suppkey) as C4
 from
 	partsupp,
 	part
 where
-	partsupp partitioned by (ps_partkey)
-	and part partitioned by (p_partkey)
+	partsupp._hidden & 8 = 8
+	and part._hidden & 8 = 8
 	and p_partkey = ps_partkey
 	and p_brand <> 'Brand#45'
 	and p_type not like 'MEDIUM POLISHED%'
@@ -18,8 +18,8 @@ where
 			s_suppkey
 		from
 			supplier
-		where
-			and s_comment like '%Customer%Complaints%'
+		where			
+			s_comment like '%Customer%Complaints%'
 	)
 group by
 	p_brand,

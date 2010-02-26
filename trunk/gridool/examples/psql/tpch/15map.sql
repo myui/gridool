@@ -5,7 +5,7 @@ create view revenue0 (supplier_no, total_revenue) as
 	from
 		lineitem
 	where
-		lineitem partitioned by (l_suppkey)
+		lineitem._hidden & 32 = 32
 		and l_shipdate >= date '1996-01-01'
 		and l_shipdate < date '1996-01-01' + interval '3' month
 	group by
@@ -22,7 +22,7 @@ from
 	supplier,
 	revenue0
 where
-	supplier partitioned by (s_suppkey)
+	supplier._hidden & 32 = 32
 	and s_suppkey = supplier_no
 	and total_revenue = (
 		select

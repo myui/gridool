@@ -542,7 +542,10 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final CsvWriter writer = new CsvWriter(outFile);
         final ResultSetHandler rsh = new ResultSetHandler() {
             public Object handle(ResultSet rs) throws SQLException {
-                writer.writeAll(rs, MONETDB_NULL_STRING, false);
+                int numRows = writer.writeAll(rs, MONETDB_NULL_STRING, false);
+                if(LOG.isInfoEnabled()) {
+                    LOG.info("Result row count: " + numRows);
+                }
                 return null;
             }
         };

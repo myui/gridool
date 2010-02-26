@@ -1,6 +1,6 @@
 select
 	c_count,
-	count(C2) as custdist
+	sum(C2) as custdist
 from
 	<src>
 group by

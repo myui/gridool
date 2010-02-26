@@ -10,7 +10,7 @@ from
 		from
 			customer
 		where
-			customer partitioned by (c_custkey)
+			customer._hidden & 16 = 16
 			and substring(c_phone from 1 for 2) in
 				('13', '31', '23', '29', '30', '18', '17')
 			and c_acctbal > (
@@ -19,8 +19,7 @@ from
 				from
 					customer
 				where
-					customer partitioned by (primarykey)
-					and c_acctbal > 0.00
+					c_acctbal > 0.00
 					and substring(c_phone from 1 for 2) in
 						('13', '31', '23', '29', '30', '18', '17')
 			)
@@ -30,7 +29,7 @@ from
 				from
 					orders 
 				where
-					orders partitioned by (o_custkey)
+					orders._hidden & 16 = 16
 					and o_custkey = c_custkey
 			)
 	) as custsale

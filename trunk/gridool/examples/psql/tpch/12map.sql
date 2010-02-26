@@ -16,7 +16,8 @@ from
 	orders,
 	lineitem
 where
-	(orders._hidden & 1) = 1
+	lineitem._hidden & 2 = 2
+	and orders._hidden & 2 = 2
 	and o_orderkey = l_orderkey
 	and l_shipmode in ('MAIL', 'SHIP')
 	and l_commitdate < l_receiptdate
