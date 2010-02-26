@@ -12,7 +12,7 @@ select
 from
 	lineitem
 where
-	(lineitem._hidden & 1) = 1
+	(lineitem._hidden & 1) = 1	-- partition by primary key of lineitem
 	and l_shipdate <= date '1998-12-01' - interval '90' day (3)
 group by
 	l_returnflag,

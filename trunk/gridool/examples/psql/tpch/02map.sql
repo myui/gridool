@@ -7,6 +7,13 @@ select
 	s_address,
 	s_phone,
 	s_comment
+	/*
+	,part._hidden as part_hidden,
+	supplier._hidden as supplier_hidden,
+	partsupp._hidden as partsupp_hidden,
+	nation._hidden as nation_hidden,
+	region._hidden as region_hidden
+	*/
 from
 	part,
 	supplier,
@@ -14,11 +21,11 @@ from
 	nation,
 	region
 where
-	(partsupp._hidden & 4) = 4
-	and (part._hidden & 4) = 4
-	and (supplier._hidden & 4) = 4
-	and (nation._hidden & 4) = 4
-	and (region._hidden & 4) = 4
+	(partsupp._hidden & 8) = 8	-- partitioned by partkey
+	and (part._hidden & 8) = 8  -- partitioned by partkey
+	and (supplier._hidden & 40) <> 0 -- partitioned by partkey or suppkey
+	and (nation._hidden & 40) <> 0  -- partitioned by partkey or suppkey
+	and (region._hidden & 40) <> 0  -- partitioned by partkey or suppkey
 	and p_partkey = ps_partkey
 	and s_suppkey = ps_suppkey
 	and p_size = 15
@@ -35,7 +42,7 @@ where
 			nation,
 			region
 		where
-			p_partkey = ps_partkey
+			p_partkey = ps_partkey	-- not need to filter partition
 			and s_suppkey = ps_suppkey
 			and s_nationkey = n_nationkey
 			and n_regionkey = r_regionkey

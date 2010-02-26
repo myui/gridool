@@ -1,8 +1,8 @@
  Q1 - ok
  Q2 - ok
- Q3 - 
- Q4 - 
- Q5 - 
+ Q3 - ok
+ Q4 - ok
+ Q5 - ok
  Q6 - 
  Q7 - 
  Q8 - 

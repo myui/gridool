@@ -4,7 +4,7 @@ select
 from
 	orders 
 where
-	(orders._hidden & 1) = 1
+	(orders._hidden & 2) = 2	-- partitioned by orderkey
 	and o_orderdate >= date '1993-07-01'
 	and o_orderdate < date '1993-07-01' + interval '3' month
 	and exists (

@@ -8,7 +8,10 @@ from
 	orders,
 	lineitem 
 where
-	c_mktsegment = 'BUILDING'
+	(lineitem._hidden & 2) = 2	-- partition by orderkey
+	and (orders._hidden & 2) = 2	-- partition by orderkey
+	and (customer._hidden & 18) <> 0 -- partition by orderkey or custkey
+	and c_mktsegment = 'BUILDING'
 	and c_custkey = o_custkey
 	and l_orderkey = o_orderkey
 	and o_orderdate < date '1995-03-15'

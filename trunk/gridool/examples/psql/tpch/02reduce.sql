@@ -7,6 +7,13 @@ select
 	s_address,
 	s_phone,
 	s_comment
+	/*
+	,part_hidden,
+	supplier_hidden,
+	partsupp_hidden,
+	nation_hidden,
+	region_hidden
+	*/
 from
 	<src>
 order by
