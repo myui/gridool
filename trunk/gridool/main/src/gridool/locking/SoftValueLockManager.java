@@ -20,12 +20,11 @@
  */
 package gridool.locking;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import xbird.util.concurrent.jsr166.ConcurrentReferenceHashMap;
-import xbird.util.concurrent.jsr166.ConcurrentReferenceHashMap.ReferenceType;
+import xbird.util.collections.SoftHashMap;
 
 /**
  * 
@@ -34,24 +33,19 @@ import xbird.util.concurrent.jsr166.ConcurrentReferenceHashMap.ReferenceType;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public final class SoftKeyLockManager implements LockManager {
+public final class SoftValueLockManager implements LockManager {
 
-    private final ConcurrentMap<Object, ReadWriteLock> lockPool;
+    private final Map<Object, ReadWriteLock> lockPool;
 
-    public SoftKeyLockManager() {
-        this.lockPool = new ConcurrentReferenceHashMap<Object, ReadWriteLock>(32, ReferenceType.SOFT, ReferenceType.STRONG);
+    public SoftValueLockManager() {
+        this.lockPool = new SoftHashMap<Object, ReadWriteLock>(32);
     }
 
-    public ReadWriteLock obtainLock(final Object resource) {
+    public synchronized ReadWriteLock obtainLock(final Object resource) {
         ReadWriteLock lock = lockPool.get(resource);
         if(lock == null) {
-            final ReadWriteLock newLock = new ReentrantReadWriteLock();
-            final ReadWriteLock prevLock = lockPool.putIfAbsent(resource, newLock);
-            if(prevLock == null) {
-                lock = newLock;
-            } else {
-                lock = prevLock;
-            }
+            lock = new ReentrantReadWriteLock();
+            lockPool.put(resource, lock);
         }
         return lock;
     }

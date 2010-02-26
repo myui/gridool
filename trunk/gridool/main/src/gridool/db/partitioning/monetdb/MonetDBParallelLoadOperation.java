@@ -57,6 +57,7 @@ import xbird.util.jdbc.JDBCUtils;
 public final class MonetDBParallelLoadOperation extends DBOperation {
     private static final long serialVersionUID = 2815346044185945907L;
     private static final Log LOG = LogFactory.getLog(MonetDBParallelLoadOperation.class);
+    private static final boolean DEBUG_FILE_LOCK = true;
     private static final String driverClassName = "nl.cwi.monetdb.jdbc.MonetDriver";
 
     @Nonnull
@@ -194,12 +195,19 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         final File loadFile = prepareLoadFile(fileName);
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
 
-        // TODO REVIEWME Why MonetDB bulkloader shows a wrong behavior (not all of records are inserted) when lock is not accquired?
-        ReadWriteLock rwlock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
-        final Lock lock = rwlock.writeLock();
+        if(DEBUG_FILE_LOCK) {
+            String filepath = loadFile.getAbsolutePath();
+            ReadWriteLock rwlock = lockMgr.obtainLock(filepath);
+            Lock lock = rwlock.readLock();
+            if(lock.tryLock()) {
+                lock.unlock();
+            } else {
+                throw new IllegalStateException("Loading file is exclusively locked: " + filepath);
+            }
+        }
+        
         final int ret;
         try {
-            lock.lock();
             ret = JDBCUtils.update(conn, query);
             conn.commit();
         } catch (SQLException e) {
@@ -207,7 +215,6 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             conn.rollback();
             throw e;
         } finally {
-            lock.unlock();
             if(!loadFile.delete()) {
                 LOG.warn("Could not remove a tempolary file: " + loadFile.getAbsolutePath());
             }
