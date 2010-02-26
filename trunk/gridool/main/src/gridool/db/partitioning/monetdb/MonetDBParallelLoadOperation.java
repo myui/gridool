@@ -22,7 +22,6 @@ package gridool.db.partitioning.monetdb;
 
 import gridool.GridException;
 import gridool.GridNode;
-import gridool.GridResourceRegistry;
 import gridool.db.DBOperation;
 import gridool.db.catalog.DistributionCatalog;
 import gridool.locking.LockManager;
@@ -121,7 +120,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         if(expectedNumRecords == -1) {
             throw new IllegalStateException();
         }
-
+        final LockManager lockMgr = registry.getLockManager();
         final Connection conn;
         try {
             conn = getConnection();
@@ -132,11 +131,11 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         int numInserted = 0;
         try {
             // #1 create table
-            prepareTable(conn, createTableDDL, tableName);
+            prepareTable(conn, createTableDDL, tableName, lockMgr);
             // #2 invoke COPY INTO
             final StopWatch sw = new StopWatch();
             if(copyIntoQuery != null) {
-                numInserted = invokeCopyInto(conn, copyIntoQuery, csvFileName, registry);
+                numInserted = invokeCopyInto(conn, copyIntoQuery, tableName, csvFileName, lockMgr);
                 if(numInserted != expectedNumRecords) {
                     String errmsg = "Expected records (" + expectedNumRecords
                             + ") != Actual records (" + numInserted + "): \n" + copyIntoQuery;
@@ -149,7 +148,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             // #3 create indices and constraints
             if(alterTableDDL != null) {
                 sw.start();
-                alterTable(conn, alterTableDDL);
+                alterTable(conn, alterTableDDL, tableName, lockMgr);
                 LOG.info("Elapsed time for creating indices and constraints on table '" + tableName
                         + "': " + sw.toString());
             }
@@ -160,12 +159,15 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         return numInserted;
     }
 
-    private static void prepareTable(final Connection conn, final String createTableDDL, final String tableName)
+    private static void prepareTable(final Connection conn, final String createTableDDL, final String tableName, final LockManager lockMgr)
             throws SQLException {
         final String sql = createTableDDL + "; ALTER TABLE \"" + tableName + "\" ADD \""
                 + DistributionCatalog.hiddenFieldName + "\" "
                 + DistributionCatalog.tableIdSQLDataType + ';';
+        ReadWriteLock rwlock = lockMgr.obtainLock(tableName);
+        final Lock lock = rwlock.writeLock(); // exclusive lock for system table in MonetDB
         try {
+            lock.lock();
             JDBCUtils.update(conn, sql);
             conn.commit();
         } catch (SQLException e) {
@@ -175,17 +177,24 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             }
             truncateTable(conn, tableName);
             // fall through
+        } finally {
+            lock.unlock();
         }
     }
 
-    private static int invokeCopyInto(final Connection conn, final String copyIntoQuery, final String fileName, final GridResourceRegistry registry)
+    private static void truncateTable(@Nonnull final Connection conn, @Nonnull final String tableName)
+            throws SQLException {
+        String dml = "DELETE FROM " + tableName;
+        JDBCUtils.update(conn, dml);
+    }
+
+    private static int invokeCopyInto(final Connection conn, final String copyIntoQuery, final String tableName, final String fileName, final LockManager lockMgr)
             throws SQLException {
         final File loadFile = prepareLoadFile(fileName);
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
-        LockManager lockMgr = registry.getLockManager();
-        String filepath = loadFile.getAbsolutePath();
-        ReadWriteLock rwlock = lockMgr.obtainLock(filepath);
-        final Lock lock = rwlock.writeLock(); // REVIEWME bulkload should be exclusively locked?
+
+        ReadWriteLock rwlock = lockMgr.obtainLock(tableName);
+        final Lock lock = rwlock.writeLock();
         final int ret;
         try {
             lock.lock();
@@ -204,21 +213,21 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         return ret;
     }
 
-    private static void alterTable(Connection conn, String sql) throws SQLException {
+    private static void alterTable(final Connection conn, final String sql, final String tableName, final LockManager lockMgr)
+            throws SQLException {
+        ReadWriteLock rwlock = lockMgr.obtainLock(tableName);
+        final Lock lock = rwlock.writeLock(); // exclusive lock for system table in MonetDB
         try {
+            lock.lock();
             JDBCUtils.update(conn, sql);
             conn.commit();
         } catch (SQLException e) {
             LOG.error("rollback a transaction", e);
             conn.rollback();
             throw e;
+        } finally {
+            lock.unlock();
         }
-    }
-
-    private static void truncateTable(@Nonnull final Connection conn, @Nonnull final String tableName)
-            throws SQLException {
-        String dml = "DELETE FROM " + tableName;
-        JDBCUtils.update(conn, dml);
     }
 
     private static File prepareLoadFile(final String fileName) {
