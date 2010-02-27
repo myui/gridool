@@ -217,13 +217,13 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         if(masters.length == 0) {
             throw new IllegalArgumentException();
         }
-        final String selectQuery;
+        String mockSelectQuery;
         if(StringUtils.countMatches(mapQuery, ';') > 1) {
             QueryString[] queries = SQLTranslator.divideQuery(mapQuery, true);
-            selectQuery = (queries.length == 1) ? mapQuery
+            mockSelectQuery = (queries.length == 1) ? mapQuery
                     : SQLTranslator.selectFirstSelectQuery(queries);
         } else {
-            selectQuery = mapQuery;
+            mockSelectQuery = mapQuery;
         }
 
         final String unionViewName = getMergeViewName(outputName);
@@ -232,7 +232,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final String mockViewName = getMockTableName(outputName);
         buf.append(mockViewName);
         buf.append("\" AS (\n");
-        buf.append(selectQuery);
+        buf.append(mockSelectQuery);
         buf.append("\n);\n");
         final int numTasks = masters.length;
         for(int i = 0; i < numTasks; i++) {
@@ -416,17 +416,17 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final File file = getImportingFile(result, outputName);
         final String sql = constructCopyIntoQuery(file, result, outputName);
 
-        final Lock rlock = rwlock.readLock(); // [Trick] read lock for system tables
+        final Lock lock = rwlock.writeLock(); // FIXME why exclusive lock? => sometimes result wrong result [Trick] read lock for system tables
         final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, true);
         final int affected;
         try {
-            rlock.lock();
+            lock.lock();
             affected = JDBCUtils.update(conn, sql);
         } catch (SQLException e) {
             LOG.error(e);
             throw new GridException("failed to execute a query: " + sql, e);
         } finally {
-            rlock.unlock();
+            lock.unlock();
             if(!file.delete()) {
                 LOG.warn("Could not delete a file: " + file.getAbsolutePath());
             }
