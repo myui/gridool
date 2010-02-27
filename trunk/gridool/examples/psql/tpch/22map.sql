@@ -28,9 +28,8 @@ from
 					*
 				from
 					orders 
-				where
-					orders._hidden & 16 = 16
-					and o_custkey = c_custkey
+				where			
+					o_custkey = c_custkey
 			)
 	) as custsale
 group by
