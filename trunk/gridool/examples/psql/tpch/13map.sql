@@ -14,7 +14,7 @@ from
 				and o_comment not like '%special%requests%'
 		where
 			orders._hidden & 16 = 16
-			and customer._hidden & 16 = 16
+			and customer._hidden & 18 <> 0
 		group by
 			c_custkey
 	) as c_orders (c_custkey, c_count)
