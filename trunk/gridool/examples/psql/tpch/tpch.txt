@@ -12,7 +12,7 @@ Q11 - ng (two-pass)
 Q12 - ok
 Q13 - ng (two-pass)
 Q14 - ok
-Q15 - ng (create view failes)
+Q15 - ok
 Q16 - ok
 Q17 - ng (two-pass)
 Q18 - ok

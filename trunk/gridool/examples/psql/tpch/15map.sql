@@ -29,6 +29,6 @@ where
 			max(total_revenue)
 		from
 			revenue0
-	)
+	);
 
 drop view revenue0;
