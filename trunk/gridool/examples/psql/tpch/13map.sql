@@ -1,7 +1,9 @@
-select * from (
+select 
+	*
+from (
 	select
 		c_custkey,
-		count(o_orderkey) as C2
+		count(o_orderkey)
 	from
 		customer 
 			left outer join 
@@ -16,11 +18,11 @@ select * from (
 	union all 
 	select 
 		c_custkey,
-		0 as C2
+		0
 	from
 		customer as c
 	where
 		c._hidden & 16 = 16
 		and c.c_custkey not in 
 			(select o_custkey from orders)
-) as __uniontable
+) as c_orders (c_custkey, C2)

@@ -1,8 +1,16 @@
 select
 	c_count,
-	sum(C2) as custdist
+	count(*) as custdist
 from
-	<src>
+	(
+		select
+			c_custkey, 
+			sum(C2)
+		from 
+			<src>
+		group by
+			c_custkey
+	) as c_orders (c_custkey, c_count)
 group by
 	c_count
 order by
