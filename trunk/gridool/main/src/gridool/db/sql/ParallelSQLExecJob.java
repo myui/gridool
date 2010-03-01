@@ -536,18 +536,21 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
 
     private static String invokeReduceQuery(@Nonnull final Connection conn, @Nonnull final String reduceQuery, @Nonnull final String outputName, @Nonnull final OutputMethod outputMethod, @Nonnull final ReadWriteLock rwlock)
             throws GridException {
-        if(outputMethod.isDDL()) {
-            return invokeReduceDDL(conn, reduceQuery, outputName, outputMethod, rwlock);
-        } else {
-            return invokeReduceDML(conn, reduceQuery, outputName, outputMethod, rwlock);
+        switch(outputMethod) {
+            case csvFile:
+                return invokeCsvOutputReduce(conn, reduceQuery, outputName, rwlock);
+            case scalarString:
+                return invokeStringOutputReduce(conn, reduceQuery, rwlock);
+            case view:
+            case table:
+                return invokeReduceDDL(conn, reduceQuery, outputName, outputMethod, rwlock);
+            default:
+                throw new IllegalStateException("Unexpected outputMethod: " + outputMethod);
         }
     }
 
-    private static String invokeReduceDML(final Connection conn, final String reduceQuery, final String outputTableName, final OutputMethod outputMethod, final ReadWriteLock rwlock)
+    private static String invokeCsvOutputReduce(final Connection conn, final String reduceQuery, final String outputTableName, final ReadWriteLock rwlock)
             throws GridException {
-        if(outputMethod != OutputMethod.csvFile) {
-            throw new IllegalArgumentException("Unexpected OutputMethod: " + outputMethod);
-        }
         File colDir = GridUtils.getWorkDir(true);
         final File outFile = new File(colDir, outputTableName + ".csv");
         final CsvWriter writer = new CsvWriter(outFile);
@@ -588,6 +591,42 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                     + outFile.getAbsolutePath());
         }
         return outFile.getAbsolutePath();
+    }
+
+    private static String invokeStringOutputReduce(final Connection conn, final String reduceQuery, final ReadWriteLock rwlock)
+            throws GridException {
+        final ResultSetHandler rsh = new ResultSetHandler() {
+            public String handle(ResultSet rs) throws SQLException {
+                if(rs.next()) {
+                    String firstResult = rs.getString(1);
+                    return firstResult;
+                }
+                return null;
+            }
+        };
+
+        if(LOG.isInfoEnabled()) {
+            LOG.info("Executing a Reduce SQL query: \n" + reduceQuery);
+        }
+        final String result;
+        final Lock rlock = rwlock.readLock();
+        try {
+            rlock.lock();
+            conn.setReadOnly(true);
+            result = (String) JDBCUtils.query(conn, reduceQuery, rsh);
+        } catch (SQLException e) {
+            String errmsg = "failed running a reduce query: " + reduceQuery;
+            LOG.error(errmsg, e);
+            try {
+                conn.rollback();
+            } catch (SQLException rbe) {
+                LOG.warn("Rollback failed", rbe);
+            }
+            throw new GridException(errmsg, e);
+        } finally {
+            rlock.unlock();
+        }
+        return result;
     }
 
     private static String invokeReduceDDL(final Connection conn, final String reduceQuery, final String outputTableName, final OutputMethod outputMethod, final ReadWriteLock rwlock)
@@ -769,7 +808,9 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         /** As table */
         table(2),
         /** As view */
-        view(3);
+        view(3),
+        /** scalar string */
+        scalarString(4);
 
         private final int id;
 
@@ -781,10 +822,6 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
             return id;
         }
 
-        public boolean isDDL() {
-            return id != 1;
-        }
-
         public static OutputMethod resolve(@Nonnull final int id) {
             switch(id) {
                 case 1:
@@ -793,6 +830,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                     return table;
                 case 3:
                     return view;
+                case 4:
+                    return scalarString;
                 default:
                     throw new IllegalArgumentException("Illegal OutputMethod ID: " + id);
             }
@@ -805,6 +844,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                 return table;
             } else if("view".equalsIgnoreCase(method)) {
                 return view;
+            } else if("scalarString".equalsIgnoreCase(method)) {
+                return scalarString;
             } else {
                 throw new IllegalArgumentException("Illegal OutputMethod: " + method);
             }

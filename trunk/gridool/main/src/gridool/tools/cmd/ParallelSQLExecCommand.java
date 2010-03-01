@@ -41,7 +41,7 @@ import xbird.util.io.FileUtils;
 import xbird.util.io.IOUtils;
 
 /**
- * -mapquery FILENAME -reducequery FILENAME -outputTable NAME [-asview true] [-waitSPE SECONDS] execute sql
+ * -mapquery FILENAME -reducequery FILENAME -outputName NAME [-preAggrMap FILENAME -preAggrReduce FILENAME] [-outputMethod NAME] [-waitSPE SECONDS] execute sql
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
@@ -52,8 +52,10 @@ public final class ParallelSQLExecCommand extends CommandBase {
     public ParallelSQLExecCommand() {
         addOption(new StringOption("mapQuery", true));
         addOption(new StringOption("reduceQuery", true));
-        addOption(new StringOption("outputTable", null, false));
+        addOption(new StringOption("outputName", null, false));
         addOption(new StringOption("outputMethod", "csvfile", false));
+        addOption(new StringOption("preAggrMap", false));
+        addOption(new StringOption("preAggrReduce", false));
         addOption(new IntOption("waitSPE", -1, false));
         addOption(new BooleanOption("showOutput", false, false));
     }
@@ -88,16 +90,22 @@ public final class ParallelSQLExecCommand extends CommandBase {
         }
         String mapQuery = FileUtils.toString(mapFile);
         String reduceQuery = FileUtils.toString(reduceFile);
-        String outputTable = getOption("outputTable");
+        String outputName = getOption("outputName");
         String method = getOption("outputMethod");
         OutputMethod outputMethod = OutputMethod.resolve(method);
         Integer waitSPE = getOption("waitSPE");
         long waitInMills = (waitSPE.intValue() == -1) ? -1L : (waitSPE.longValue() * 1000L);
-        ParallelSQLExecJob.JobConf jobConf = new ParallelSQLExecJob.JobConf(outputTable, mapQuery, reduceQuery, outputMethod, waitInMills);
 
-        final StopWatch sw = new StopWatch();
         final Grid grid = new GridClient();
-        final String outputName;
+        final StopWatch sw = new StopWatch();
+
+        String preAggrMapFp = getOption("preAggrMap");
+        String preAggrReduceFp = getOption("preAggrReduce");
+        if(preAggrMapFp != null && preAggrReduceFp != null) {
+            mapQuery = runPreAggregation(grid, mapQuery, preAggrMapFp, preAggrReduceFp, waitInMills);
+        }
+
+        final ParallelSQLExecJob.JobConf jobConf = new ParallelSQLExecJob.JobConf(outputName, mapQuery, reduceQuery, outputMethod, waitInMills);
         try {
             outputName = grid.execute(ParallelSQLExecJob.class, jobConf);
         } catch (RemoteException e) {
@@ -118,12 +126,42 @@ public final class ParallelSQLExecCommand extends CommandBase {
                 }
                 System.out.println();
             }
-        }        
+        }
         return true;
     }
 
+    private static String runPreAggregation(final Grid grid, final String origMapQuery, final String preAggrMapFp, final String preAggrReduceFp, final long waitInMills)
+            throws CommandException {
+        if(!origMapQuery.contains("<src>")) {
+            throw new IllegalArgumentException("mapQuery does not need to perform pre-aggregation: "
+                    + origMapQuery);
+        }
+        File mapFile = new File(preAggrMapFp);
+        File reduceFile = new File(preAggrReduceFp);
+        if(!mapFile.exists()) {
+            throw new CommandException("Pre-aggregate map query file does not exist: "
+                    + mapFile.getAbsolutePath());
+        }
+        if(!reduceFile.exists()) {
+            throw new CommandException("Pre-aggregate reduce query file does not exist: "
+                    + reduceFile.getAbsolutePath());
+        }
+        String mapQuery = FileUtils.toString(mapFile);
+        String reduceQuery = FileUtils.toString(reduceFile);
+
+        final ParallelSQLExecJob.JobConf jobConf = new ParallelSQLExecJob.JobConf(null, mapQuery, reduceQuery, OutputMethod.scalarString, waitInMills);
+        final String replacement;
+        try {
+            replacement = grid.execute(ParallelSQLExecJob.class, jobConf);
+        } catch (RemoteException e) {
+            throw new CommandException(e);
+        }
+        String modifiedQuery = origMapQuery.replaceFirst("<src>", replacement);
+        return modifiedQuery;
+    }
+
     public String usage() {
-        return constructHelp("Executes a parallel SQL job", "-mapQuery FILENAME -reduceQuery FILENAME -outputTable NAME [-asView true] [-waitSPE SECONDS] execute sql");
+        return constructHelp("Executes a parallel SQL job", "-mapQuery FILENAME -reduceQuery FILENAME -outputName NAME [-preAggrMap FILENAME -preAggrReduce FILENAME] [-outputMethod NAME] [-waitSPE SECONDS] execute sql");
     }
 
 }
