@@ -4,6 +4,6 @@ from
     customer,
     orders
 where
-	customer partitioned by (c_custkey)
-	and orders partitioned by (o_custkey)
+	customer._hidden & 16 = 16
+	and orders._hidden & 16 = 16
     and c_custkey = o_custkey

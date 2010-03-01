@@ -4,7 +4,7 @@ select * from (
 		count(o_orderkey) as C2
 	from
 		customer 
-			left outer join 
+			inner join 
 		orders 
 			on c_custkey = o_custkey
 			and o_comment not like '%special%requests%'

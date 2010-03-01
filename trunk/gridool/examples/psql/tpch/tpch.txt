@@ -8,9 +8,9 @@
  Q8 - ok
  Q9 - ok
 Q10 - ok
-Q11 - ng (two-pass)
+Q11 - ok (two-pass)
 Q12 - ok
-Q13 - ng
+Q13 - ok
 Q14 - ok
 Q15 - ok
 Q16 - ok
@@ -19,4 +19,4 @@ Q18 - ok
 Q19 - ok
 Q20 - ok
 Q21 - ok
-Q22 - ng (two-pass)
+Q22 - ok (two-pass)
