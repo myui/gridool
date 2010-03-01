@@ -416,7 +416,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final File file = getImportingFile(result, outputName);
         final String sql = constructCopyIntoQuery(file, result, outputName);
 
-        final Lock lock = rwlock.readLock(); // FIXME why exclusive lock? => sometimes result wrong result [Trick] read lock for system tables
+        final Lock lock = rwlock.writeLock(); // FIXME why exclusive lock? => sometimes result wrong result [Trick] read lock for system tables
         final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, true);
         final int affected;
         try {
