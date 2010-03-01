@@ -4,9 +4,9 @@ select
 from
 	(
 		select
-			c_custkey, 
+			c_custkey,
 			sum(C2)
-		from 
+		from
 			<src>
 		group by
 			c_custkey
@@ -15,4 +15,4 @@ group by
 	c_count
 order by
 	custdist desc,
-	c_count desc;
+	c_count desc

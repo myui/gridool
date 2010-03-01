@@ -1,9 +1,7 @@
-select 
-	*
-from (
+select * from (
 	select
 		c_custkey,
-		count(o_orderkey)
+		count(o_orderkey) as C2
 	from
 		customer 
 			left outer join 
@@ -18,7 +16,7 @@ from (
 	union all 
 	select 
 		c_custkey,
-		0
+		0 as C2
 	from
 		customer as c
 	where

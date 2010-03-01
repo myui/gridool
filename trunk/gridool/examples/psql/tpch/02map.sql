@@ -7,13 +7,6 @@ select
 	s_address,
 	s_phone,
 	s_comment
-	/*
-	,part._hidden as part_hidden,
-	supplier._hidden as supplier_hidden,
-	partsupp._hidden as partsupp_hidden,
-	nation._hidden as nation_hidden,
-	region._hidden as region_hidden
-	*/
 from
 	part,
 	supplier,
