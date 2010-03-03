@@ -105,6 +105,10 @@ public interface ILocalDirectory {
     @Nullable
     public byte[] getValue(@Nonnull String idxName, @Nonnull byte[] key) throws DbException;
 
+    public void setCacheSize(@Nonnull String idxName, int cacheSize);
+
+    public int getCacheSize(@Nonnull String idxName);
+
     public enum DirectoryIndexType {
         bfile /* default */, tcb;
 

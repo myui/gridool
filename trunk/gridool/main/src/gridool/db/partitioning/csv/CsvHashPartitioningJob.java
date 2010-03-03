@@ -49,6 +49,7 @@ import javax.annotation.Nonnull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import xbird.config.Settings;
 import xbird.storage.DbException;
 import xbird.storage.index.BTreeCallback;
 import xbird.storage.index.Value;
@@ -74,6 +75,7 @@ public final class CsvHashPartitioningJob extends
         GridJobBase<CsvHashPartitioningJob.JobConf, Map<GridNode, MutableInt>> {
     private static final long serialVersionUID = 149683992715077498L;
     private static final Log LOG = LogFactory.getLog(CsvHashPartitioningJob.class);
+    private static final int FK_INDEX_CACHE_SIZE = Primitives.parseInt(Settings.get("gridool.db.partitioning.fk_index_caches"), 8192);
 
     private transient Map<GridNode, MutableInt> assignedRecMap;
 
@@ -133,6 +135,9 @@ public final class CsvHashPartitioningJob extends
         final char quoteChar = jobConf.getStringQuote();
         // working resources
         final ILocalDirectory index = registry.getDirectory();
+        for(String idxName : fkIdxNames) {
+            setFkIndexCacheSizes(index, idxName, FK_INDEX_CACHE_SIZE);
+        }
         final String[] fields = new String[getMaxColumnCount(primaryKey, foreignKeys)];
         assert (fields.length > 0);
         final FixedArrayList<String> fieldList = new FixedArrayList<String>(fields);
@@ -524,6 +529,10 @@ public final class CsvHashPartitioningJob extends
         System.arraycopy(b, 2, nodeBytes, 0, nodeLength);
         GridNode node = GridNodeInfo.fromBytes(nodeBytes);
         return node;
+    }
+
+    private static void setFkIndexCacheSizes(final ILocalDirectory index, final String idxName, final int cacheSize) {
+        index.setCacheSize(idxName, cacheSize);
     }
 
     private static final class NodeWithPartitionNo {

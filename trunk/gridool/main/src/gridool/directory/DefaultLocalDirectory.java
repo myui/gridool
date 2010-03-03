@@ -38,6 +38,7 @@ import org.apache.commons.logging.LogFactory;
 import xbird.storage.DbException;
 import xbird.storage.index.BIndexFile;
 import xbird.storage.index.BTreeCallback;
+import xbird.storage.index.Paged;
 import xbird.storage.index.Value;
 import xbird.storage.indexer.IndexQuery;
 import xbird.storage.indexer.BasicIndexQuery.IndexConditionEQ;
@@ -60,7 +61,7 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory {
 
     public DefaultLocalDirectory(@CheckForNull LockManager lockManger) {
         super(lockManger);
-        this.map = new ConcurrentHashMap<String, BIndexFile>(8);
+        this.map = new ConcurrentHashMap<String, BIndexFile>(16);
     }
 
     @SuppressWarnings("unchecked")
@@ -127,7 +128,7 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory {
 
     public void addMapping(final String idxName, final byte[][] keys, final byte[] value)
             throws DbException {
-        final BIndexFile btree = prepareDatabase(idxName);
+        final BIndexFile btree = openIndex(idxName);
         for(byte[] k : keys) {
             btree.addValue(new Value(k), value);
         }
@@ -139,7 +140,7 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory {
             throw new IllegalArgumentException();
         }
 
-        final BIndexFile btree = prepareDatabase(idxName);
+        final BIndexFile btree = openIndex(idxName);
         final int length = keys.length;
         for(int i = 0; i < length; i++) {
             btree.addValue(new Value(keys[i]), values[i]);
@@ -151,24 +152,11 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory {
             throw new IllegalArgumentException();
         }
 
-        final BIndexFile btree = prepareDatabase(idxName);
+        final BIndexFile btree = openIndex(idxName);
         final int length = keys.length;
         for(int i = 0; i < length; i++) {
             btree.putValue(new Value(keys[i]), values[i]);
         }
-    }
-
-    private BIndexFile prepareDatabase(final String idxName) throws DbException {
-        BIndexFile btree;
-        synchronized(map) {
-            btree = map.get(idxName);
-            if(btree == null) {
-                btree = createIndex(idxName, false);
-                btree.init(false);
-                map.put(idxName, btree);
-            }
-        }
-        return btree;
     }
 
     public byte[][] removeMapping(final String idxName, final byte[] key) throws DbException {
@@ -238,11 +226,31 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory {
         return v;
     }
 
-    private static BIndexFile createIndex(final String name, final boolean create)
-            throws DbException {
+    private BIndexFile openIndex(final String idxName) throws DbException {
+        BIndexFile btree;
+        synchronized(map) {
+            btree = map.get(idxName);
+            if(btree == null) {
+                btree = createIndex(idxName, false);
+                btree.init(false);
+                map.put(idxName, btree);
+            }
+        }
+        return btree;
+    }
+
+    private BIndexFile createIndex(final String name, final boolean create) throws DbException {
         File colDir = GridUtils.getWorkDir(true);
         File idxFile = new File(colDir, name + IDX_SUFFIX_NAME);
-        BIndexFile btree = new BIndexFile(idxFile, true);
+        Integer cacheSize = getCacheSize(name);
+        final BIndexFile btree;
+        if(cacheSize == null) {
+            btree = new BIndexFile(idxFile, true);
+        } else {
+            int idxCaches = cacheSize.intValue();
+            int dataCaches = (int) (idxCaches * 0.6);
+            btree = new BIndexFile(idxFile, Paged.DEFAULT_PAGESIZE, idxCaches, dataCaches, true);
+        }
         if(DELETE_IDX_ON_EXIT) {
             if(idxFile.exists()) {
                 if(!idxFile.delete()) {

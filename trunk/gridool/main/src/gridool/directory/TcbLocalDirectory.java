@@ -59,7 +59,7 @@ public final class TcbLocalDirectory extends AbstractLocalDirectory {
 
     public TcbLocalDirectory(LockManager lockManger) {
         super(lockManger);
-        this.map = new ConcurrentHashMap<String, BDB>(8);
+        this.map = new ConcurrentHashMap<String, BDB>(16);
     }
 
     @SuppressWarnings("unchecked")
@@ -310,7 +310,7 @@ public final class TcbLocalDirectory extends AbstractLocalDirectory {
         return v;
     }
 
-    private static BDB createIndex(final String name) throws DbException {
+    private BDB createIndex(final String name) throws DbException {
         File colDir = GridUtils.getWorkDir(true);
         File idxFile = new File(colDir, name + IDX_SUFFIX_NAME);
         if(DELETE_IDX_ON_EXIT) {
@@ -329,6 +329,12 @@ public final class TcbLocalDirectory extends AbstractLocalDirectory {
             throw new DbException(errmsg);
         } else {
             LOG.info("Use a TokyoCabinet B+tree index on " + filePath + " for LocalDirectory");
+        }
+        Integer cacheSize = getCacheSize(name);
+        if(cacheSize != null) {
+            int leafCaches = cacheSize.intValue();
+            int nonLeafCaches = (int) (cacheSize.intValue() * 0.6);
+            tcb.setcache(leafCaches, nonLeafCaches);
         }
         return tcb;
     }
