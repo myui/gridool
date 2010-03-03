@@ -20,13 +20,15 @@
  */
 package gridool.directory;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import gridool.locking.LockManager;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+
+import com.sun.istack.internal.Nullable;
 
 import xbird.config.Settings;
 import xbird.storage.DbException;
@@ -42,18 +44,18 @@ import xbird.storage.index.BTreeCallback;
 public abstract class AbstractLocalDirectory implements ILocalDirectory {
 
     protected static final boolean DELETE_IDX_ON_EXIT = Boolean.parseBoolean(Settings.get("gridool.directory.btree.delete_on_exit"));
-        
+
     @Nonnull
     protected final LockManager lockManager;
+    @Nonnull
+    protected final ConcurrentMap<String, Integer> cacheSizes;
 
-    protected final Map<String, Integer> cacheSizes;
-    
     public AbstractLocalDirectory(@CheckForNull LockManager lockManger) {
         if(lockManger == null) {
             throw new IllegalArgumentException();
         }
         this.lockManager = lockManger;
-        this.cacheSizes = new HashMap<String, Integer>(16);
+        this.cacheSizes = new ConcurrentHashMap<String, Integer>(16);
     }
 
     @Nonnull
@@ -94,10 +96,11 @@ public abstract class AbstractLocalDirectory implements ILocalDirectory {
     }
 
     public void setCacheSize(@Nonnull String idxName, int cacheSize) {
-        cacheSizes.put(idxName, cacheSize);    
+        cacheSizes.put(idxName, cacheSize);
     }
-    
-    public int getCacheSize(@Nonnull String idxName) {
+
+    @Nullable
+    public Integer getCacheSize(@Nonnull String idxName) {
         return cacheSizes.get(idxName);
     }
 }

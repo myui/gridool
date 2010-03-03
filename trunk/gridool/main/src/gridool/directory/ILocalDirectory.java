@@ -107,7 +107,7 @@ public interface ILocalDirectory {
 
     public void setCacheSize(@Nonnull String idxName, int cacheSize);
 
-    public int getCacheSize(@Nonnull String idxName);
+    public Integer getCacheSize(@Nonnull String idxName);
 
     public enum DirectoryIndexType {
         bfile /* default */, tcb;
