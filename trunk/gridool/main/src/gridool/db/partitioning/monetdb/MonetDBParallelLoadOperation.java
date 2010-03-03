@@ -122,6 +122,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             throw new IllegalStateException();
         }
         final LockManager lockMgr = registry.getLockManager();
+        final ReadWriteLock lock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
         final Connection conn;
         try {
             conn = getConnection();
@@ -132,11 +133,11 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         int numInserted = 0;
         try {
             // #1 create table
-            prepareTable(conn, createTableDDL, tableName, lockMgr);
+            prepareTable(conn, createTableDDL, tableName, lock);
             // #2 invoke COPY INTO
             final StopWatch sw = new StopWatch();
             if(copyIntoQuery != null) {
-                numInserted = invokeCopyInto(conn, copyIntoQuery, tableName, csvFileName, lockMgr);
+                numInserted = invokeCopyInto(conn, copyIntoQuery, tableName, csvFileName, lock);
                 if(numInserted != expectedNumRecords) {
                     String errmsg = "Expected records (" + expectedNumRecords
                             + ") != Actual records (" + numInserted + "): \n" + copyIntoQuery;
@@ -149,7 +150,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             // #3 create indices and constraints
             if(alterTableDDL != null) {
                 sw.start();
-                alterTable(conn, alterTableDDL, lockMgr);
+                alterTable(conn, alterTableDDL, lock);
                 LOG.info("Elapsed time for creating indices and constraints on table '" + tableName
                         + "': " + sw.toString());
             }
@@ -160,12 +161,11 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         return numInserted;
     }
 
-    private static void prepareTable(final Connection conn, final String createTableDDL, final String tableName, final LockManager lockMgr)
+    private static void prepareTable(final Connection conn, final String createTableDDL, final String tableName, final ReadWriteLock rwlock)
             throws SQLException {
         final String sql = createTableDDL + "; ALTER TABLE \"" + tableName + "\" ADD \""
                 + DistributionCatalog.hiddenFieldName + "\" "
                 + DistributionCatalog.tableIdSQLDataType + ';';
-        ReadWriteLock rwlock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
         final Lock lock = rwlock.writeLock(); // exclusive lock for system table in MonetDB
         try {
             lock.lock();
@@ -189,13 +189,15 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         JDBCUtils.update(conn, dml);
     }
 
-    private static int invokeCopyInto(final Connection conn, final String copyIntoQuery, final String tableName, final String fileName, final LockManager lockMgr)
+    private static int invokeCopyInto(final Connection conn, final String copyIntoQuery, final String tableName, final String fileName, final ReadWriteLock rwlock)
             throws SQLException {
         final File loadFile = prepareLoadFile(fileName);
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
 
+        final Lock lock = rwlock.readLock();    // TODO REVIEWME Is this really required?
         final int ret;
         try {
+            lock.lock();
             ret = JDBCUtils.update(conn, query);
             conn.commit();
         } catch (SQLException e) {
@@ -203,6 +205,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
             conn.rollback();
             throw e;
         } finally {
+            lock.unlock();
             if(!loadFile.delete()) {
                 LOG.warn("Could not remove a tempolary file: " + loadFile.getAbsolutePath());
             }
@@ -210,9 +213,8 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         return ret;
     }
 
-    private static void alterTable(final Connection conn, final String sql, final LockManager lockMgr)
+    private static void alterTable(final Connection conn, final String sql, final ReadWriteLock rwlock)
             throws SQLException {
-        ReadWriteLock rwlock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
         final Lock lock = rwlock.writeLock(); // exclusive lock for system table in MonetDB
         try {
             lock.lock();
