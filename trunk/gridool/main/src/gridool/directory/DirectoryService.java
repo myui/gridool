@@ -85,7 +85,7 @@ public final class DirectoryService implements GridService {
         final ILocalDirectory ld;
         switch(type) {
             case tcb:
-                ld = new TcbLocalDirectory(lockManager);
+                ld = new TcBtreeLocalDirectory(lockManager);
                 break;
             case bfile:
             default:

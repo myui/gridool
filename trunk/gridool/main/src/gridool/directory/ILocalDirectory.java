@@ -110,11 +110,13 @@ public interface ILocalDirectory {
     public Integer getCacheSize(@Nonnull String idxName);
 
     public enum DirectoryIndexType {
-        bfile /* default */, tcb;
+        bfile /* default */, tcb, tch;
 
         public static DirectoryIndexType resolve(String type) {
-            if("tcb".equalsIgnoreCase(type) || "tokyocabinet".equalsIgnoreCase(type)) {
+            if("tcb".equalsIgnoreCase(type)) {
                 return tcb;
+            } else if("tch".equalsIgnoreCase(type)) {
+                return tch;
             } else {
                 return bfile;
             }

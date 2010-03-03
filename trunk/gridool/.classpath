@@ -5,7 +5,6 @@
 	<classpathentry kind="src" path="main/conf"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/jgroups-core-2.6.3.GA.jar"/>
-	<classpathentry kind="lib" path="lib/optional/tokyocabinet-1.14.jar"/>
 	<classpathentry kind="lib" path="lib/jsr305.jar"/>
 	<classpathentry kind="lib" path="lib/optional/junit-4.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.0.4.jar"/>
@@ -19,5 +18,6 @@
 	<classpathentry kind="lib" path="lib/optional/jdbc/postgresql-8.4-701.jdbc4.jar" sourcepath="lib/src/postgresql-jdbc-8.4-701.src.zip"/>
 	<classpathentry kind="lib" path="lib/args4j-2.0.12.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/xbird-open"/>
+	<classpathentry kind="lib" path="lib/optional/tokyocabinet-1.22.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>

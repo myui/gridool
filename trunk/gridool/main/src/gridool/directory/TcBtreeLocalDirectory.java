@@ -51,13 +51,13 @@ import xbird.storage.indexer.IndexQuery;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 @ThreadSafe
-public final class TcbLocalDirectory extends AbstractLocalDirectory {
-    private static final Log LOG = LogFactory.getLog(TcbLocalDirectory.class);
+public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
+    private static final Log LOG = LogFactory.getLog(TcBtreeLocalDirectory.class);
     private static final String IDX_SUFFIX_NAME = ".tcb";
 
     private final Map<String, BDB> map;
 
-    public TcbLocalDirectory(LockManager lockManger) {
+    public TcBtreeLocalDirectory(LockManager lockManger) {
         super(lockManger);
         this.map = new ConcurrentHashMap<String, BDB>(16);
     }
