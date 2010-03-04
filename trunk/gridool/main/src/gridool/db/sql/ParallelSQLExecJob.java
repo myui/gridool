@@ -417,21 +417,17 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         final String sql = constructCopyIntoQuery(file, result, tableName);
 
         ReadWriteLock systableLock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
-        final Lock sysReadLock = systableLock.readLock();
-        ReadWriteLock tableLock = lockMgr.obtainLock(tableName);
-        final Lock tblWritelock = tableLock.writeLock(); // TODO REVIEWME
+        final Lock lock = systableLock.writeLock(); // FIXME why exclusive lock? => sometimes result wrong result [Trick] read lock for system tables
         final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, true);
         final int affected;
         try {
-            sysReadLock.lock();
-            tblWritelock.lock();
+            lock.lock();
             affected = JDBCUtils.update(conn, sql);
         } catch (SQLException e) {
             LOG.error(e);
             throw new GridException("failed to execute a query: " + sql, e);
         } finally {
-            sysReadLock.unlock();
-            tblWritelock.unlock();
+            lock.unlock();
             if(!file.delete()) {
                 LOG.warn("Could not delete a file: " + file.getAbsolutePath());
             }
