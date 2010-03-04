@@ -194,7 +194,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         final File loadFile = prepareLoadFile(fileName);
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
 
-        final Lock lock = rwlock.readLock();    // TODO REVIEWME Is this really required?
+        final Lock lock = rwlock.writeLock(); // TODO REVIEWME Is this really required? why exlusive lock is required.
         final int ret;
         try {
             lock.lock();
