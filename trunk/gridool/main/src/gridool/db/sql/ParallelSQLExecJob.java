@@ -361,10 +361,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         GridNode taskMaster = taskResult.getMasterNode();
         finishedNodes.add(taskMaster);
 
-        LockManager lockMgr = registry.getLockManager();
-        final ReadWriteLock rwlock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
-
         // # 3 invoke COPY INTO table if needed
+        final LockManager lockMgr = registry.getLockManager();
         final int numFetchedRows = taskResult.getNumRows();
         if(numFetchedRows > 0) {
             final DBAccessor dba = registry.getDbAccessor();
@@ -372,7 +370,7 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
                 public void run() {
                     final int inserted;
                     try {
-                        inserted = invokeCopyIntoTable(taskResult, outputName, dba, rwlock);
+                        inserted = invokeCopyIntoTable(taskResult, outputName, dba, lockMgr);
                     } catch (GridException e) {
                         LOG.error(e);
                         throw new IllegalStateException("Copy Into table failed: " + outputName, e);
@@ -411,22 +409,29 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return GridTaskResultPolicy.CONTINUE;
     }
 
-    private static int invokeCopyIntoTable(@Nonnull final ParallelSQLMapTaskResult result, @Nonnull final String outputName, @Nonnull final DBAccessor dba, @Nonnull final ReadWriteLock rwlock)
+    private static int invokeCopyIntoTable(@Nonnull final ParallelSQLMapTaskResult result, @Nonnull final String outputName, @Nonnull final DBAccessor dba, @Nonnull final LockManager lockMgr)
             throws GridException {
         final File file = getImportingFile(result, outputName);
-        final String sql = constructCopyIntoQuery(file, result, outputName);
+        int taskNum = result.getTaskNumber();
+        final String tableName = getTaskResultTableName(outputName, taskNum);
+        final String sql = constructCopyIntoQuery(file, result, tableName);
 
-        final Lock lock = rwlock.writeLock(); // FIXME why exclusive lock? => sometimes result wrong result [Trick] read lock for system tables
+        ReadWriteLock systableLock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
+        final Lock sysReadLock = systableLock.readLock();
+        ReadWriteLock tableLock = lockMgr.obtainLock(tableName);
+        final Lock tblWritelock = tableLock.writeLock(); // TODO REVIEWME
         final Connection conn = GridDbUtils.getPrimaryDbConnection(dba, true);
         final int affected;
         try {
-            lock.lock();
+            sysReadLock.lock();
+            tblWritelock.lock();
             affected = JDBCUtils.update(conn, sql);
         } catch (SQLException e) {
             LOG.error(e);
             throw new GridException("failed to execute a query: " + sql, e);
         } finally {
-            lock.unlock();
+            sysReadLock.unlock();
+            tblWritelock.unlock();
             if(!file.delete()) {
                 LOG.warn("Could not delete a file: " + file.getAbsolutePath());
             }
@@ -455,10 +460,8 @@ public final class ParallelSQLExecJob extends GridJobBase<ParallelSQLExecJob.Job
         return file;
     }
 
-    private static String constructCopyIntoQuery(final File file, final ParallelSQLMapTaskResult result, final String outputName) {
+    private static String constructCopyIntoQuery(final File file, final ParallelSQLMapTaskResult result, final String tableName) {
         final int records = result.getNumRows();
-        int taskNum = result.getTaskNumber();
-        final String tableName = getTaskResultTableName(outputName, taskNum);
         final String filePath = file.getAbsolutePath();
         return "COPY " + records + " RECORDS INTO \"" + tableName + "\" FROM '" + filePath
                 + "' USING DELIMITERS '|','\n','\"'";
