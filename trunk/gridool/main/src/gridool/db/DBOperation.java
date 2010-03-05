@@ -117,8 +117,13 @@ public abstract class DBOperation implements Externalizable {
         this.registry = registry;
     }
 
-    public final Connection getConnection() throws ClassNotFoundException, SQLException {
-        final Connection primaryConn = JDBCUtils.getConnection(connectUrl, driverClassName, userName, password);
+    public final Connection getConnection() throws SQLException, GridException {
+        final Connection primaryConn;
+        try {
+            primaryConn = JDBCUtils.getConnection(connectUrl, driverClassName, userName, password);
+        } catch (ClassNotFoundException e) {
+            throw new GridException("Failed to get a database connection: " + connectUrl, e);
+        }
         configureConnection(primaryConn);
         if(transferredForReplica) {
             try {

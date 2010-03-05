@@ -100,13 +100,7 @@ public final class DBInsertOperation extends DBOperation {
     }
 
     public Serializable execute() throws SQLException, GridException {
-        final Connection conn;
-        try {
-            conn = getConnection();
-        } catch (ClassNotFoundException e) {
-            LOG.error(e);
-            throw new SQLException(e.getMessage());
-        }
+        final Connection conn = getConnection();
         if(createTableDDL != null) {
             try {
                 executeDDL(conn, createTableDDL);

@@ -25,15 +25,11 @@ import gridool.GridException;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 import javax.annotation.Nonnull;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
@@ -47,7 +43,6 @@ import xbird.util.jdbc.JDBCUtils;
  */
 public final class DBExecuteUpdateOperation extends DBOperation {
     private static final long serialVersionUID = 7996807762151927537L;
-    private static final Log LOG = LogFactory.getLog(DBExecuteUpdateOperation.class);
 
     @Nonnull
     private/* final */String sql;
@@ -60,19 +55,15 @@ public final class DBExecuteUpdateOperation extends DBOperation {
     }
 
     @Override
-    public Serializable execute() throws SQLException, GridException {
-        final Connection conn;
+    public Integer execute() throws SQLException, GridException {
+        final Connection conn = getConnection();
+        final int ret;
         try {
-            conn = getConnection();
-        } catch (ClassNotFoundException e) {
-            LOG.error(e);
-            throw new SQLException(e.getMessage());
-        }
-        try {
-            return executeUpdate(conn, sql);
+            ret = executeUpdate(conn, sql);
         } finally {
             JDBCUtils.closeQuietly(conn);
         }
+        return ret;
     }
 
     private static int executeUpdate(@Nonnull final Connection conn, @Nonnull final String sql)
