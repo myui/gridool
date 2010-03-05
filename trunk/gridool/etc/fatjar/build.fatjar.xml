@@ -10,7 +10,6 @@
             </manifest>
             <fileset dir="/home/myui/workspace/gridool/build"/>
             <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/jgroups-core-2.6.3.GA.jar"/>
-            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/optional/tokyocabinet-1.14.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/jsr305.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/optional/junit-4.1.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/commons-logging-1.0.4.jar"/>
@@ -51,6 +50,7 @@
             <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/xbird-open/lib/optional/tomcat-apr-5.5.23.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/xbird-open/lib/optional/testng-5.9-jdk15.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/xbird-open/lib/optional/args4j-2.0.12.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/myui/workspace/gridool/lib/optional/tokyocabinet-1.22.jar"/>
         </jar>
     </target>
 </project>
