@@ -44,8 +44,8 @@ import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
@@ -101,7 +101,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
 
     // ------------------------
 
-    protected transient final ConcurrentHashMap<GridNode, Integer> assignMap;
+    protected transient final HashMap<GridNode, Integer> assignMap;
 
     // ------------------------
     // working resources
@@ -120,7 +120,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     public CsvPartitioningTask(GridJob job, DBPartitioningJobConf jobConf) {
         super(job, false);
         this.jobConf = jobConf;
-        this.assignMap = new ConcurrentHashMap<GridNode, Integer>(64);
+        this.assignMap = new HashMap<GridNode, Integer>(64);
     }
 
     @Override
@@ -144,7 +144,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         this.shuffleThreads = shuffleThreads;
     }
 
-    protected ConcurrentHashMap<GridNode, Integer> execute() throws GridException {
+    protected HashMap<GridNode, Integer> execute() throws GridException {
         int numShuffleThreads = shuffleThreads();
         this.shuffleExecPool = (numShuffleThreads <= 0) ? new DirectExecutorService()
                 : ExecutorFactory.newBoundedWorkQueueFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
@@ -207,46 +207,46 @@ public class CsvPartitioningTask extends GridTaskAdapter {
 
     private final void invokeShuffle(@Nonnull final ExecutorService shuffleExecPool, @Nonnull final ArrayQueue<String> queue) {
         assert (kernel != null);
-        final boolean isFirst;
-        if(isFirstShuffle) {
-            this.isFirstShuffle = false;
-            isFirst = true;
-        } else {
-            isFirst = false;
-        }
+        final String[] lines = queue.toArray(String.class);
         final String fileName = csvFileName;
-        shuffleExecPool.execute(new Runnable() {
-            public void run() {
-                String[] lines = queue.toArray(String.class);
-                CsvHashPartitioningJob.JobConf conf = new CsvHashPartitioningJob.JobConf(lines, fileName, isFirst, primaryForeignKeys, jobConf);
-
-                final GridJobFuture<Map<GridNode, Integer>> future = kernel.execute(CsvHashPartitioningJob.class, conf);
-                final Map<GridNode, Integer> map;
-                try {
-                    map = future.get(); // wait for execution
-                } catch (InterruptedException ie) {
-                    LOG.error(ie.getMessage(), ie);
-                    throw new IllegalStateException(ie);
-                } catch (ExecutionException ee) {
-                    LOG.error(ee.getMessage(), ee);
-                    throw new IllegalStateException(ee);
+        if(isFirstShuffle) {
+            CsvHashPartitioningJob.JobConf conf = new CsvHashPartitioningJob.JobConf(lines, fileName, true, primaryForeignKeys, jobConf);
+            runShuffleJob(kernel, conf, assignMap);
+        } else {
+            shuffleExecPool.execute(new Runnable() {
+                public void run() {
+                    CsvHashPartitioningJob.JobConf conf = new CsvHashPartitioningJob.JobConf(lines, fileName, false, primaryForeignKeys, jobConf);
+                    runShuffleJob(kernel, conf, assignMap);
                 }
-                final ConcurrentHashMap<GridNode, Integer> recMap = assignMap;
-                synchronized(recMap) {
-                    for(final Map.Entry<GridNode, Integer> e : map.entrySet()) {
-                        GridNode node = e.getKey();
-                        Integer assigned = e.getValue();
-                        Integer prev = recMap.get(node);
-                        if(prev == null) {
-                            recMap.put(node, assigned);
-                        } else {
-                            int newValue = prev.intValue() + assigned.intValue();
-                            recMap.put(node, newValue);
-                        }
-                    }
+            });
+        }
+    }
+
+    private static void runShuffleJob(final GridKernel kernel, final CsvHashPartitioningJob.JobConf conf, final Map<GridNode, Integer> recMap) {
+        final GridJobFuture<Map<GridNode, Integer>> future = kernel.execute(CsvHashPartitioningJob.class, conf);
+        final Map<GridNode, Integer> map;
+        try {
+            map = future.get(); // wait for execution
+        } catch (InterruptedException ie) {
+            LOG.error(ie.getMessage(), ie);
+            throw new IllegalStateException(ie);
+        } catch (ExecutionException ee) {
+            LOG.error(ee.getMessage(), ee);
+            throw new IllegalStateException(ee);
+        }
+        synchronized(recMap) {
+            for(final Map.Entry<GridNode, Integer> e : map.entrySet()) {
+                GridNode node = e.getKey();
+                Integer assigned = e.getValue();
+                Integer prev = recMap.get(node);
+                if(prev == null) {
+                    recMap.put(node, assigned);
+                } else {
+                    int newValue = prev.intValue() + assigned.intValue();
+                    recMap.put(node, newValue);
                 }
             }
-        });
+        }
     }
 
     private static final CvsReader getCsvReader(final DBPartitioningJobConf jobConf)

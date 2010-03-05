@@ -227,20 +227,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         File colDir = GridUtils.getWorkDir(true);
         final File file = new File(colDir, fileName);
         if(!file.exists()) {
-            LOG.info("Wait for FileAppend task completed: " + file.getAbsolutePath());
-            int retrycnt = 20; // timeout 10sec (500msec x 20)
-            while(!file.exists()) {
-                if((retrycnt--) == 0) {
-                    throw new IllegalStateException("Give up loading a file: "
-                            + file.getAbsolutePath());
-                }
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    LOG.warn(e);
-                    break;
-                }
-            }
+            throw new IllegalStateException("Loading file does not exist: " + file.getAbsolutePath());
         }
         return file;
     }
