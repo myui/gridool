@@ -38,7 +38,6 @@ import org.apache.commons.logging.LogFactory;
 
 import xbird.util.datetime.StopWatch;
 import xbird.util.math.MathUtils;
-import xbird.util.primitive.MutableInt;
 
 /**
  * 
@@ -67,7 +66,7 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
     }
 
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
-        final ConcurrentHashMap<GridNode, MutableInt> processed = result.getResult();
+        final ConcurrentHashMap<GridNode, Integer> processed = result.getResult();
         if(processed == null || processed.isEmpty()) {
             Exception err = result.getException();
             if(err == null) {
@@ -81,7 +80,7 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
             final int numNodes = processed.size();
             final int[] counts = new int[numNodes];
             int i = 0;
-            for(MutableInt e : processed.values()) {
+            for(Integer e : processed.values()) {
                 int v = e.intValue();
                 numProcessed += v;
                 counts[i++] = v;
@@ -92,7 +91,7 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
             LOG.info("STDDEV of data distribution in " + numNodes + " nodes: " + sd + " ("
                     + percent + "%), Job executed in " + StopWatch.elapsedTime(elapsed));
         } else {
-            for(MutableInt e : processed.values()) {
+            for(Integer e : processed.values()) {
                 numProcessed += e.intValue();
             }
         }

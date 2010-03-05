@@ -64,7 +64,6 @@ import xbird.util.concurrent.ExecutorUtils;
 import xbird.util.csv.CvsReader;
 import xbird.util.csv.SimpleCvsReader;
 import xbird.util.io.FastBufferedInputStream;
-import xbird.util.primitive.MutableInt;
 import xbird.util.primitive.Primitives;
 import xbird.util.struct.Pair;
 import xbird.util.system.SystemUtils;
@@ -102,7 +101,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
 
     // ------------------------
 
-    protected transient final ConcurrentHashMap<GridNode, MutableInt> assignMap;
+    protected transient final ConcurrentHashMap<GridNode, Integer> assignMap;
 
     // ------------------------
     // working resources
@@ -121,7 +120,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     public CsvPartitioningTask(GridJob job, DBPartitioningJobConf jobConf) {
         super(job, false);
         this.jobConf = jobConf;
-        this.assignMap = new ConcurrentHashMap<GridNode, MutableInt>(64);
+        this.assignMap = new ConcurrentHashMap<GridNode, Integer>(64);
     }
 
     @Override
@@ -145,7 +144,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         this.shuffleThreads = shuffleThreads;
     }
 
-    protected ConcurrentHashMap<GridNode, MutableInt> execute() throws GridException {
+    protected ConcurrentHashMap<GridNode, Integer> execute() throws GridException {
         int numShuffleThreads = shuffleThreads();
         this.shuffleExecPool = (numShuffleThreads <= 0) ? new DirectExecutorService()
                 : ExecutorFactory.newBoundedWorkQueueFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
@@ -220,8 +219,9 @@ public class CsvPartitioningTask extends GridTaskAdapter {
             public void run() {
                 String[] lines = queue.toArray(String.class);
                 CsvHashPartitioningJob.JobConf conf = new CsvHashPartitioningJob.JobConf(lines, fileName, isFirst, primaryForeignKeys, jobConf);
-                final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(CsvHashPartitioningJob.class, conf);
-                final Map<GridNode, MutableInt> map;
+
+                final GridJobFuture<Map<GridNode, Integer>> future = kernel.execute(CsvHashPartitioningJob.class, conf);
+                final Map<GridNode, Integer> map;
                 try {
                     map = future.get(); // wait for execution
                 } catch (InterruptedException ie) {
@@ -231,15 +231,17 @@ public class CsvPartitioningTask extends GridTaskAdapter {
                     LOG.error(ee.getMessage(), ee);
                     throw new IllegalStateException(ee);
                 }
-                final ConcurrentHashMap<GridNode, MutableInt> recMap = assignMap;
+                final ConcurrentHashMap<GridNode, Integer> recMap = assignMap;
                 synchronized(recMap) {
-                    for(Map.Entry<GridNode, MutableInt> e : map.entrySet()) {
+                    for(final Map.Entry<GridNode, Integer> e : map.entrySet()) {
                         GridNode node = e.getKey();
-                        MutableInt assigned = e.getValue();
-                        final MutableInt prev = recMap.putIfAbsent(node, assigned);
-                        if(prev != null) {
-                            int v = assigned.intValue();
-                            prev.add(v);
+                        Integer assigned = e.getValue();
+                        Integer prev = recMap.get(node);
+                        if(prev == null) {
+                            recMap.put(node, assigned);
+                        } else {
+                            int newValue = prev.intValue() + assigned.intValue();
+                            recMap.put(node, newValue);
                         }
                     }
                 }

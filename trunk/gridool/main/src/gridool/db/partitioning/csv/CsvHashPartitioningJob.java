@@ -72,12 +72,12 @@ import com.sun.istack.internal.Nullable;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class CsvHashPartitioningJob extends
-        GridJobBase<CsvHashPartitioningJob.JobConf, Map<GridNode, MutableInt>> {
+        GridJobBase<CsvHashPartitioningJob.JobConf, Map<GridNode, Integer>> {
     private static final long serialVersionUID = 149683992715077498L;
     private static final Log LOG = LogFactory.getLog(CsvHashPartitioningJob.class);
     private static final int FK_INDEX_CACHE_SIZE = Primitives.parseInt(Settings.get("gridool.db.partitioning.fk_index_caches"), 8192);
 
-    private transient Map<GridNode, MutableInt> assignedRecMap;
+    private transient Map<GridNode, Integer> assignedRecMap;
 
     @GridRegistryResource
     private transient GridResourceRegistry registry;
@@ -219,12 +219,13 @@ public final class CsvHashPartitioningJob extends
         }
 
         final Map<GridTask, GridNode> taskmap = new IdentityHashMap<GridTask, GridNode>(numNodes);
-        final Map<GridNode, MutableInt> assignedRecMap = new HashMap<GridNode, MutableInt>(numNodes);
+        final Map<GridNode, Integer> assignedRecMap = new HashMap<GridNode, Integer>(numNodes);
         for(final Map.Entry<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> e : nodeAssignMap.entrySet()) {
             GridNode node = e.getKey();
             Pair<MutableInt, FastByteArrayOutputStream> pair = e.getValue();
             MutableInt numRecords = pair.first;
-            assignedRecMap.put(node, numRecords);
+            int i = numRecords.intValue();
+            assignedRecMap.put(node, new Integer(i));
             FastByteArrayOutputStream rows = pair.second;
             byte[] b = rows.toByteArray();
             pair.clear();
@@ -234,7 +235,7 @@ public final class CsvHashPartitioningJob extends
 
         for(final GridNode node : router.getAllNodes()) {
             if(!assignedRecMap.containsKey(node)) {
-                assignedRecMap.put(node, new MutableInt(0));
+                assignedRecMap.put(node, new Integer(0));
             }
         }
         this.assignedRecMap = assignedRecMap;
@@ -348,7 +349,7 @@ public final class CsvHashPartitioningJob extends
         }
     }
 
-    public Map<GridNode, MutableInt> reduce() throws GridException {
+    public Map<GridNode, Integer> reduce() throws GridException {
         return assignedRecMap;
     }
 
