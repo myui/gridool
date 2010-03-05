@@ -74,16 +74,18 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
 
     public void close() throws DbException {
         final Collection<HDB> values = map.values();
-        for(HDB tch : values) {
-            final String fp = tch.path();
-            if(tch.close() && DELETE_IDX_ON_EXIT) {
-                File file = new File(fp);
-                if(file.exists()) {
-                    file.delete();
+        for(final HDB tch : values) {
+            synchronized(tch) {
+                final String fp = tch.path();
+                if(tch.close() && DELETE_IDX_ON_EXIT) {
+                    File file = new File(fp);
+                    if(file.exists()) {
+                        file.delete();
+                    }
+                } else {
+                    int ecode = tch.ecode();
+                    LOG.error("close error: " + HDB.errmsg(ecode));
                 }
-            } else {
-                int ecode = tch.ecode();
-                LOG.error("close error: " + HDB.errmsg(ecode));
             }
         }
     }
@@ -106,15 +108,17 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
             if(tch == null) {
                 continue;
             }
-            final String fp = tch.path();
-            if(tch.close()) {
-                File file = new File(fp);
-                if(file.exists()) {
-                    file.delete();
+            synchronized(tch) {
+                final String fp = tch.path();
+                if(tch.close()) {
+                    File file = new File(fp);
+                    if(file.exists()) {
+                        file.delete();
+                    }
+                } else {
+                    int ecode = tch.ecode();
+                    LOG.warn("Close failed: " + HDB.errmsg(ecode));
                 }
-            } else {
-                int ecode = tch.ecode();
-                LOG.warn("Close failed: " + HDB.errmsg(ecode));
             }
         }
     }
@@ -123,14 +127,18 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
         for(String idx : idxNames) {
             final HDB tch = map.get(idx);
             if(tch != null) {
-                tch.sync();
+                synchronized(tch) {
+                    tch.sync();
+                }
             }
         }
     }
 
     public void purgeAll(boolean clear) throws DbException {
         for(HDB tch : map.values()) {
-            tch.sync();
+            synchronized(tch) {
+                tch.sync();
+            }
         }
     }
 
@@ -138,12 +146,14 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
             throws DbException {
         final HDB tch = openIndex(idxName);
         final byte[] wrappedValue = wrapValue(value);
-        for(final byte[] key : keys) {
-            if(!tch.putcat(key, wrappedValue)) {
-                int ecode = tch.ecode();
-                String errmsg = "put failed: " + HDB.errmsg(ecode);
-                LOG.error(errmsg);
-                throw new DbException(errmsg);
+        synchronized(tch) {
+            for(final byte[] key : keys) {
+                if(!tch.putcat(key, wrappedValue)) {
+                    int ecode = tch.ecode();
+                    String errmsg = "put failed: " + HDB.errmsg(ecode);
+                    LOG.error(errmsg);
+                    throw new DbException(errmsg);
+                }
             }
         }
     }
@@ -154,14 +164,16 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
             throw new IllegalArgumentException();
         }
         final HDB tch = openIndex(idxName);
-        final int length = keys.length;
-        for(int i = 0; i < length; i++) {
-            final byte[] wrappedValue = wrapValue(values[i]);
-            if(!tch.putcat(keys[i], wrappedValue)) {
-                int ecode = tch.ecode();
-                String errmsg = "put failed: " + HDB.errmsg(ecode);
-                LOG.error(errmsg);
-                throw new DbException(errmsg);
+        synchronized(tch) {
+            final int length = keys.length;
+            for(int i = 0; i < length; i++) {
+                final byte[] wrappedValue = wrapValue(values[i]);
+                if(!tch.putcat(keys[i], wrappedValue)) {
+                    int ecode = tch.ecode();
+                    String errmsg = "put failed: " + HDB.errmsg(ecode);
+                    LOG.error(errmsg);
+                    throw new DbException(errmsg);
+                }
             }
         }
     }
@@ -171,14 +183,16 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
             throw new IllegalArgumentException();
         }
         final HDB tch = openIndex(idxName);
-        final int length = keys.length;
-        for(int i = 0; i < length; i++) {
-            final byte[] wrappedValue = wrapValue(values[i]);
-            if(!tch.put(keys[i], wrappedValue)) {
-                int ecode = tch.ecode();
-                String errmsg = "put failed: " + HDB.errmsg(ecode);
-                LOG.error(errmsg);
-                throw new DbException(errmsg);
+        synchronized(tch) {
+            final int length = keys.length;
+            for(int i = 0; i < length; i++) {
+                final byte[] wrappedValue = wrapValue(values[i]);
+                if(!tch.put(keys[i], wrappedValue)) {
+                    int ecode = tch.ecode();
+                    String errmsg = "put failed: " + HDB.errmsg(ecode);
+                    LOG.error(errmsg);
+                    throw new DbException(errmsg);
+                }
             }
         }
     }
@@ -186,11 +200,13 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
     public byte[][] removeMapping(String idxName, byte[] key) throws DbException {
         final HDB tch = map.get(idxName);
         if(tch != null) {
-            byte[] v = tch.get(key);
-            if(v != null) {
-                tch.out(key);
-                byte[][] unwrappedValues = unwrapValues(v);
-                return unwrappedValues;
+            synchronized(tch) {
+                byte[] v = tch.get(key);
+                if(v != null) {
+                    tch.out(key);
+                    byte[][] unwrappedValues = unwrapValues(v);
+                    return unwrappedValues;
+                }
             }
         }
         return null;
@@ -200,9 +216,11 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
         final HDB tch = map.get(idxName);
         if(tch != null) {
             boolean removedAll = true;
-            for(byte[] key : keys) {
-                if(!tch.out(key)) {
-                    removedAll = false;
+            synchronized(tch) {
+                for(byte[] key : keys) {
+                    if(!tch.out(key)) {
+                        removedAll = false;
+                    }
                 }
             }
             return removedAll;
@@ -217,7 +235,10 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
             return;
         }
 
-        final byte[] results = tch.get(key);
+        final byte[] results;
+        synchronized(tch) {
+            results = tch.get(key);
+        }
         if(results == null) {
             return;
         }
@@ -233,7 +254,10 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
         if(tch == null) {
             return null;
         }
-        byte[] v = tch.get(key);
+        final byte[] v;
+        synchronized(tch) {
+            v = tch.get(key);
+        }
         return v;
     }
 

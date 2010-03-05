@@ -74,16 +74,18 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
 
     public void close() throws DbException {
         final Collection<BDB> values = map.values();
-        for(BDB tcb : values) {
-            final String fp = tcb.path();
-            if(tcb.close() && DELETE_IDX_ON_EXIT) {
-                File file = new File(fp);
-                if(file.exists()) {
-                    file.delete();
+        for(final BDB tcb : values) {
+            synchronized(tcb) {
+                final String fp = tcb.path();
+                if(tcb.close() && DELETE_IDX_ON_EXIT) {
+                    File file = new File(fp);
+                    if(file.exists()) {
+                        file.delete();
+                    }
+                } else {
+                    int ecode = tcb.ecode();
+                    LOG.error("close error: " + BDB.errmsg(ecode));
                 }
-            } else {
-                int ecode = tcb.ecode();
-                LOG.error("close error: " + BDB.errmsg(ecode));
             }
         }
     }
@@ -106,11 +108,13 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
             if(tcb == null) {
                 continue;
             }
-            final String fp = tcb.path();
-            if(tcb.close()) {
-                File file = new File(fp);
-                if(file.exists()) {
-                    file.delete();
+            synchronized(tcb) {
+                final String fp = tcb.path();
+                if(tcb.close()) {
+                    File file = new File(fp);
+                    if(file.exists()) {
+                        file.delete();
+                    }
                 }
             }
         }
@@ -120,26 +124,32 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
         for(String idx : idxNames) {
             final BDB tcb = map.get(idx);
             if(tcb != null) {
-                tcb.sync();
+                synchronized(tcb) {
+                    tcb.sync();
+                }
             }
         }
     }
 
     public void purgeAll(boolean clear) throws DbException {
-        for(BDB tcb : map.values()) {
-            tcb.sync();
+        for(final BDB tcb : map.values()) {
+            synchronized(tcb) {
+                tcb.sync();
+            }
         }
     }
 
     public void addMapping(final String idxName, final byte[][] keys, final byte[] value)
             throws DbException {
-        final BDB tcb = prepareDatabase(idxName);
-        for(byte[] key : keys) {
-            if(!tcb.putdup(key, value)) {
-                int ecode = tcb.ecode();
-                String errmsg = "put failed: " + BDB.errmsg(ecode);
-                LOG.error(errmsg);
-                throw new DbException(errmsg);
+        final BDB tcb = openIndex(idxName);
+        synchronized(tcb) {
+            for(byte[] key : keys) {
+                if(!tcb.putdup(key, value)) {
+                    int ecode = tcb.ecode();
+                    String errmsg = "put failed: " + BDB.errmsg(ecode);
+                    LOG.error(errmsg);
+                    throw new DbException(errmsg);
+                }
             }
         }
     }
@@ -149,14 +159,16 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
         if(keys.length != values.length) {
             throw new IllegalArgumentException();
         }
-        final BDB tcb = prepareDatabase(idxName);
+        final BDB tcb = openIndex(idxName);
         final int length = keys.length;
-        for(int i = 0; i < length; i++) {
-            if(!tcb.putdup(keys[i], values[i])) {
-                int ecode = tcb.ecode();
-                String errmsg = "put failed: " + BDB.errmsg(ecode);
-                LOG.error(errmsg);
-                throw new DbException(errmsg);
+        synchronized(tcb) {
+            for(int i = 0; i < length; i++) {
+                if(!tcb.putdup(keys[i], values[i])) {
+                    int ecode = tcb.ecode();
+                    String errmsg = "put failed: " + BDB.errmsg(ecode);
+                    LOG.error(errmsg);
+                    throw new DbException(errmsg);
+                }
             }
         }
     }
@@ -165,47 +177,39 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
         if(keys.length != values.length) {
             throw new IllegalArgumentException();
         }
-        final BDB tcb = prepareDatabase(idxName);
+        final BDB tcb = openIndex(idxName);
         final int length = keys.length;
-        for(int i = 0; i < length; i++) {
-            if(!tcb.put(keys[i], values[i])) {
-                int ecode = tcb.ecode();
-                String errmsg = "put failed: " + BDB.errmsg(ecode);
-                LOG.error(errmsg);
-                throw new DbException(errmsg);
+        synchronized(tcb) {
+            for(int i = 0; i < length; i++) {
+                if(!tcb.put(keys[i], values[i])) {
+                    int ecode = tcb.ecode();
+                    String errmsg = "put failed: " + BDB.errmsg(ecode);
+                    LOG.error(errmsg);
+                    throw new DbException(errmsg);
+                }
             }
         }
-    }
-
-    private BDB prepareDatabase(final String idxName) throws DbException {
-        BDB tcb;
-        synchronized(map) {
-            tcb = map.get(idxName);
-            if(tcb == null) {
-                tcb = createIndex(idxName);
-                map.put(idxName, tcb);
-            }
-        }
-        return tcb;
     }
 
     public byte[][] removeMapping(String idxName, byte[] key) throws DbException {
         final BDB tcb = map.get(idxName);
         if(tcb != null) {
-            final BDBCUR cur = new BDBCUR(tcb);
-            if(cur.jump(key)) {
-                final List<byte[]> list = new ArrayList<byte[]>(4);
+            synchronized(tcb) {
+                final BDBCUR cur = new BDBCUR(tcb);
+                if(cur.jump(key)) {
+                    final List<byte[]> list = new ArrayList<byte[]>(4);
 
-                byte[] k;
-                do {
-                    byte[] v = cur.val();
-                    list.add(v);
-                    cur.out();
-                    k = cur.key();
-                } while(k != null && Arrays.equals(k, key));
+                    byte[] k;
+                    do {
+                        byte[] v = cur.val();
+                        list.add(v);
+                        cur.out();
+                        k = cur.key();
+                    } while(k != null && Arrays.equals(k, key));
 
-                byte[][] ary = new byte[list.size()][];
-                return list.toArray(ary);
+                    byte[][] ary = new byte[list.size()][];
+                    return list.toArray(ary);
+                }
             }
         }
         return null;
@@ -214,20 +218,22 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
     public boolean removeMapping(String idxName, byte[]... keys) throws DbException {
         final BDB tcb = map.get(idxName);
         if(tcb != null) {
-            final BDBCUR cur = new BDBCUR(tcb);
-            boolean foundAll = true;
-            for(byte[] key : keys) {
-                if(cur.jump(key)) {
-                    byte[] k;
-                    do {
-                        cur.out();
-                        k = cur.key();
-                    } while(k != null && Arrays.equals(k, key));
-                } else {
-                    foundAll = false;
+            synchronized(tcb) {
+                final BDBCUR cur = new BDBCUR(tcb);
+                boolean foundAll = true;
+                for(byte[] key : keys) {
+                    if(cur.jump(key)) {
+                        byte[] k;
+                        do {
+                            cur.out();
+                            k = cur.key();
+                        } while(k != null && Arrays.equals(k, key));
+                    } else {
+                        foundAll = false;
+                    }
                 }
+                return foundAll;
             }
-            return foundAll;
         }
         return false;
     }
@@ -240,7 +246,10 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
             return;
         }
 
-        final List<byte[]> results = tcb.getlist(key);
+        final List<byte[]> results;
+        synchronized(tcb) {
+            results = tcb.getlist(key);
+        }
         if(results == null) {
             return;
         }
@@ -259,15 +268,20 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
         }
 
         final byte[] rightEdge = calculateRightEdgeValue(prefix);
-        final List<byte[]> matchedKeys = tcb.range(prefix, true, rightEdge, false, -1);
+        final List<byte[]> matchedKeys;
+        synchronized(tcb) {
+            matchedKeys = tcb.range(prefix, true, rightEdge, false, -1);
+        }
         if(matchedKeys.isEmpty()) {
             return;
         }
 
-        for(byte[] k : matchedKeys) {
-            final List<byte[]> values = tcb.getlist(k);
-            for(byte[] v : values) {
-                handler.indexInfo(new Value(k), v);
+        synchronized(tcb) {
+            for(byte[] k : matchedKeys) {
+                final List<byte[]> values = tcb.getlist(k);
+                for(byte[] v : values) {
+                    handler.indexInfo(new Value(k), v);
+                }
             }
         }
     }
@@ -280,25 +294,19 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
         }
 
         // traverse records
-        final BDBCUR cur = new BDBCUR(tcb);
-        cur.first();
-        byte[] key;
-        while((key = cur.key()) != null) {
-            final Value k = new Value(key);
-            if(query.testValue(k)) {
-                byte[] v = cur.val();
-                callback.indexInfo(k, v);
+        synchronized(tcb) {
+            final BDBCUR cur = new BDBCUR(tcb);
+            cur.first();
+            byte[] key;
+            while((key = cur.key()) != null) {
+                final Value k = new Value(key);
+                if(query.testValue(k)) {
+                    byte[] v = cur.val();
+                    callback.indexInfo(k, v);
+                }
+                cur.next();
             }
-            cur.next();
         }
-    }
-
-    private static final byte[] calculateRightEdgeValue(final byte[] v) {
-        final int vlen = v.length;
-        final byte[] b = new byte[vlen + 1];
-        System.arraycopy(v, 0, b, 0, vlen);
-        b[vlen] = Byte.MAX_VALUE;
-        return b;
     }
 
     public byte[] getValue(String idxName, byte[] key) throws DbException {
@@ -306,8 +314,23 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
         if(tcb == null) {
             return null;
         }
-        byte[] v = tcb.get(key);
+        final byte[] v;
+        synchronized(tcb) {
+            v = tcb.get(key);
+        }
         return v;
+    }
+
+    private BDB openIndex(final String idxName) throws DbException {
+        BDB tcb;
+        synchronized(map) {
+            tcb = map.get(idxName);
+            if(tcb == null) {
+                tcb = createIndex(idxName);
+                map.put(idxName, tcb);
+            }
+        }
+        return tcb;
     }
 
     private BDB createIndex(final String name) throws DbException {
@@ -338,4 +361,13 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
         }
         return tcb;
     }
+
+    private static final byte[] calculateRightEdgeValue(final byte[] v) {
+        final int vlen = v.length;
+        final byte[] b = new byte[vlen + 1];
+        System.arraycopy(v, 0, b, 0, vlen);
+        b[vlen] = Byte.MAX_VALUE;
+        return b;
+    }
+
 }
