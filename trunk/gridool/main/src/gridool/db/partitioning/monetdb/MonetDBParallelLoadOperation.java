@@ -188,7 +188,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         final File loadFile = prepareLoadFile(fileName);
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
 
-        final Lock lock = rwlock.writeLock(); // TODO REVIEWME Why write lock is required?
+        final Lock lock = rwlock.readLock();    // REVIEWME read lock for system table
         final int ret;
         try {
             lock.lock();

@@ -212,6 +212,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         if(isFirstShuffle) {
             CsvHashPartitioningJob.JobConf conf = new CsvHashPartitioningJob.JobConf(lines, fileName, true, primaryForeignKeys, jobConf);
             runShuffleJob(kernel, conf, assignMap);
+            this.isFirstShuffle = false;
         } else {
             shuffleExecPool.execute(new Runnable() {
                 public void run() {
