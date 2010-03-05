@@ -311,7 +311,7 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
 
     private static byte[][] unwrapValues(final byte[] b) {
         int total = b.length;
-        int size = Primitives.getInt(b);
+        int size = Primitives.getInt(b, 0);
         if((size + 4) == total) {
             byte[] fb = ArrayUtils.copyOfRange(b, 4, size);
             return new byte[][] { fb };
