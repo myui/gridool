@@ -38,10 +38,12 @@ import org.apache.commons.logging.LogFactory;
 
 import tokyocabinet.BDB;
 import tokyocabinet.BDBCUR;
+import xbird.config.Settings;
 import xbird.storage.DbException;
 import xbird.storage.index.BTreeCallback;
 import xbird.storage.index.Value;
 import xbird.storage.indexer.IndexQuery;
+import xbird.util.primitive.Primitives;
 
 /**
  * 
@@ -54,6 +56,12 @@ import xbird.storage.indexer.IndexQuery;
 public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
     private static final Log LOG = LogFactory.getLog(TcBtreeLocalDirectory.class);
     private static final String IDX_SUFFIX_NAME = ".tcb";
+    private static final int RECORD_MMAP_SIZE;
+    private static final boolean USE_DEFLATE;
+    static {
+        RECORD_MMAP_SIZE = Primitives.parseInt(Settings.get("gridool.directory.ld.tokyocabinet.xms"), -1);
+        USE_DEFLATE = Boolean.parseBoolean(Settings.get("gridool.directory.ld.tokyocabinet.enable_deflate"));
+    }
 
     private final Map<String, BDB> map;
 
@@ -345,7 +353,8 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
         }
         String filePath = idxFile.getAbsolutePath();
         final BDB tcb = new BDB();
-        if(!tcb.open(filePath, (BDB.OWRITER | BDB.OCREAT))) {
+        if(!tcb.open(filePath, USE_DEFLATE ? (BDB.OWRITER | BDB.OCREAT | BDB.TDEFLATE)
+                : (BDB.OWRITER | BDB.OCREAT))) {
             int ecode = tcb.ecode();
             String errmsg = "open error: " + BDB.errmsg(ecode);
             LOG.fatal(errmsg);
@@ -358,6 +367,9 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
             int leafCaches = cacheSize.intValue();
             int nonLeafCaches = (int) (cacheSize.intValue() * 0.6);
             tcb.setcache(leafCaches, nonLeafCaches);
+        }
+        if(RECORD_MMAP_SIZE > 0) {
+            tcb.setxmsiz(RECORD_MMAP_SIZE);
         }
         return tcb;
     }
