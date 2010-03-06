@@ -55,7 +55,7 @@ import xbird.util.primitive.Primitives;
 public final class TcHashLocalDirectory extends AbstractLocalDirectory {
     private static final Log LOG = LogFactory.getLog(TcHashLocalDirectory.class);
     private static final String IDX_SUFFIX_NAME = ".tch";
-    private static final int NUM_HASH_BUCKETS;
+    private static final long NUM_HASH_BUCKETS;
     private static final int RECORD_MMAP_SIZE;
     private static final boolean USE_DEFLATE;
     static {
