@@ -56,11 +56,11 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
     private static final Log LOG = LogFactory.getLog(TcHashLocalDirectory.class);
     private static final String IDX_SUFFIX_NAME = ".tch";
     private static final long NUM_HASH_BUCKETS;
-    private static final int RECORD_MMAP_SIZE;
+    private static final long RECORD_MMAP_SIZE;
     private static final boolean USE_DEFLATE;
     static {
-        NUM_HASH_BUCKETS = Primitives.parseInt(Settings.get("gridool.directory.ld.tokyocabinet.hashbuckets"), 2000000);
-        RECORD_MMAP_SIZE = Primitives.parseInt(Settings.get("gridool.directory.ld.tokyocabinet.xms"), -1);
+        NUM_HASH_BUCKETS = Primitives.parseLong(Settings.get("gridool.directory.ld.tokyocabinet.hashbuckets"), 2000000L);
+        RECORD_MMAP_SIZE = Primitives.parseLong(Settings.get("gridool.directory.ld.tokyocabinet.xms"), -1L);
         USE_DEFLATE = Boolean.parseBoolean(Settings.get("gridool.directory.ld.tokyocabinet.enable_deflate"));
     }
 
