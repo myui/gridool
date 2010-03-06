@@ -55,9 +55,11 @@ import xbird.util.primitive.Primitives;
 public final class TcHashLocalDirectory extends AbstractLocalDirectory {
     private static final Log LOG = LogFactory.getLog(TcHashLocalDirectory.class);
     private static final String IDX_SUFFIX_NAME = ".tch";
+    private static final int NUM_HASH_BUCKETS;
     private static final int RECORD_MMAP_SIZE;
     private static final boolean USE_DEFLATE;
     static {
+        NUM_HASH_BUCKETS = Primitives.parseInt(Settings.get("gridool.directory.ld.tokyocabinet.hashbuckets"), 2000000);
         RECORD_MMAP_SIZE = Primitives.parseInt(Settings.get("gridool.directory.ld.tokyocabinet.xms"), -1);
         USE_DEFLATE = Boolean.parseBoolean(Settings.get("gridool.directory.ld.tokyocabinet.enable_deflate"));
     }
@@ -292,8 +294,7 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
         }
         String filePath = idxFile.getAbsolutePath();
         final HDB tch = new HDB();
-        if(!tch.open(filePath, USE_DEFLATE ? (HDB.OWRITER | HDB.OCREAT | HDB.TDEFLATE)
-                : (HDB.OWRITER | HDB.OCREAT))) {
+        if(!tch.open(filePath, HDB.OWRITER | HDB.OCREAT)) {
             int ecode = tch.ecode();
             String errmsg = "open error: " + HDB.errmsg(ecode);
             LOG.fatal(errmsg);
@@ -309,6 +310,8 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
         if(RECORD_MMAP_SIZE > 0) {
             tch.setxmsiz(RECORD_MMAP_SIZE);
         }
+        tch.tune(NUM_HASH_BUCKETS, /* alignment */4, /* block pool 2^N */10, USE_DEFLATE ? HDB.TDEFLATE
+                : 0);
         return tch;
     }
 
