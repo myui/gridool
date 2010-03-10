@@ -163,7 +163,7 @@ public final class CsvHashPartitioningJob extends
                 final byte[] distkey = StringUtils.getBytes(pkeysField);
                 mapPrimaryFragment(distkey, mappedNodes, tablePartitionNo, router);
                 if(hasParentTable) {
-                    // "derived by parent" fragment mapping                   
+                    // "derived by parent" fragment mapping
                     for(int kk = 0; kk < numParentForeignKeys; kk++) {
                         String idxName = parentTableFkIndexNames[kk];
                         mapDerivedByParentFragment(distkey, mappedNodes, index, idxName);
@@ -190,7 +190,7 @@ public final class CsvHashPartitioningJob extends
                     final GridNode fkMappedNode = fkMappedNodes[kk];
                     final LRUMap<String, List<NodeWithPartitionNo>> fkCache = fkCaches[kk];
                     List<NodeWithPartitionNo> storedNodeInfo = fkCache.get(fkeysField);
-                    for(Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
+                    for(final Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
                         final GridNode node = e.getKey();
                         if(node.equals(fkMappedNode)) {
                             continue; // no need to map
