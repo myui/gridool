@@ -151,7 +151,7 @@ public final class PrimaryKey implements ConstraintKey, Externalizable {
             names.add(name);
         }
         this.columnNames = names;
-        final int numPos = in.readInt();
+        final int numPos = in.readShort();
         if(numPos == -1) {
             this.columnPositions = null;
         } else {
