@@ -47,6 +47,7 @@ import xbird.util.io.IOUtils;
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
 public final class PrimaryKey implements ConstraintKey, Externalizable {
+    private static final long serialVersionUID = 8620075379126746930L;
 
     private/* final */String pkName;
     private/* final */String tableName;
