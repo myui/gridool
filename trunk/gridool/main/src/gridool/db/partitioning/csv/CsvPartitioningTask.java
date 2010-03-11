@@ -34,7 +34,6 @@ import gridool.db.helpers.ForeignKey;
 import gridool.db.helpers.GridDbUtils;
 import gridool.db.helpers.PrimaryKey;
 import gridool.db.partitioning.DBPartitioningJobConf;
-import gridool.directory.ILocalDirectory;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -55,7 +54,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import xbird.config.Settings;
-import xbird.storage.DbException;
 import xbird.util.collections.ArrayQueue;
 import xbird.util.collections.BoundedArrayQueue;
 import xbird.util.concurrent.DirectExecutorService;
@@ -196,14 +194,6 @@ public class CsvPartitioningTask extends GridTaskAdapter {
             invokeShuffle(shuffleExecPool, shuffleSink);
         }
         ExecutorUtils.shutdownAndAwaitTermination(shuffleExecPool);
-
-        // clear index buffer
-        ILocalDirectory index = registry.getDirectory();
-        try {
-            index.purgeAll(true);
-        } catch (DbException dbe) {
-            LOG.error(dbe);
-        }
     }
 
     private final void invokeShuffle(@Nonnull final ExecutorService shuffleExecPool, @Nonnull final ArrayQueue<String> queue) {

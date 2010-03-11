@@ -25,6 +25,7 @@ import gridool.GridNode;
 import gridool.db.DBOperation;
 import gridool.db.catalog.DistributionCatalog;
 import gridool.db.helpers.DBAccessor;
+import gridool.directory.ILocalDirectory;
 import gridool.locking.LockManager;
 import gridool.util.GridUtils;
 
@@ -43,6 +44,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import xbird.storage.DbException;
 import xbird.util.datetime.StopWatch;
 import xbird.util.io.IOUtils;
 import xbird.util.jdbc.JDBCUtils;
@@ -121,6 +123,14 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         if(expectedNumRecords == -1) {
             throw new IllegalStateException();
         }
+        // clear index buffer
+        final ILocalDirectory index = registry.getDirectory();
+        try {
+            index.purgeAll(true);
+        } catch (DbException dbe) {
+            LOG.error(dbe);
+        }
+
         final LockManager lockMgr = registry.getLockManager();
         final ReadWriteLock systblLock = lockMgr.obtainLock(DBAccessor.SYS_TABLE_SYMBOL);
         final Connection conn = getConnection();
@@ -188,7 +198,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         final File loadFile = prepareLoadFile(fileName);
         final String query = complementCopyIntoQuery(copyIntoQuery, loadFile);
 
-        final Lock lock = rwlock.readLock();    // REVIEWME read lock for system table
+        final Lock lock = rwlock.readLock(); // REVIEWME read lock for system table
         final int ret;
         try {
             lock.lock();
@@ -227,7 +237,8 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         File colDir = GridUtils.getWorkDir(true);
         final File file = new File(colDir, fileName);
         if(!file.exists()) {
-            throw new IllegalStateException("Loading file does not exist: " + file.getAbsolutePath());
+            throw new IllegalStateException("Loading file does not exist: "
+                    + file.getAbsolutePath());
         }
         return file;
     }

@@ -23,7 +23,6 @@ package gridool.routing.strategy;
 import gridool.GridConfiguration;
 import gridool.GridNode;
 import gridool.discovery.DiscoveryEvent;
-import gridool.routing.GridNodeSelector;
 import gridool.routing.GridTaskRouter;
 import gridool.util.ConsistentHash;
 import gridool.util.HashFunction;
@@ -50,10 +49,6 @@ import javax.annotation.concurrent.ThreadSafe;
 public final class ConsistentHashRouter implements GridTaskRouter {
 
     @Nonnull
-    @Deprecated
-    private final GridConfiguration config;
-
-    @Nonnull
     @GuardedBy("rwLock")
     private final ConsistentHash consistentHash;
 
@@ -67,14 +62,9 @@ public final class ConsistentHashRouter implements GridTaskRouter {
         if(config == null) {
             throw new IllegalArgumentException();
         }
-        this.config = config;
         HashFunction hasher = config.getHashFunction();
         int virtualNodes = config.getNumberOfVirtualNodes();
         this.consistentHash = new ConsistentHash(hasher, virtualNodes);
-    }
-
-    public GridNodeSelector getNodeSelector() {
-        return config.getNodeSelector();
     }
 
     public int getGridSize() {

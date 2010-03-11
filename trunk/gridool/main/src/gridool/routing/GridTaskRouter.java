@@ -36,8 +36,6 @@ import javax.annotation.Nonnull;
  */
 public interface GridTaskRouter extends GridDiscoveryListener {
 
-    GridNodeSelector getNodeSelector();
-
     int getGridSize();
 
     @Nonnull
