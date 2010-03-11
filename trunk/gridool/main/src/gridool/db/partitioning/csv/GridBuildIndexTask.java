@@ -20,9 +20,12 @@
  */
 package gridool.db.partitioning.csv;
 
+import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.GridJob;
+import gridool.GridNode;
 import gridool.GridResourceRegistry;
+import gridool.annotation.GridConfigResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridTaskAdapter;
 import gridool.db.partitioning.csv.LocalCsvHashPartitioningJob.DerivedFragmentInfo;
@@ -49,6 +52,8 @@ public final class GridBuildIndexTask extends GridTaskAdapter {
 
     private final List<DerivedFragmentInfo> storeList;
 
+    @GridConfigResource
+    private transient GridConfiguration config;
     @GridRegistryResource
     private transient GridResourceRegistry registry;
 
@@ -75,6 +80,8 @@ public final class GridBuildIndexTask extends GridTaskAdapter {
             }
             storeList.add(e);
         }
+        // build index for derived fragments
+        final GridNode localNode = config.getLocalNode();
         final ILocalDirectory index = registry.getDirectory();
         for(final Map.Entry<String, List<DerivedFragmentInfo>> e : map.entrySet()) {
             List<DerivedFragmentInfo> list = e.getValue();
@@ -84,7 +91,9 @@ public final class GridBuildIndexTask extends GridTaskAdapter {
             for(int i = 0; i < size; i++) {
                 DerivedFragmentInfo info = list.get(i);
                 keys[i] = info.getDistkey();
-                values[i] = info.getValue();
+                int hiddenValue = info.getHiddenValue();
+                byte[] b = LocalCsvHashPartitioningJob.serialize(localNode, hiddenValue);
+                values[i] = b;
             }
             final String idxName = e.getKey();
             try {

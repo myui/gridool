@@ -102,7 +102,7 @@ public final class LocalCsvHashPartitioningJob extends
         final String csvFileName = ops.getFileName();
         final DBPartitioningJobConf jobConf = ops.getJobConf();
         final GridTaskRouter origRouter = args.getSecond();
-        
+
         // partitioning resources
         final String tableName;
         final int tablePartitionNo;
@@ -195,11 +195,6 @@ public final class LocalCsvHashPartitioningJob extends
                     final String fkeysField = fkeysFields[kk];
                     final byte[] distkey = distkeys[kk];
                     final GridNode fkMappedNode = fkMappedNodes[kk];
-                    List<DerivedFragmentInfo> storeList = idxShippingMap.get(fkMappedNode);
-                    if(storeList == null) {
-                        storeList = new ArrayList<DerivedFragmentInfo>(1000);
-                        idxShippingMap.put(fkMappedNode, storeList);
-                    }
                     final LRUMap<String, List<NodeWithPartitionNo>> fkCache = fkCaches[kk];
                     List<NodeWithPartitionNo> storedNodeInfo = fkCache.get(fkeysField);
                     for(final Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
@@ -216,9 +211,14 @@ public final class LocalCsvHashPartitioningJob extends
                             continue;
                         }
                         storedNodeInfo.add(nodeInfo);
-                        byte[] value = serialize(node, hiddenValue);
-                        DerivedFragmentInfo fragInfo = new DerivedFragmentInfo(fkIdxName, distkey, value);
-                        storeList.add(fragInfo);
+                        // index shipping 
+                        List<DerivedFragmentInfo> shipIdxList = idxShippingMap.get(node);
+                        if(shipIdxList == null) {
+                            shipIdxList = new ArrayList<DerivedFragmentInfo>(1000);
+                            idxShippingMap.put(node, shipIdxList);
+                        }
+                        DerivedFragmentInfo fragInfo = new DerivedFragmentInfo(fkIdxName, distkey, hiddenValue);
+                        shipIdxList.add(fragInfo);
                     }
                 }
             }
@@ -477,7 +477,7 @@ public final class LocalCsvHashPartitioningJob extends
         return buf.toString();
     }
 
-    private static byte[] serialize(final GridNode node, final int partitionNo) {
+    static byte[] serialize(final GridNode node, final int partitionNo) {
         if(partitionNo < 1 || partitionNo > Short.MAX_VALUE) {
             throw new IllegalArgumentException("Illeal PartitionNo: " + partitionNo);
         }
@@ -561,14 +561,14 @@ public final class LocalCsvHashPartitioningJob extends
 
         private/* final */String fkIdxName;
         private/* final */byte[] distkey;
-        private/* final */byte[] value;
+        private/* final */int hiddenValue;
 
         public DerivedFragmentInfo() {} // Externalizable
 
-        DerivedFragmentInfo(@Nonnull String fkIdxName, @Nonnull byte[] distkey, @Nonnull byte[] value) {
+        DerivedFragmentInfo(@Nonnull String fkIdxName, @Nonnull byte[] distkey, int hiddenValue) {
             this.fkIdxName = fkIdxName;
             this.distkey = distkey;
-            this.value = value;
+            this.hiddenValue = hiddenValue;
         }
 
         String getFkIdxName() {
@@ -579,20 +579,20 @@ public final class LocalCsvHashPartitioningJob extends
             return distkey;
         }
 
-        byte[] getValue() {
-            return value;
+        int getHiddenValue() {
+            return hiddenValue;
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             this.fkIdxName = IOUtils.readString(in);
             this.distkey = IOUtils.readBytes(in);
-            this.value = IOUtils.readBytes(in);
+            this.hiddenValue = in.readInt();
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
             IOUtils.writeString(fkIdxName, out);
             IOUtils.writeBytes(distkey, out);
-            IOUtils.writeBytes(value, out);
+            out.writeInt(hiddenValue);
         }
 
     }
