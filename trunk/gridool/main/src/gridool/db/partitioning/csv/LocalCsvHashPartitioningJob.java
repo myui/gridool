@@ -99,7 +99,6 @@ public final class LocalCsvHashPartitioningJob extends
         assert (registry != null);
         final String[] lines = ops.getLines();
         final String csvFileName = ops.getFileName();
-        final boolean append = !ops.isFirst();
         final DBPartitioningJobConf jobConf = ops.getJobConf();
 
         // partitioning resources
@@ -248,7 +247,7 @@ public final class LocalCsvHashPartitioningJob extends
             FastByteArrayOutputStream rows = pair.second;
             byte[] b = rows.toByteArray();
             pair.clear();
-            GridTask task = new FileAppendTask(this, csvFileName, b, append, true);
+            GridTask task = new FileAppendTask(this, csvFileName, b, true, true);
             taskmap.put(task, node);
         }
 
