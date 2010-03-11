@@ -23,6 +23,7 @@ package gridool.routing;
 import gridool.GridNode;
 import gridool.discovery.GridDiscoveryListener;
 
+import java.io.Externalizable;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -34,7 +35,7 @@ import javax.annotation.Nonnull;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public interface GridTaskRouter extends GridDiscoveryListener {
+public interface GridTaskRouter extends GridDiscoveryListener, Externalizable {
 
     int getGridSize();
 

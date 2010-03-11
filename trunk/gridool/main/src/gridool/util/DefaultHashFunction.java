@@ -30,6 +30,7 @@ import xbird.util.lang.HashAlgorithm;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class DefaultHashFunction implements HashFunction {
+    private static final long serialVersionUID = -3655476533739178525L;
 
     private final HashAlgorithm algorithm;
 

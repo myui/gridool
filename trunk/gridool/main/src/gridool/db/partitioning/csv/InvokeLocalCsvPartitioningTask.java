@@ -30,6 +30,7 @@ import gridool.construct.GridTaskAdapter;
 import gridool.db.helpers.ForeignKey;
 import gridool.db.helpers.PrimaryKey;
 import gridool.db.partitioning.DBPartitioningJobConf;
+import gridool.routing.GridTaskRouter;
 import gridool.util.GridUtils;
 
 import java.io.ObjectInputStream;
@@ -61,18 +62,20 @@ public final class InvokeLocalCsvPartitioningTask extends GridTaskAdapter {
     private transient/* final */boolean isFirst;
     private transient/* final */Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys;
     private transient/* final */DBPartitioningJobConf jobConf;
+    private transient/* final */GridTaskRouter router;
 
     @GridKernelResource
     private transient GridKernel kernel;
 
     @SuppressWarnings("unchecked")
-    public InvokeLocalCsvPartitioningTask(final GridJob job, @Nonnull final List<String> lineList, @Nonnull final PartitioningJobConf ops) {
+    public InvokeLocalCsvPartitioningTask(final GridJob job, @Nonnull final List<String> lineList, @Nonnull final PartitioningJobConf ops, @Nonnull GridTaskRouter router) {
         super(job, false);
         this.lines = ArrayUtils.toArray(lineList);
         this.fileName = ops.getFileName();
         this.isFirst = ops.isFirst();
         this.primaryForeignKeys = ops.getPrimaryForeignKeys();
         this.jobConf = ops.getJobConf();
+        this.router = router;
     }
 
     @Override
@@ -82,7 +85,8 @@ public final class InvokeLocalCsvPartitioningTask extends GridTaskAdapter {
 
     @Override
     protected HashMap<GridNode, MutableInt> execute() throws GridException {
-        PartitioningJobConf args = new PartitioningJobConf(lines, fileName, isFirst, primaryForeignKeys, jobConf);
+        PartitioningJobConf conf = new PartitioningJobConf(lines, fileName, isFirst, primaryForeignKeys, jobConf);
+        Pair<PartitioningJobConf, GridTaskRouter> args = new Pair<PartitioningJobConf, GridTaskRouter>(conf, router);
         GridJobFuture<HashMap<GridNode, MutableInt>> future = kernel.execute(LocalCsvHashPartitioningJob.class, args);
         HashMap<GridNode, MutableInt> result = GridUtils.invokeGet(future);
         return result;
@@ -109,6 +113,7 @@ public final class InvokeLocalCsvPartitioningTask extends GridTaskAdapter {
         }
         this.primaryForeignKeys = new Pair<PrimaryKey, Collection<ForeignKey>>(pkey, fkeys);
         this.jobConf = (DBPartitioningJobConf) in.readObject();
+        this.router = (GridTaskRouter) in.readObject();
     }
 
     private void writeObject(ObjectOutputStream out) throws java.io.IOException {
@@ -129,5 +134,6 @@ public final class InvokeLocalCsvPartitioningTask extends GridTaskAdapter {
             out.writeObject(fk);
         }
         out.writeObject(jobConf);
+        out.writeObject(router);
     }
 }

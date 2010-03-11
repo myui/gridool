@@ -77,7 +77,7 @@ import com.sun.istack.internal.Nullable;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public final class LocalCsvHashPartitioningJob extends
-        GridJobBase<PartitioningJobConf, HashMap<GridNode, MutableInt>> {
+        GridJobBase<Pair<PartitioningJobConf, GridTaskRouter>, HashMap<GridNode, MutableInt>> {
     private static final long serialVersionUID = 149683992715077498L;
     private static final Log LOG = LogFactory.getLog(LocalCsvHashPartitioningJob.class);
     private static final int FK_INDEX_CACHE_SIZE = Primitives.parseInt(Settings.get("gridool.db.partitioning.fk_index_caches"), 8192);
@@ -94,13 +94,15 @@ public final class LocalCsvHashPartitioningJob extends
         return true;
     }
 
-    public Map<GridTask, GridNode> map(final GridTaskRouter router, final PartitioningJobConf ops)
+    public Map<GridTask, GridNode> map(final GridTaskRouter router, final Pair<PartitioningJobConf, GridTaskRouter> args)
             throws GridException {
         assert (registry != null);
+        final PartitioningJobConf ops = args.getFirst();
         final String[] lines = ops.getLines();
         final String csvFileName = ops.getFileName();
         final DBPartitioningJobConf jobConf = ops.getJobConf();
-
+        final GridTaskRouter origRouter = args.getSecond();
+        
         // partitioning resources
         final String tableName;
         final int tablePartitionNo;
@@ -152,7 +154,7 @@ public final class LocalCsvHashPartitioningJob extends
         final byte[][] distkeys = new byte[numForeignKeys][];
         final GridNode[] fkMappedNodes = new GridNode[numForeignKeys];
 
-        final int numNodes = router.getGridSize();
+        final int numNodes = origRouter.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new HashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
         final Map<GridNode, MutableInt> mappedNodes = new HashMap<GridNode, MutableInt>(numNodes);
         final Map<GridNode, List<DerivedFragmentInfo>> idxShippingMap = new HashMap<GridNode, List<DerivedFragmentInfo>>(numNodes);
@@ -166,7 +168,7 @@ public final class LocalCsvHashPartitioningJob extends
                 String pkeysField = combineFields(fields, pkeyIndicies.length, strBuf);
                 // "primary" fragment mapping
                 final byte[] distkey = StringUtils.getBytes(pkeysField);
-                mapPrimaryFragment(distkey, mappedNodes, tablePartitionNo, router);
+                mapPrimaryFragment(distkey, mappedNodes, tablePartitionNo, origRouter);
                 if(hasParentTable) {
                     // "derived by parent" fragment mapping
                     for(int kk = 0; kk < numParentForeignKeys; kk++) {
@@ -183,7 +185,7 @@ public final class LocalCsvHashPartitioningJob extends
                     fieldList.trimToZero();
                     String fkeysField = combineFields(fields, pos.length, strBuf);
                     byte[] distkey = StringUtils.getBytes(fkeysField);
-                    fkMappedNodes[jj] = mapDerivedByChildFragment(distkey, mappedNodes, childTablesPartitionNo[jj], router);
+                    fkMappedNodes[jj] = mapDerivedByChildFragment(distkey, mappedNodes, childTablesPartitionNo[jj], origRouter);
                     fkeysFields[jj] = fkeysField;
                     distkeys[jj] = distkey;
                 }
@@ -251,7 +253,7 @@ public final class LocalCsvHashPartitioningJob extends
             taskmap.put(task, node);
         }
 
-        for(final GridNode node : router.getAllNodes()) {
+        for(final GridNode node : origRouter.getAllNodes()) {
             if(!assignedRecMap.containsKey(node)) {
                 assignedRecMap.put(node, new MutableInt(0));
             }

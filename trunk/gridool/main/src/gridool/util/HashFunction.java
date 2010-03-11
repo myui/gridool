@@ -20,6 +20,8 @@
  */
 package gridool.util;
 
+import java.io.Serializable;
+
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -27,7 +29,7 @@ package gridool.util;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public interface HashFunction {
+public interface HashFunction extends Serializable {
 
     long hash(String key);
     

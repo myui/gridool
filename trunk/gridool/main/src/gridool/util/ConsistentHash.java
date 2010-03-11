@@ -21,7 +21,12 @@
 package gridool.util;
 
 import gridool.GridNode;
+import gridool.communication.payload.GridNodeInfo;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -39,6 +44,8 @@ import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import xbird.util.io.IOUtils;
+
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -47,14 +54,19 @@ import org.apache.commons.logging.LogFactory;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 @NotThreadSafe
-public final class ConsistentHash {
+public final class ConsistentHash implements Externalizable {
     private static final Log LOG = LogFactory.getLog(ConsistentHash.class);
 
-    private final HashFunction hashFunction;
-    private final int numberOfVirtualNodes;
+    @Nonnull
+    private/* final */HashFunction hashFunction;
+    private/* final */int numberOfVirtualNodes;
 
-    private final SortedMap<Long, GridNode> circle;
-    private final SortedSet<GridNode> nodes;
+    @Nonnull
+    private/* final */SortedMap<Long, GridNode> circle;
+    @Nonnull
+    private/* final */SortedSet<GridNode> nodes;
+
+    public ConsistentHash() {}// Externalizable
 
     public ConsistentHash(@Nonnull HashFunction hashFunction, @Nonnegative int numberOfVirtualNodes) {
         assert (numberOfVirtualNodes > 0) : numberOfVirtualNodes;
@@ -218,6 +230,31 @@ public final class ConsistentHash {
     public void clear() {
         circle.clear();
         nodes.clear();
+    }
+
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        HashFunction hashFunc = (HashFunction) in.readObject();
+        this.hashFunction = hashFunc;
+        this.numberOfVirtualNodes = in.readInt();
+        this.circle = new TreeMap<Long, GridNode>();
+        this.nodes = new TreeSet<GridNode>(new NodeComparator(hashFunc));
+        final int numNodes = in.readInt();
+        for(int i = 0; i < numNodes; i++) {
+            byte[] b = IOUtils.readBytes(in);
+            GridNode node = GridNodeInfo.fromBytes(b);
+            add(node);
+        }
+    }
+
+    public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(hashFunction);
+        out.writeInt(numberOfVirtualNodes);
+        final GridNode[] nodes = getAll();
+        out.writeInt(nodes.length);
+        for(GridNode node : nodes) {
+            byte[] b = node.toBytes();
+            IOUtils.writeBytes(b, out);
+        }
     }
 
 }

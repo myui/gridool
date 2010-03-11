@@ -27,6 +27,9 @@ import gridool.routing.GridTaskRouter;
 import gridool.util.ConsistentHash;
 import gridool.util.HashFunction;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,16 +50,20 @@ import javax.annotation.concurrent.ThreadSafe;
  */
 @ThreadSafe
 public final class ConsistentHashRouter implements GridTaskRouter {
+    private static final long serialVersionUID = -3597764190794712761L;
 
     @Nonnull
     @GuardedBy("rwLock")
-    private final ConsistentHash consistentHash;
-
+    private/* final */ConsistentHash consistentHash;
     @GuardedBy("rwLock")
     private int gridSize = 0;
 
     @Nonnull
-    private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+    private transient/* final */ReadWriteLock rwLock;
+
+    public ConsistentHashRouter() { // for Externalizable
+        this.rwLock = new ReentrantReadWriteLock();
+    }
 
     public ConsistentHashRouter(@Nonnull GridConfiguration config) {
         if(config == null) {
@@ -65,6 +72,7 @@ public final class ConsistentHashRouter implements GridTaskRouter {
         HashFunction hasher = config.getHashFunction();
         int virtualNodes = config.getNumberOfVirtualNodes();
         this.consistentHash = new ConsistentHash(hasher, virtualNodes);
+        this.rwLock = new ReentrantReadWriteLock();
     }
 
     public int getGridSize() {
@@ -171,6 +179,16 @@ public final class ConsistentHashRouter implements GridTaskRouter {
                 nodes[i] = curNode;
             }
         }
+    }
+
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        this.consistentHash = (ConsistentHash) in.readObject();
+        this.gridSize = in.readInt();
+    }
+
+    public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(consistentHash);
+        out.writeInt(gridSize);
     }
 
 }
