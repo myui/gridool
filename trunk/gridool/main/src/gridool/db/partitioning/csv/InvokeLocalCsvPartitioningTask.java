@@ -56,11 +56,11 @@ import xbird.util.struct.Pair;
 public final class InvokeLocalCsvPartitioningTask extends GridTaskAdapter {
     private static final long serialVersionUID = -6863271080717798071L;
 
-    private/* final */String[] lines;
-    private/* final */String fileName;
-    private/* final */boolean isFirst;
-    private/* final */Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys;
-    private/* final */DBPartitioningJobConf jobConf;
+    private transient/* final */String[] lines;
+    private transient/* final */String fileName;
+    private transient/* final */boolean isFirst;
+    private transient/* final */Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys;
+    private transient/* final */DBPartitioningJobConf jobConf;
 
     @GridKernelResource
     private transient GridKernel kernel;
