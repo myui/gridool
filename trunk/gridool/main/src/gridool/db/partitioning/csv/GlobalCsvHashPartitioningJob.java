@@ -84,6 +84,7 @@ public final class GlobalCsvHashPartitioningJob extends
             String line = lines[i];
             lines[i] = null;
             CsvUtils.retrieveFields(line, pkeyIndicies, fieldList, filedSeparator, quoteChar);
+            fieldList.trimToZero();
             String pkeysField = combineFields(fields, pkeyIndicies.length, strBuf);
             // "primary" fragment mapping
             byte[] distkey = StringUtils.getBytes(pkeysField);
