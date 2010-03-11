@@ -20,10 +20,12 @@
  */
 package gridool.db.partitioning.csv;
 
+import gridool.GridConfiguration;
 import gridool.GridException;
 import gridool.GridNode;
 import gridool.GridResourceRegistry;
 import gridool.GridTask;
+import gridool.annotation.GridConfigResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.communication.payload.GridNodeInfo;
 import gridool.construct.GridJobBase;
@@ -84,6 +86,8 @@ public final class LocalCsvHashPartitioningJob extends
 
     private transient HashMap<GridNode, MutableInt> assignedRecMap;
 
+    @GridConfigResource
+    private transient GridConfiguration config;
     @GridRegistryResource
     private transient GridResourceRegistry registry;
 
@@ -144,6 +148,7 @@ public final class LocalCsvHashPartitioningJob extends
         for(String idxName : fkIdxNames) {
             setFkIndexCacheSizes(index, idxName, FK_INDEX_CACHE_SIZE);
         }
+        final GridNode localNode = config.getLocalNode();
         final String[] fields = new String[getMaxColumnCount(primaryKey, foreignKeys)];
         assert (fields.length > 0);
         final FixedArrayList<String> fieldList = new FixedArrayList<String>(fields);
@@ -168,7 +173,7 @@ public final class LocalCsvHashPartitioningJob extends
                 String pkeysField = combineFields(fields, pkeyIndicies.length, strBuf);
                 // "primary" fragment mapping
                 final byte[] distkey = StringUtils.getBytes(pkeysField);
-                mapPrimaryFragment(distkey, mappedNodes, tablePartitionNo, origRouter);
+                mapPrimaryFragment(distkey, mappedNodes, tablePartitionNo, origRouter, localNode);
                 if(hasParentTable) {
                     // "derived by parent" fragment mapping
                     for(int kk = 0; kk < numParentForeignKeys; kk++) {
@@ -263,12 +268,16 @@ public final class LocalCsvHashPartitioningJob extends
         return taskmap;
     }
 
-    private static GridNode mapPrimaryFragment(final byte[] distkey, final Map<GridNode, MutableInt> mappedNodes, final int tablePartitionNo, final GridTaskRouter router)
+    private static GridNode mapPrimaryFragment(final byte[] distkey, final Map<GridNode, MutableInt> mappedNodes, final int tablePartitionNo, final GridTaskRouter router, final GridNode localNode)
             throws GridException {
         assert (mappedNodes.isEmpty());
         GridNode mappedNode = router.selectNode(distkey);
         if(mappedNode == null) {
             throw new GridException("Could not find any node in cluster.");
+        }
+        if(!mappedNode.equals(localNode)) {
+            throw new IllegalStateException("Illegal mapping: primary fragment should be mapped to the local node, but mapped to node: "
+                    + mappedNode);
         }
         MutableInt newHidden = new MutableInt(tablePartitionNo);
         mappedNodes.put(mappedNode, newHidden);
