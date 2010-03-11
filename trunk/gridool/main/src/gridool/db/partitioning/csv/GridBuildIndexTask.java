@@ -44,7 +44,7 @@ import xbird.storage.DbException;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class GridIndexBuildTask extends GridTaskAdapter {
+public final class GridBuildIndexTask extends GridTaskAdapter {
     private static final long serialVersionUID = 7085923588933253600L;
 
     private final List<DerivedFragmentInfo> storeList;
@@ -53,7 +53,7 @@ public final class GridIndexBuildTask extends GridTaskAdapter {
     private transient GridResourceRegistry registry;
 
     @SuppressWarnings("unchecked")
-    public GridIndexBuildTask(@Nonnull GridJob job, @Nonnull List<DerivedFragmentInfo> storeList) {
+    public GridBuildIndexTask(@Nonnull GridJob job, @Nonnull List<DerivedFragmentInfo> storeList) {
         super(job, false);
         this.storeList = storeList;
     }

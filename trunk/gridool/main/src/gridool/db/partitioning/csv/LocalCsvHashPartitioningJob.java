@@ -236,7 +236,7 @@ public final class LocalCsvHashPartitioningJob extends
         for(final Map.Entry<GridNode, List<DerivedFragmentInfo>> e : idxShippingMap.entrySet()) {
             GridNode node = e.getKey();
             List<DerivedFragmentInfo> storeList = e.getValue();
-            GridTask task = new GridIndexBuildTask(this, storeList);
+            GridTask task = new GridBuildIndexTask(this, storeList);
             taskmap.put(task, node);
         }
         final HashMap<GridNode, MutableInt> assignedRecMap = new HashMap<GridNode, MutableInt>(numNodes);
