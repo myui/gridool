@@ -33,6 +33,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import xbird.util.datetime.StopWatch;
+import xbird.util.primitive.MutableInt;
 import xbird.util.struct.Pair;
 
 /**
@@ -64,7 +65,7 @@ public final class MonetDBParallelLoadTask extends CsvPartitioningTask {
 
         MonetDBParallelLoadOperation ops = new MonetDBParallelLoadOperation(connectUrl, tableName, csvFileName, createTableDDL, copyIntoQuery, alterTableDDL);
         ops.setAuth(jobConf.getUserName(), jobConf.getPassword());
-        final Pair<MonetDBParallelLoadOperation, Map<GridNode, Integer>> pair = new Pair<MonetDBParallelLoadOperation, Map<GridNode, Integer>>(ops, assignMap);
+        final Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>> pair = new Pair<MonetDBParallelLoadOperation, Map<GridNode, MutableInt>>(ops, assignMap);
 
         final StopWatch sw = new StopWatch();
         final GridJobFuture<Long> future = kernel.execute(MonetDBInvokeParallelLoadJob.class, pair);

@@ -64,6 +64,7 @@ import xbird.util.concurrent.ExecutorUtils;
 import xbird.util.csv.CvsReader;
 import xbird.util.csv.SimpleCvsReader;
 import xbird.util.io.FastBufferedInputStream;
+import xbird.util.primitive.MutableInt;
 import xbird.util.primitive.Primitives;
 import xbird.util.struct.Pair;
 import xbird.util.system.SystemUtils;
@@ -101,7 +102,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
 
     // ------------------------
 
-    protected transient final HashMap<GridNode, Integer> assignMap;
+    protected transient final HashMap<GridNode, MutableInt> assignMap;
 
     // ------------------------
     // working resources
@@ -120,7 +121,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     public CsvPartitioningTask(GridJob job, DBPartitioningJobConf jobConf) {
         super(job, false);
         this.jobConf = jobConf;
-        this.assignMap = new HashMap<GridNode, Integer>(64);
+        this.assignMap = new HashMap<GridNode, MutableInt>(64);
     }
 
     @Override
@@ -144,7 +145,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         this.shuffleThreads = shuffleThreads;
     }
 
-    protected HashMap<GridNode, Integer> execute() throws GridException {
+    protected HashMap<GridNode, MutableInt> execute() throws GridException {
         int numShuffleThreads = shuffleThreads();
         this.shuffleExecPool = (numShuffleThreads <= 0) ? new DirectExecutorService()
                 : ExecutorFactory.newBoundedWorkQueueFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
@@ -210,22 +211,22 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         final String[] lines = queue.toArray(String.class);
         final String fileName = csvFileName;
         if(isFirstShuffle) {
-            CsvHashPartitioningJob.JobConf conf = new CsvHashPartitioningJob.JobConf(lines, fileName, true, primaryForeignKeys, jobConf);
+            PartitioningJobConf conf = new PartitioningJobConf(lines, fileName, true, primaryForeignKeys, jobConf);
             runShuffleJob(kernel, conf, assignMap);
             this.isFirstShuffle = false;
         } else {
             shuffleExecPool.execute(new Runnable() {
                 public void run() {
-                    CsvHashPartitioningJob.JobConf conf = new CsvHashPartitioningJob.JobConf(lines, fileName, false, primaryForeignKeys, jobConf);
+                    PartitioningJobConf conf = new PartitioningJobConf(lines, fileName, false, primaryForeignKeys, jobConf);
                     runShuffleJob(kernel, conf, assignMap);
                 }
             });
         }
     }
 
-    private static void runShuffleJob(final GridKernel kernel, final CsvHashPartitioningJob.JobConf conf, final Map<GridNode, Integer> recMap) {
-        final GridJobFuture<Map<GridNode, Integer>> future = kernel.execute(CsvHashPartitioningJob.class, conf);
-        final Map<GridNode, Integer> map;
+    private static void runShuffleJob(final GridKernel kernel, final PartitioningJobConf conf, final Map<GridNode, MutableInt> recMap) {
+        final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(CsvHashPartitioningJob.class, conf);
+        final Map<GridNode, MutableInt> map;
         try {
             map = future.get(); // wait for execution
         } catch (InterruptedException ie) {
@@ -236,15 +237,15 @@ public class CsvPartitioningTask extends GridTaskAdapter {
             throw new IllegalStateException(ee);
         }
         synchronized(recMap) {
-            for(final Map.Entry<GridNode, Integer> e : map.entrySet()) {
+            for(final Map.Entry<GridNode, MutableInt> e : map.entrySet()) {
                 GridNode node = e.getKey();
-                Integer assigned = e.getValue();
-                Integer prev = recMap.get(node);
+                MutableInt assigned = e.getValue();
+                MutableInt prev = recMap.get(node);
                 if(prev == null) {
                     recMap.put(node, assigned);
                 } else {
-                    int newValue = prev.intValue() + assigned.intValue();
-                    recMap.put(node, newValue);
+                    int v = assigned.intValue();
+                    prev.add(v);
                 }
             }
         }

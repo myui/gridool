@@ -35,6 +35,10 @@ import gridool.db.partitioning.FileAppendTask;
 import gridool.directory.ILocalDirectory;
 import gridool.routing.GridTaskRouter;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -57,6 +61,7 @@ import xbird.util.collections.FixedArrayList;
 import xbird.util.collections.LRUMap;
 import xbird.util.csv.CsvUtils;
 import xbird.util.io.FastByteArrayOutputStream;
+import xbird.util.io.IOUtils;
 import xbird.util.primitive.MutableInt;
 import xbird.util.primitive.Primitives;
 import xbird.util.string.StringUtils;
@@ -71,18 +76,18 @@ import com.sun.istack.internal.Nullable;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public final class CsvHashPartitioningJob extends
-        GridJobBase<PartitioningJobConf, Map<GridNode, MutableInt>> {
+public final class ParallelCsvHashPartitioningJob extends
+        GridJobBase<PartitioningJobConf, HashMap<GridNode, MutableInt>> {
     private static final long serialVersionUID = 149683992715077498L;
-    private static final Log LOG = LogFactory.getLog(CsvHashPartitioningJob.class);
+    private static final Log LOG = LogFactory.getLog(ParallelCsvHashPartitioningJob.class);
     private static final int FK_INDEX_CACHE_SIZE = Primitives.parseInt(Settings.get("gridool.db.partitioning.fk_index_caches"), 8192);
 
-    private transient Map<GridNode, MutableInt> assignedRecMap;
+    private transient HashMap<GridNode, MutableInt> assignedRecMap;
 
     @GridRegistryResource
     private transient GridResourceRegistry registry;
 
-    public CsvHashPartitioningJob() {}
+    public ParallelCsvHashPartitioningJob() {}
 
     @Override
     public boolean injectResources() {
@@ -151,6 +156,7 @@ public final class CsvHashPartitioningJob extends
         final int numNodes = router.getGridSize();
         final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap = new HashMap<GridNode, Pair<MutableInt, FastByteArrayOutputStream>>(numNodes);
         final Map<GridNode, MutableInt> mappedNodes = new HashMap<GridNode, MutableInt>(numNodes);
+        final Map<GridNode, List<DerivedFragmentInfo>> idxShippingMap = new HashMap<GridNode, List<DerivedFragmentInfo>>(numNodes);
         for(int i = 0; i < totalRecords; i++) {
             String line = lines[i];
             lines[i] = null;
@@ -188,6 +194,11 @@ public final class CsvHashPartitioningJob extends
                     final String fkeysField = fkeysFields[kk];
                     final byte[] distkey = distkeys[kk];
                     final GridNode fkMappedNode = fkMappedNodes[kk];
+                    List<DerivedFragmentInfo> storeList = idxShippingMap.get(fkMappedNode);
+                    if(storeList == null) {
+                        storeList = new ArrayList<DerivedFragmentInfo>(1000);
+                        idxShippingMap.put(fkMappedNode, storeList);
+                    }
                     final LRUMap<String, List<NodeWithPartitionNo>> fkCache = fkCaches[kk];
                     List<NodeWithPartitionNo> storedNodeInfo = fkCache.get(fkeysField);
                     for(final Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
@@ -205,7 +216,8 @@ public final class CsvHashPartitioningJob extends
                         }
                         storedNodeInfo.add(nodeInfo);
                         byte[] value = serialize(node, hiddenValue);
-                        storeDerivedFragmentationInfo(distkey, value, index, fkIdxName);
+                        DerivedFragmentInfo fragInfo = new DerivedFragmentInfo(fkIdxName, distkey, value);
+                        storeList.add(fragInfo);
                     }
                 }
             }
@@ -218,8 +230,16 @@ public final class CsvHashPartitioningJob extends
             mappedNodes.clear();
         }
 
-        final Map<GridTask, GridNode> taskmap = new IdentityHashMap<GridTask, GridNode>(numNodes);
-        final Map<GridNode, MutableInt> assignedRecMap = new HashMap<GridNode, MutableInt>(numNodes);
+        int numIdxShippedNodes = idxShippingMap.size();
+        final Map<GridTask, GridNode> taskmap = new IdentityHashMap<GridTask, GridNode>(numNodes
+                + numIdxShippedNodes);
+        for(final Map.Entry<GridNode, List<DerivedFragmentInfo>> e : idxShippingMap.entrySet()) {
+            GridNode node = e.getKey();
+            List<DerivedFragmentInfo> storeList = e.getValue();
+            GridTask task = new GridIndexBuildTask(this, storeList);
+            taskmap.put(task, node);
+        }
+        final HashMap<GridNode, MutableInt> assignedRecMap = new HashMap<GridNode, MutableInt>(numNodes);
         for(final Map.Entry<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> e : nodeAssignMap.entrySet()) {
             GridNode node = e.getKey();
             Pair<MutableInt, FastByteArrayOutputStream> pair = e.getValue();
@@ -339,16 +359,7 @@ public final class CsvHashPartitioningJob extends
         }
     }
 
-    private static void storeDerivedFragmentationInfo(final byte[] distkey, final byte[] nodeWithPartitionNo, final ILocalDirectory index, final String idxName)
-            throws GridException {
-        try {
-            index.addMapping(idxName, distkey, nodeWithPartitionNo);
-        } catch (DbException e) {
-            throw new GridException(e);
-        }
-    }
-
-    public Map<GridNode, MutableInt> reduce() throws GridException {
+    public HashMap<GridNode, MutableInt> reduce() throws GridException {
         return assignedRecMap;
     }
 
@@ -542,5 +553,46 @@ public final class CsvHashPartitioningJob extends
         public String toString() {
             return node.toString() + " [partitionNo=" + partitionNo + "]";
         }
+    }
+
+    static final class DerivedFragmentInfo implements Externalizable {
+        private static final long serialVersionUID = -4472952971698389386L;
+
+        private/* final */String fkIdxName;
+        private/* final */byte[] distkey;
+        private/* final */byte[] value;
+
+        public DerivedFragmentInfo() {} // Externalizable
+
+        DerivedFragmentInfo(@Nonnull String fkIdxName, @Nonnull byte[] distkey, @Nonnull byte[] value) {
+            this.fkIdxName = fkIdxName;
+            this.distkey = distkey;
+            this.value = value;
+        }
+
+        String getFkIdxName() {
+            return fkIdxName;
+        }
+
+        byte[] getDistkey() {
+            return distkey;
+        }
+
+        byte[] getValue() {
+            return value;
+        }
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            this.fkIdxName = IOUtils.readString(in);
+            this.distkey = IOUtils.readBytes(in);
+            this.value = IOUtils.readBytes(in);
+        }
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            IOUtils.writeString(fkIdxName, out);
+            IOUtils.writeBytes(distkey, out);
+            IOUtils.writeBytes(value, out);
+        }
+
     }
 }
