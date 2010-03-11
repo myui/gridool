@@ -65,8 +65,6 @@ public final class GridIndexBuildTask extends GridTaskAdapter {
 
     @Override
     protected Boolean execute() throws GridException {
-        final ILocalDirectory index = registry.getDirectory();
-
         final Map<String, List<DerivedFragmentInfo>> map = new HashMap<String, List<DerivedFragmentInfo>>(12);
         for(final DerivedFragmentInfo e : storeList) {
             String idxName = e.getFkIdxName();
@@ -77,6 +75,7 @@ public final class GridIndexBuildTask extends GridTaskAdapter {
             }
             storeList.add(e);
         }
+        final ILocalDirectory index = registry.getDirectory();
         for(final Map.Entry<String, List<DerivedFragmentInfo>> e : map.entrySet()) {
             List<DerivedFragmentInfo> list = e.getValue();
             int size = list.size();

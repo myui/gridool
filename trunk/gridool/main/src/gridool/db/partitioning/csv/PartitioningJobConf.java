@@ -97,7 +97,7 @@ public final class PartitioningJobConf implements Externalizable {
 
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(lines.length);
-        for(String line : lines) {
+        for(final String line : lines) {
             IOUtils.writeString(line, out);
         }
         IOUtils.writeString(fileName, out);

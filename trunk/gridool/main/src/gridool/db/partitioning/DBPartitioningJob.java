@@ -82,7 +82,7 @@ public final class DBPartitioningJob extends GridJobBase<DBPartitioningJobConf, 
             final int numNodes = processed.size();
             final int[] counts = new int[numNodes];
             int i = 0;
-            for(MutableInt e : processed.values()) {
+            for(final MutableInt e : processed.values()) {
                 int v = e.intValue();
                 numProcessed += v;
                 counts[i++] = v;
