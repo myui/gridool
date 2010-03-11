@@ -195,6 +195,11 @@ public final class LocalCsvHashPartitioningJob extends
                     final String fkeysField = fkeysFields[kk];
                     final byte[] distkey = distkeys[kk];
                     final GridNode fkMappedNode = fkMappedNodes[kk];
+                    List<DerivedFragmentInfo> shipIdxList = idxShippingMap.get(fkMappedNode);
+                    if(shipIdxList == null) {
+                        shipIdxList = new ArrayList<DerivedFragmentInfo>(1000);
+                        idxShippingMap.put(fkMappedNode, shipIdxList);
+                    }
                     final LRUMap<String, List<NodeWithPartitionNo>> fkCache = fkCaches[kk];
                     List<NodeWithPartitionNo> storedNodeInfo = fkCache.get(fkeysField);
                     for(final Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
@@ -211,13 +216,9 @@ public final class LocalCsvHashPartitioningJob extends
                             continue;
                         }
                         storedNodeInfo.add(nodeInfo);
+                        byte[] value = serialize(node, hiddenValue);
                         // index shipping 
-                        List<DerivedFragmentInfo> shipIdxList = idxShippingMap.get(node);
-                        if(shipIdxList == null) {
-                            shipIdxList = new ArrayList<DerivedFragmentInfo>(1000);
-                            idxShippingMap.put(node, shipIdxList);
-                        }
-                        DerivedFragmentInfo fragInfo = new DerivedFragmentInfo(fkIdxName, distkey, hiddenValue);
+                        DerivedFragmentInfo fragInfo = new DerivedFragmentInfo(fkIdxName, distkey, value);
                         shipIdxList.add(fragInfo);
                     }
                 }
@@ -477,7 +478,7 @@ public final class LocalCsvHashPartitioningJob extends
         return buf.toString();
     }
 
-    static byte[] serialize(final GridNode node, final int partitionNo) {
+    private static byte[] serialize(final GridNode node, final int partitionNo) {
         if(partitionNo < 1 || partitionNo > Short.MAX_VALUE) {
             throw new IllegalArgumentException("Illeal PartitionNo: " + partitionNo);
         }
@@ -561,14 +562,14 @@ public final class LocalCsvHashPartitioningJob extends
 
         private/* final */String fkIdxName;
         private/* final */byte[] distkey;
-        private/* final */int hiddenValue;
+        private/* final */byte[] value;
 
         public DerivedFragmentInfo() {} // Externalizable
 
-        DerivedFragmentInfo(@Nonnull String fkIdxName, @Nonnull byte[] distkey, int hiddenValue) {
+        DerivedFragmentInfo(@Nonnull String fkIdxName, @Nonnull byte[] distkey, byte[] value) {
             this.fkIdxName = fkIdxName;
             this.distkey = distkey;
-            this.hiddenValue = hiddenValue;
+            this.value = value;
         }
 
         String getFkIdxName() {
@@ -579,20 +580,20 @@ public final class LocalCsvHashPartitioningJob extends
             return distkey;
         }
 
-        int getHiddenValue() {
-            return hiddenValue;
+        byte[] getValue() {
+            return value;
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             this.fkIdxName = IOUtils.readString(in);
             this.distkey = IOUtils.readBytes(in);
-            this.hiddenValue = in.readInt();
+            this.value = IOUtils.readBytes(in);
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
             IOUtils.writeString(fkIdxName, out);
             IOUtils.writeBytes(distkey, out);
-            out.writeInt(hiddenValue);
+            IOUtils.writeBytes(value, out);
         }
 
     }
