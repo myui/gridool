@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -68,8 +69,6 @@ import xbird.util.primitive.MutableInt;
 import xbird.util.primitive.Primitives;
 import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
-
-import com.sun.istack.internal.Nullable;
 
 /**
  * 
@@ -166,20 +165,17 @@ public final class LocalCsvHashPartitioningJob extends
         for(int i = 0; i < totalRecords; i++) {
             String line = lines[i];
             lines[i] = null;
-            final byte[] lineBytes = line.getBytes(charset);
-            {
+            // "primary" fragment mapping
+            mapPrimaryFragment(mappedNodes, tablePartitionNo, localNode);
+            if(hasParentTable) {
+                // "derived by parent" fragment mapping
                 CsvUtils.retrieveFields(line, pkeyIndicies, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
                 String pkeysField = combineFields(fields, pkeyIndicies.length, strBuf);
-                // "primary" fragment mapping
                 final byte[] distkey = StringUtils.getBytes(pkeysField);
-                mapPrimaryFragment(distkey, mappedNodes, tablePartitionNo, origRouter, localNode);
-                if(hasParentTable) {
-                    // "derived by parent" fragment mapping
-                    for(int kk = 0; kk < numParentForeignKeys; kk++) {
-                        String idxName = parentTableFkIndexNames[kk];
-                        mapDerivedByParentFragment(distkey, mappedNodes, index, idxName);
-                    }
+                for(int kk = 0; kk < numParentForeignKeys; kk++) {
+                    String idxName = parentTableFkIndexNames[kk];
+                    mapDerivedByParentFragment(distkey, mappedNodes, index, idxName);
                 }
             }
             if(numForeignKeys > 0) {
@@ -233,6 +229,7 @@ public final class LocalCsvHashPartitioningJob extends
                         + '\'');
             }
             // bind a record to nodes
+            byte[] lineBytes = line.getBytes(charset);
             mapRecord(lineBytes, totalRecords, numNodes, nodeAssignMap, mappedNodes, filedSeparator);
             mappedNodes.clear();
         }
@@ -268,20 +265,10 @@ public final class LocalCsvHashPartitioningJob extends
         return taskmap;
     }
 
-    private static GridNode mapPrimaryFragment(final byte[] distkey, final Map<GridNode, MutableInt> mappedNodes, final int tablePartitionNo, final GridTaskRouter router, final GridNode localNode)
+    private static void mapPrimaryFragment(final Map<GridNode, MutableInt> mappedNodes, final int tablePartitionNo, final GridNode localNode)
             throws GridException {
-        assert (mappedNodes.isEmpty());
-        GridNode mappedNode = router.selectNode(distkey);
-        if(mappedNode == null) {
-            throw new GridException("Could not find any node in cluster.");
-        }
-        if(!mappedNode.equals(localNode)) {
-            throw new IllegalStateException("Illegal mapping: primary fragment should be mapped to the local node, but mapped to node: "
-                    + mappedNode);
-        }
         MutableInt newHidden = new MutableInt(tablePartitionNo);
-        mappedNodes.put(mappedNode, newHidden);
-        return mappedNode;
+        mappedNodes.put(localNode, newHidden);
     }
 
     private static GridNode mapDerivedByChildFragment(final byte[] distkey, final Map<GridNode, MutableInt> mappedNodes, final int tablePartitionNo, final GridTaskRouter router)
@@ -335,7 +322,7 @@ public final class LocalCsvHashPartitioningJob extends
 
     private static void mapRecord(final byte[] line, final int totalRecords, final int numNodes, final Map<GridNode, Pair<MutableInt, FastByteArrayOutputStream>> nodeAssignMap, final Map<GridNode, MutableInt> mappedNodes, final char filedSeparator) {
         final int lineSize = line.length;
-        for(Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
+        for(final Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
             final GridNode node = e.getKey();
             final int hiddenValue = e.getValue().intValue();
 

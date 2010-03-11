@@ -29,6 +29,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.CheckForNull;
@@ -55,7 +56,7 @@ public final class PrimaryKey implements ConstraintKey, Externalizable {
     @Nullable
     private/* final */IntArrayList columnPositions;
     @Nonnull
-    private transient List<ForeignKey> exportedKeys;
+    private List<ForeignKey> exportedKeys = Collections.emptyList();
 
     public PrimaryKey() {} // for Externalizable
 
@@ -162,6 +163,12 @@ public final class PrimaryKey implements ConstraintKey, Externalizable {
             }
             this.columnPositions = positions;
         }
+        final int numExportedKeys = in.readInt();
+        this.exportedKeys = new ArrayList<ForeignKey>(numExportedKeys);
+        for(int i = 0; i < numExportedKeys; i++) {
+            ForeignKey fk = (ForeignKey) in.readObject();
+            exportedKeys.add(fk);
+        }
     }
 
     public void writeExternal(final ObjectOutput out) throws IOException {
@@ -182,6 +189,12 @@ public final class PrimaryKey implements ConstraintKey, Externalizable {
                 int pos = columnPositions.get(i);
                 out.writeInt(pos);
             }
+        }
+        final int numExportedKeys = exportedKeys.size();
+        out.writeInt(numExportedKeys);
+        for(int i = 0; i < numExportedKeys; i++) {
+            ForeignKey fk = exportedKeys.get(i);
+            out.writeObject(fk);
         }
     }
 
