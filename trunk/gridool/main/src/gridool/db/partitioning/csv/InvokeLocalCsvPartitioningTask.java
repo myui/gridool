@@ -49,7 +49,7 @@ import xbird.util.struct.Pair;
  * 
  * @author Makoto YUI (yuin405+xbird@gmail.com)
  */
-public final class InvokeParallelCsvPartitioningTask extends GridTaskAdapter {
+public final class InvokeLocalCsvPartitioningTask extends GridTaskAdapter {
     private static final long serialVersionUID = -6863271080717798071L;
 
     private final String[] lines;
@@ -62,7 +62,7 @@ public final class InvokeParallelCsvPartitioningTask extends GridTaskAdapter {
     private transient GridKernel kernel;
 
     @SuppressWarnings("unchecked")
-    public InvokeParallelCsvPartitioningTask(final GridJob job, @Nonnull final List<String> lineList, @Nonnull final PartitioningJobConf ops) {
+    public InvokeLocalCsvPartitioningTask(final GridJob job, @Nonnull final List<String> lineList, @Nonnull final PartitioningJobConf ops) {
         super(job, false);
         this.lines = ArrayUtils.toArray(lineList);
         this.fileName = ops.getFileName();
@@ -79,7 +79,7 @@ public final class InvokeParallelCsvPartitioningTask extends GridTaskAdapter {
     @Override
     protected HashMap<GridNode, MutableInt> execute() throws GridException {
         PartitioningJobConf args = new PartitioningJobConf(lines, fileName, isFirst, primaryForeignKeys, jobConf);
-        GridJobFuture<HashMap<GridNode, MutableInt>> future = kernel.execute(ParallelCsvHashPartitioningJob.class, args);
+        GridJobFuture<HashMap<GridNode, MutableInt>> future = kernel.execute(LocalCsvHashPartitioningJob.class, args);
         HashMap<GridNode, MutableInt> result = GridUtils.invokeGet(future);
         return result;
     }

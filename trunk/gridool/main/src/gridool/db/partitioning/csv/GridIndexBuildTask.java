@@ -25,7 +25,7 @@ import gridool.GridJob;
 import gridool.GridResourceRegistry;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridTaskAdapter;
-import gridool.db.partitioning.csv.ParallelCsvHashPartitioningJob.DerivedFragmentInfo;
+import gridool.db.partitioning.csv.LocalCsvHashPartitioningJob.DerivedFragmentInfo;
 import gridool.directory.ILocalDirectory;
 
 import java.util.ArrayList;

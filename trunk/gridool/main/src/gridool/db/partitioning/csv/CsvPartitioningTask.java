@@ -225,7 +225,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     }
 
     private static void runShuffleJob(final GridKernel kernel, final PartitioningJobConf conf, final Map<GridNode, MutableInt> recMap) {
-        final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(CsvHashPartitioningJob.class, conf);
+        final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(GlobalCsvHashPartitioningJob.class, conf);
         final Map<GridNode, MutableInt> map;
         try {
             map = future.get(); // wait for execution

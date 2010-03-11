@@ -76,10 +76,10 @@ import com.sun.istack.internal.Nullable;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public final class ParallelCsvHashPartitioningJob extends
+public final class LocalCsvHashPartitioningJob extends
         GridJobBase<PartitioningJobConf, HashMap<GridNode, MutableInt>> {
     private static final long serialVersionUID = 149683992715077498L;
-    private static final Log LOG = LogFactory.getLog(ParallelCsvHashPartitioningJob.class);
+    private static final Log LOG = LogFactory.getLog(LocalCsvHashPartitioningJob.class);
     private static final int FK_INDEX_CACHE_SIZE = Primitives.parseInt(Settings.get("gridool.db.partitioning.fk_index_caches"), 8192);
 
     private transient HashMap<GridNode, MutableInt> assignedRecMap;
@@ -87,7 +87,7 @@ public final class ParallelCsvHashPartitioningJob extends
     @GridRegistryResource
     private transient GridResourceRegistry registry;
 
-    public ParallelCsvHashPartitioningJob() {}
+    public LocalCsvHashPartitioningJob() {}
 
     @Override
     public boolean injectResources() {

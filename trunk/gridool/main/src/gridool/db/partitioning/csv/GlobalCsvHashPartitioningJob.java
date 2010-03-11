@@ -103,7 +103,7 @@ public final class GlobalCsvHashPartitioningJob extends
         for(final Map.Entry<GridNode, List<String>> e : nodeAssignMap.entrySet()) {
             GridNode node = e.getKey();
             List<String> lineList = e.getValue();
-            GridTask task = new InvokeParallelCsvPartitioningTask(this, lineList, ops);
+            GridTask task = new InvokeLocalCsvPartitioningTask(this, lineList, ops);
             taskMap.put(task, node);
         }
 
