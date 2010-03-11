@@ -32,12 +32,16 @@ import gridool.db.helpers.PrimaryKey;
 import gridool.db.partitioning.DBPartitioningJobConf;
 import gridool.util.GridUtils;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
 import javax.annotation.Nonnull;
 
+import xbird.util.io.IOUtils;
 import xbird.util.lang.ArrayUtils;
 import xbird.util.primitive.MutableInt;
 import xbird.util.struct.Pair;
@@ -52,11 +56,11 @@ import xbird.util.struct.Pair;
 public final class InvokeLocalCsvPartitioningTask extends GridTaskAdapter {
     private static final long serialVersionUID = -6863271080717798071L;
 
-    private final String[] lines;
-    private final String fileName;
-    private final boolean isFirst;
-    private final Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys;
-    private final DBPartitioningJobConf jobConf;
+    private/* final */String[] lines;
+    private/* final */String fileName;
+    private/* final */boolean isFirst;
+    private/* final */Pair<PrimaryKey, Collection<ForeignKey>> primaryForeignKeys;
+    private/* final */DBPartitioningJobConf jobConf;
 
     @GridKernelResource
     private transient GridKernel kernel;
@@ -84,4 +88,46 @@ public final class InvokeLocalCsvPartitioningTask extends GridTaskAdapter {
         return result;
     }
 
+    private void readObject(ObjectInputStream in) throws java.io.IOException,
+            ClassNotFoundException {
+        in.defaultReadObject();
+
+        int numLines = in.readInt();
+        final String[] lines = new String[numLines];
+        for(int i = 0; i < numLines; i++) {
+            lines[i] = IOUtils.readString(in);
+        }
+        this.lines = lines;
+        this.fileName = IOUtils.readString(in);
+        this.isFirst = in.readBoolean();
+        PrimaryKey pkey = (PrimaryKey) in.readObject();
+        final int numFkeys = in.readInt();
+        final List<ForeignKey> fkeys = new ArrayList<ForeignKey>(numFkeys);
+        for(int i = 0; i < numFkeys; i++) {
+            ForeignKey fk = (ForeignKey) in.readObject();
+            fkeys.add(fk);
+        }
+        this.primaryForeignKeys = new Pair<PrimaryKey, Collection<ForeignKey>>(pkey, fkeys);
+        this.jobConf = (DBPartitioningJobConf) in.readObject();
+    }
+
+    private void writeObject(ObjectOutputStream out) throws java.io.IOException {
+        out.defaultWriteObject();
+
+        out.writeInt(lines.length);
+        for(final String line : lines) {
+            IOUtils.writeString(line, out);
+        }
+        IOUtils.writeString(fileName, out);
+        out.writeBoolean(isFirst);
+        PrimaryKey pkey = primaryForeignKeys.getFirst();
+        out.writeObject(pkey);
+        Collection<ForeignKey> fkeys = primaryForeignKeys.getSecond();
+        int numFkeys = fkeys.size();
+        out.writeInt(numFkeys);
+        for(final ForeignKey fk : fkeys) {
+            out.writeObject(fk);
+        }
+        out.writeObject(jobConf);
+    }
 }

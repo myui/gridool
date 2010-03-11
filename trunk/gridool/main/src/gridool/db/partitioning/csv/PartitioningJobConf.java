@@ -28,7 +28,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 
@@ -81,7 +83,6 @@ public final class PartitioningJobConf implements Externalizable {
         return jobConf;
     }
 
-    @SuppressWarnings("unchecked")
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         int numLines = in.readInt();
         final String[] lines = new String[numLines];
@@ -91,7 +92,14 @@ public final class PartitioningJobConf implements Externalizable {
         this.lines = lines;
         this.fileName = IOUtils.readString(in);
         this.isFirst = in.readBoolean();
-        this.primaryForeignKeys = (Pair<PrimaryKey, Collection<ForeignKey>>) in.readObject();
+        PrimaryKey pkey = (PrimaryKey) in.readObject();
+        final int numFkeys = in.readInt();
+        final List<ForeignKey> fkeys = new ArrayList<ForeignKey>(numFkeys);
+        for(int i = 0; i < numFkeys; i++) {
+            ForeignKey fk = (ForeignKey) in.readObject();
+            fkeys.add(fk);
+        }
+        this.primaryForeignKeys = new Pair<PrimaryKey, Collection<ForeignKey>>(pkey, fkeys);
         this.jobConf = (DBPartitioningJobConf) in.readObject();
     }
 
@@ -102,7 +110,14 @@ public final class PartitioningJobConf implements Externalizable {
         }
         IOUtils.writeString(fileName, out);
         out.writeBoolean(isFirst);
-        out.writeObject(primaryForeignKeys);
+        PrimaryKey pkey = primaryForeignKeys.getFirst();
+        out.writeObject(pkey);
+        Collection<ForeignKey> fkeys = primaryForeignKeys.getSecond();
+        int numFkeys = fkeys.size();
+        out.writeInt(numFkeys);
+        for(final ForeignKey fk : fkeys) {
+            out.writeObject(fk);
+        }
         out.writeObject(jobConf);
     }
 
