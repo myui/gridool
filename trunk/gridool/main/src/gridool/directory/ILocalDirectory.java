@@ -117,6 +117,8 @@ public interface ILocalDirectory {
                 return tcb;
             } else if("tch".equalsIgnoreCase(type)) {
                 return tch;
+            } else if("bfile".equals(type)) {
+                return bfile;
             } else {
                 return bfile;
             }

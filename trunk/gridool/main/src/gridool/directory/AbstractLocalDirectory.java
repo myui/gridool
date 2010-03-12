@@ -27,8 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-
-import com.sun.istack.internal.Nullable;
+import javax.annotation.Nullable;
 
 import xbird.config.Settings;
 import xbird.storage.DbException;
