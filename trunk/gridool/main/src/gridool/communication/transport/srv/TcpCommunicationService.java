@@ -59,7 +59,7 @@ public final class TcpCommunicationService extends CommunicationServiceBase {
     static {
         String prop = Settings.getThroughSystemProperty("gridool.transport.force_oio");
         forceOio = Boolean.parseBoolean(prop);
-        nioServerType = Settings.get("gridool.transport.nio.server", "GridThreadPerConnectionServer");
+        nioServerType = Settings.get("gridool.transport.oio.server", "GridThreadPerConnectionServer");
     }
 
     protected final GridTransportClient client;
