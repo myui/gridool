@@ -198,16 +198,16 @@ public final class LocalCsvHashPartitioningJob extends
                     final GridNode fkMappedNode = fkMappedNodes[kk];
                     List<DerivedFragmentInfo> shipIdxList = idxShippingMap.get(fkMappedNode);
                     if(shipIdxList == null) {
-                        shipIdxList = new ArrayList<DerivedFragmentInfo>(1000);
+                        shipIdxList = new ArrayList<DerivedFragmentInfo>(2000);
                         idxShippingMap.put(fkMappedNode, shipIdxList);
                     }
                     final LRUMap<String, List<NodeWithPartitionNo>> fkCache = fkCaches[kk];
                     List<NodeWithPartitionNo> storedNodeInfo = fkCache.get(fkeysField);
                     for(final Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
                         final GridNode node = e.getKey();
-                        if(node.equals(fkMappedNode)) {
-                            continue; // no need to map
-                        }
+                        //if(node.equals(fkMappedNode)) {
+                        //    continue; // no need to map
+                        //}
                         int hiddenValue = e.getValue().intValue();
                         NodeWithPartitionNo nodeInfo = new NodeWithPartitionNo(node, hiddenValue);
                         if(storedNodeInfo == null) {
