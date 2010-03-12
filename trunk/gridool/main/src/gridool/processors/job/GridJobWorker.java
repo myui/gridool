@@ -257,13 +257,17 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
         for(int finishedTasks = 0; finishedTasks < numTasks; finishedTasks++) {
             GridTaskResult result = null;
             try {
-                while(true) {
-                    result = resultQueue.poll(JOB_INSPECTION_INTERVAL_SEC, TimeUnit.SECONDS);
-                    if(result != null) {
-                        break;
-                    }
-                    if(LOG.isInfoEnabled()) {
-                        showRemainingTasks(job, taskMap);
+                if(JOB_INSPECTION_INTERVAL_SEC == -1L) {
+                    result = resultQueue.take();
+                } else {
+                    while(true) {
+                        result = resultQueue.poll(JOB_INSPECTION_INTERVAL_SEC, TimeUnit.SECONDS);
+                        if(result != null) {
+                            break;
+                        }
+                        if(LOG.isInfoEnabled()) {
+                            showRemainingTasks(job, taskMap);
+                        }
                     }
                 }
             } catch (InterruptedException e) {
