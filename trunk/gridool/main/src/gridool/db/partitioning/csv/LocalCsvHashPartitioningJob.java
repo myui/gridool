@@ -33,7 +33,6 @@ import gridool.db.catalog.DistributionCatalog;
 import gridool.db.helpers.ForeignKey;
 import gridool.db.helpers.PrimaryKey;
 import gridool.db.partitioning.DBPartitioningJobConf;
-import gridool.db.partitioning.FileAppendTask;
 import gridool.directory.ILocalDirectory;
 import gridool.routing.GridTaskRouter;
 
@@ -205,9 +204,7 @@ public final class LocalCsvHashPartitioningJob extends
                     List<NodeWithPartitionNo> storedNodeInfo = fkCache.get(fkeysField);
                     for(final Map.Entry<GridNode, MutableInt> e : mappedNodes.entrySet()) {
                         final GridNode node = e.getKey();
-                        //if(node.equals(fkMappedNode)) {
-                        //    continue; // no need to map
-                        //}
+                        //if(node.equals(fkMappedNode)) continue; // no need to map
                         int hiddenValue = e.getValue().intValue();
                         NodeWithPartitionNo nodeInfo = new NodeWithPartitionNo(node, hiddenValue);
                         if(storedNodeInfo == null) {

@@ -18,7 +18,7 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.db.partitioning;
+package gridool.db.partitioning.csv;
 
 import gridool.GridException;
 import gridool.GridJob;

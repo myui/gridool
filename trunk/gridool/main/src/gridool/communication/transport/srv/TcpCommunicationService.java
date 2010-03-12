@@ -55,11 +55,11 @@ import xbird.util.system.SystemUtils;
 public final class TcpCommunicationService extends CommunicationServiceBase {
 
     private static final boolean forceOio;
-    private static final String nioServerType;
+    private static final String oioServerType;
     static {
         String prop = Settings.getThroughSystemProperty("gridool.transport.force_oio");
         forceOio = Boolean.parseBoolean(prop);
-        nioServerType = Settings.get("gridool.transport.oio.server", "GridThreadPerConnectionServer");
+        oioServerType = Settings.get("gridool.transport.oio.server", "GridMasterSlaveWorkerServer");
     }
 
     protected final GridTransportClient client;
@@ -73,13 +73,13 @@ public final class TcpCommunicationService extends CommunicationServiceBase {
             this.server = new GridNioServer(config);
         } else {
             this.client = new GridOioClient(config);
-            if(nioServerType.equalsIgnoreCase("GridThreadPerConnectionServer")) {
-                this.server = new GridThreadPerConnectionServer(config);
-            } else if(nioServerType.equalsIgnoreCase("GridMasterSlaveWorkerServer")) {
+            if(oioServerType.equalsIgnoreCase("GridMasterSlaveWorkerServer")) {
                 this.server = new GridMasterSlaveWorkerServer(config);
+            } else if(oioServerType.equalsIgnoreCase("GridThreadPerConnectionServer")) {
+                this.server = new GridThreadPerConnectionServer(config);
             } else {
-                throw new IllegalStateException("Unexpected NIO server type: " + nioServerType
-                        + ". Check 'gridool.transport.nio.server' in gridool.conf");
+                throw new IllegalStateException("Unexpected OIO server type: " + oioServerType
+                        + ". Check 'gridool.transport.oio.server' in gridool.conf");
             }
         }
     }

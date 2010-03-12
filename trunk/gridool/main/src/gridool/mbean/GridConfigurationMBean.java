@@ -81,7 +81,7 @@ public interface GridConfigurationMBean extends Serializable {
     void setTaskAssignorPoolSize(@Nonnegative int taskAssignorPoolSize);
 
     @Nonnegative
-    int getTaskProcessorPoolSize();
+    int getTaskProcessorCorePoolSize();
 
     @Nonnegative
     int getTransportServerPort();

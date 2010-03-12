@@ -208,7 +208,7 @@ public final class GridConfiguration implements GridConfigurationMBean {
         this.taskAssignorPoolSize = taskAssignorPoolSize;
     }
 
-    public int getTaskProcessorPoolSize() {
+    public int getTaskProcessorCorePoolSize() {
         return taskProcessorPoolSize;
     }
 
