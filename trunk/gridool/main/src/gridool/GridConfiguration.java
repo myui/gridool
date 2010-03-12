@@ -86,7 +86,7 @@ public final class GridConfiguration implements GridConfigurationMBean {
         this.metricsHistorySize = Primitives.parseInt(Settings.get("gridool.metrics.history_size"), 1000);
         this.jobProcessorPoolSize = Primitives.parseInt(Settings.get("gridool.job.proc.poolsize"), 16);
         this.taskAssignorPoolSize = Primitives.parseInt(Settings.get("gridool.job.taskassignor.poolsize"), 16);
-        this.taskProcessorPoolSize = Primitives.parseInt(Settings.get("gridool.task.proc.poolsize"), 64);
+        this.taskProcessorPoolSize = Primitives.parseInt(Settings.get("gridool.task.proc.corepoolsize"), 24);
         this.transportServerPort = Primitives.parseInt(Settings.get("gridool.transport.port"), CommunicationServiceBase.DEFAULT_PORT);
         this.transportChannelSweepInterval = Primitives.parseInt(Settings.get("gridool.transport.channel.sweep_interval"), GridTransportClient.DEFAULT_SWEEP_INTERVAL);
         this.transportChannelTTL = Primitives.parseInt(Settings.get("gridool.transport.channel.ttl"), GridTransportClient.DEFAULT_TTL);

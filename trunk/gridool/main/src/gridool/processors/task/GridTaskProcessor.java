@@ -63,7 +63,7 @@ public final class GridTaskProcessor implements GridProcessor {
         this.monitor = monitor;
         this.respListener = respListener;
         int poolSize = config.getTaskProcessorPoolSize();
-        this.execPool = ExecutorFactory.newFixedThreadPool(poolSize, "GridTaskProcessor");
+        this.execPool = ExecutorFactory.newCachedThreadPool(poolSize, 60L, "GridTaskProcessor"); // REVIEWME cached or fixed
         this.metricsRef = resourceRegistry.getTaskMetricsCounter();
         this.waitingTaskQueue = new NonblockingUnboundedDeque<GridTask>(8); // 2^8=256
         resourceRegistry.setTaskProcessor(this);
