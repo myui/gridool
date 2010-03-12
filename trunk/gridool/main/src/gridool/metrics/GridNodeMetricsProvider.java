@@ -158,9 +158,6 @@ public final class GridNodeMetricsProvider {
         }
 
         private void addSnapshot() {
-            if(LOG.isTraceEnabled()) {
-                LOG.trace("Captured metrics snapshot.");
-            }
             final MetricsSnapshot snapshot = new MetricsSnapshot(metrics);
             synchronized(lock) {
                 history.insert(snapshot);
