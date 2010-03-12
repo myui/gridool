@@ -25,6 +25,8 @@ import gridool.GridException;
 import gridool.GridNode;
 import gridool.GridResourceRegistry;
 import gridool.GridTask;
+import gridool.GridTaskResult;
+import gridool.GridTaskResultPolicy;
 import gridool.annotation.GridConfigResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.communication.payload.GridNodeInfo;
@@ -62,6 +64,7 @@ import xbird.storage.index.Value;
 import xbird.util.collections.FixedArrayList;
 import xbird.util.collections.LRUMap;
 import xbird.util.csv.CsvUtils;
+import xbird.util.datetime.TextProgressBar;
 import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.io.IOUtils;
 import xbird.util.primitive.MutableInt;
@@ -83,6 +86,9 @@ public final class LocalCsvHashPartitioningJob extends
     private static final int FK_INDEX_CACHE_SIZE = Primitives.parseInt(Settings.get("gridool.db.partitioning.fk_index_caches"), 8192);
 
     private transient HashMap<GridNode, MutableInt> assignedRecMap;
+
+    @Nullable
+    private transient TextProgressBar _progressBar = null;
 
     @GridConfigResource
     private transient GridConfiguration config;
@@ -232,8 +238,8 @@ public final class LocalCsvHashPartitioningJob extends
         }
 
         int numIdxShippedNodes = idxShippingMap.size();
-        final Map<GridTask, GridNode> taskmap = new IdentityHashMap<GridTask, GridNode>(numNodes
-                + numIdxShippedNodes);
+        final int numTasks = numIdxShippedNodes + nodeAssignMap.size();
+        final Map<GridTask, GridNode> taskmap = new IdentityHashMap<GridTask, GridNode>(numTasks);
         for(final Map.Entry<GridNode, List<DerivedFragmentInfo>> e : idxShippingMap.entrySet()) {
             GridNode node = e.getKey();
             List<DerivedFragmentInfo> storeList = e.getValue();
@@ -259,6 +265,14 @@ public final class LocalCsvHashPartitioningJob extends
             }
         }
         this.assignedRecMap = assignedRecMap;
+        this._progressBar = new TextProgressBar("LocalCsvHashPartitioningJob [" + getJobId() + ']',
+                numTasks) {
+            protected void show() {
+                if(LOG.isInfoEnabled()) {
+                    LOG.info(getInfo());
+                }
+            }
+        };
         return taskmap;
     }
 
@@ -354,7 +368,20 @@ public final class LocalCsvHashPartitioningJob extends
         }
     }
 
+    @Override
+    public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
+        final GridException err = result.getException();
+        if(err != null) {
+            GridNode node = result.getExecutedNode();
+            String errmsg = getClass().getSimpleName() + " failed on node: " + node;
+            throw new GridException(errmsg, err);
+        }
+        _progressBar.inc();
+        return GridTaskResultPolicy.CONTINUE;
+    }
+
     public HashMap<GridNode, MutableInt> reduce() throws GridException {
+        _progressBar.finish();
         return assignedRecMap;
     }
 

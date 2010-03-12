@@ -39,9 +39,14 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import xbird.util.collections.FixedArrayList;
 import xbird.util.csv.CsvUtils;
+import xbird.util.datetime.TextProgressBar;
 import xbird.util.primitive.MutableInt;
 import xbird.util.string.StringUtils;
 import xbird.util.struct.Pair;
@@ -56,8 +61,11 @@ import xbird.util.struct.Pair;
 public final class GlobalCsvHashPartitioningJob extends
         GridJobBase<PartitioningJobConf, Map<GridNode, MutableInt>> {
     private static final long serialVersionUID = 149683992715077498L;
+    private static final Log LOG = LogFactory.getLog(GlobalCsvHashPartitioningJob.class);
 
     private transient Map<GridNode, MutableInt> assignedRecMap;
+    @Nullable
+    private transient TextProgressBar _progressBar = null;
 
     public GlobalCsvHashPartitioningJob() {}
 
@@ -100,7 +108,8 @@ public final class GlobalCsvHashPartitioningJob extends
             list.add(line);
         }
 
-        final Map<GridTask, GridNode> taskMap = new IdentityHashMap<GridTask, GridNode>(nodeAssignMap.size());
+        final int numTasks = nodeAssignMap.size();
+        final Map<GridTask, GridNode> taskMap = new IdentityHashMap<GridTask, GridNode>(numTasks);
         for(final Map.Entry<GridNode, List<String>> e : nodeAssignMap.entrySet()) {
             GridNode node = e.getKey();
             List<String> lineList = e.getValue();
@@ -109,6 +118,14 @@ public final class GlobalCsvHashPartitioningJob extends
         }
 
         this.assignedRecMap = new HashMap<GridNode, MutableInt>(numNodes);
+        this._progressBar = new TextProgressBar(
+                "GlobalCsvHashPartitioningJob [" + getJobId() + ']', numTasks) {
+            protected void show() {
+                if(LOG.isInfoEnabled()) {
+                    LOG.info(getInfo());
+                }
+            }
+        };
         return taskMap;
     }
 
@@ -132,10 +149,12 @@ public final class GlobalCsvHashPartitioningJob extends
                 prevCount.add(v);
             }
         }
+        _progressBar.inc();
         return GridTaskResultPolicy.CONTINUE;
     }
 
     public Map<GridNode, MutableInt> reduce() throws GridException {
+        _progressBar.finish();
         return assignedRecMap;
     }
 
