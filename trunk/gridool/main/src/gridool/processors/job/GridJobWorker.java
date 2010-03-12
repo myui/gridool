@@ -387,7 +387,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
     private static void showRemainingTasks(final GridJob<?, ?> job, final Map<String, Pair<GridTask, List<Future<?>>>> taskMap) {
         final StringBuilder buf = new StringBuilder(256);
         String jobClassName = ClassUtils.getSimpleClassName(job);
-        buf.append("Inspecting job... ");
+        buf.append("Run Job inspection... ");
         buf.append(jobClassName);
         buf.append(" [");
         buf.append(job.getJobId());
