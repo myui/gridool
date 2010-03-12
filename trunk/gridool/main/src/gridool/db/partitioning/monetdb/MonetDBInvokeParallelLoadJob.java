@@ -78,8 +78,8 @@ public final class MonetDBInvokeParallelLoadJob extends
                 assigned.put(node, new MutableInt(0));
             }
         }
-        final int mapsize = assigned.size();
-        final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(mapsize);
+        final int numTasks = assigned.size();
+        final Map<GridTask, GridNode> map = new IdentityHashMap<GridTask, GridNode>(numTasks);
         for(final Map.Entry<GridNode, MutableInt> e : assigned.entrySet()) {
             GridNode node = e.getKey();
             int numRecords = e.getValue().intValue();
@@ -89,7 +89,7 @@ public final class MonetDBInvokeParallelLoadJob extends
             map.put(task, node);
         }
 
-        this.masterSlaves = new ArrayList<Pair<GridNode, List<GridNode>>>(mapsize);
+        this.masterSlaves = new ArrayList<Pair<GridNode, List<GridNode>>>(numTasks);
         return map;
     }
 

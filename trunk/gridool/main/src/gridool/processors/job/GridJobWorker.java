@@ -59,6 +59,7 @@ import org.apache.commons.logging.LogFactory;
 import xbird.util.concurrent.CancellableTask;
 import xbird.util.concurrent.ExecutorFactory;
 import xbird.util.datetime.StopWatch;
+import xbird.util.datetime.TextProgressBar;
 import xbird.util.lang.ClassUtils;
 import xbird.util.struct.Pair;
 
@@ -162,26 +163,35 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
         }
 
         final String jobClassName = ClassUtils.getSimpleClassName(job);
+        final String jobId = job.getJobId();
         final int numTasks = mappedTasks.size();
         if(numTasks == 0) {
             if(LOG.isInfoEnabled()) {
-                LOG.info(jobClassName + "#map of a job [" + job.getJobId()
-                        + "] returns an empty result");
+                LOG.info(jobClassName + "#map of a job [" + jobId + "] returns an empty result");
             }
             return job.reduce();
         }
         if(LOG.isInfoEnabled()) {
-            LOG.info(jobClassName + " [" + job.getJobId() + "] is mapped to " + numTasks
-                    + " tasks (nodes)");
+            LOG.info(jobClassName + " [" + jobId + "] is mapped to " + numTasks + " tasks (nodes)");
         }
+        final TextProgressBar progressBar = new TextProgressBar(jobClassName + " [" + jobId + ']',
+                numTasks) {
+            protected void show() {
+                if(LOG.isInfoEnabled()) {
+                    LOG.info(getInfo());
+                }
+            }
+        };
+        progressBar.setRefreshFluctations(10);
 
         final BlockingQueue<GridTaskResult> resultQueue = new ArrayBlockingQueue<GridTaskResult>(numTasks);
-        taskResponseQueue.addResponseQueue(job.getJobId(), resultQueue);
+        taskResponseQueue.addResponseQueue(jobId, resultQueue);
         final Map<String, Pair<GridTask, List<Future<?>>>> taskMap = new ConcurrentHashMap<String, Pair<GridTask, List<Future<?>>>>(numTasks); // taskMap contends rarely
 
         GridDiscoveryListener nodeFailoverHandler = new GridNodeFailureHandler(mappedTasks, taskMap, resultQueue);
         discoveryService.addListener(nodeFailoverHandler);
 
+        // assign map tasks
         assignMappedTasks(mappedTasks, taskMap, resultQueue);
 
         if(job.isAsyncOps()) {
@@ -189,8 +199,10 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
             return null;
         }
 
-        aggregateTaskResults(taskMap, resultQueue);
+        // collect map task results
+        aggregateTaskResults(taskMap, resultQueue, progressBar);
         discoveryService.removeListener(nodeFailoverHandler);
+        // invoke reduce
         R result = job.reduce();
 
         if(!taskMap.isEmpty()) {//TODO REVIEWME
@@ -198,6 +210,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
             cancelRemainingTasks(taskMap);
         }
 
+        progressBar.finish();
         return result;
     }
 
@@ -228,7 +241,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
         }
     }
 
-    private void aggregateTaskResults(final Map<String, Pair<GridTask, List<Future<?>>>> taskMap, final BlockingQueue<GridTaskResult> resultQueue)
+    private void aggregateTaskResults(final Map<String, Pair<GridTask, List<Future<?>>>> taskMap, final BlockingQueue<GridTaskResult> resultQueue, final TextProgressBar progressBar)
             throws GridException {
         final int numTasks = taskMap.size();
         for(int finishedTasks = 0; finishedTasks < numTasks; finishedTasks++) {
@@ -243,10 +256,12 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
             final GridTaskResultPolicy policy = job.result(result);
             switch(policy) {
                 case CONTINUE: {
+                    progressBar.inc();
                     taskMap.remove(taskId);
                     break;
                 }
                 case CONTINUE_WITH_SPECULATIVE_TASKS: {
+                    progressBar.inc();
                     taskMap.remove(taskId);
                     for(final GridTask task : result.getSpeculativeTasks()) {
                         String speculativeTaskId = task.getTaskId();
