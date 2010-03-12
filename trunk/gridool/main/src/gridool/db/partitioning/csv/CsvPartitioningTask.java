@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import javax.annotation.Nonnull;
 
@@ -146,7 +147,7 @@ public class CsvPartitioningTask extends GridTaskAdapter {
     protected HashMap<GridNode, MutableInt> execute() throws GridException {
         int numShuffleThreads = shuffleThreads();
         this.shuffleExecPool = (numShuffleThreads <= 0) ? new DirectExecutorService()
-                : ExecutorFactory.newBoundedWorkQueueFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true);
+                : ExecutorFactory.newBoundedWorkQueueFixedThreadPool(numShuffleThreads, "Gridool#Shuffle", true, new ThreadPoolExecutor.CallerRunsPolicy());
         this.shuffleSink = new BoundedArrayQueue<String>(shuffleUnits());
         this.csvFileName = generateCsvFileName();
 
