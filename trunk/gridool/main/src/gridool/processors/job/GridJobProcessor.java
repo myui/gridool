@@ -77,9 +77,12 @@ public final class GridJobProcessor extends AbstractGridProcessor {
         }
 
         GridJobWorker<A, R> worker = new GridJobWorker<A, R>(job, arg, monitor, resourceRegistry, config);
-        FutureTask<R> future = worker.newTask();
-        execPool.execute(future);
-
+        final FutureTask<R> future = worker.newTask();
+        try {
+            execPool.execute(future);
+        } catch (Throwable e) {
+            return new GridJobFutureAdapter<R>(e);
+        }
         return new GridJobFutureAdapter<R>(future);
     }
 

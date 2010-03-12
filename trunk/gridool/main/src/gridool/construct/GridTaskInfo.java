@@ -122,6 +122,14 @@ public final class GridTaskInfo implements GridTask {
         throw new UnsupportedOperationException();
     }
 
+    public GridNode getAssignedNode() {
+        throw new UnsupportedOperationException();
+    }
+
+    public void setAssignedNode(GridNode node) {
+        throw new UnsupportedOperationException();
+    }
+
     public Serializable invokeTask() throws GridException {
         throw new UnsupportedOperationException();
     }

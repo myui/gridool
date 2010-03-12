@@ -74,6 +74,9 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
     protected volatile boolean canceled = false;
     private transient volatile FutureTask<Serializable> running;
 
+    @Nullable
+    private transient GridNode assignedNode;
+
     @GridExecutionMonitorResource
     protected transient GridExecutionMonitor monitor;
     @Nullable
@@ -145,6 +148,14 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
 
     public GridNode getSenderNode() {
         return senderNode;
+    }
+
+    public void setAssignedNode(GridNode assignedNode) {
+        this.assignedNode = assignedNode;
+    }
+
+    public GridNode getAssignedNode() {
+        return assignedNode;
     }
 
     public final Serializable invokeTask() throws GridException {

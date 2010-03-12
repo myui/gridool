@@ -42,7 +42,7 @@ public final class GridJobFutureAdapter<R> implements GridJobFuture<R> {
     @Nullable
     private final Future<R> delegate;
     @Nullable
-    private Exception exception = null;
+    private Throwable exception = null;
 
     private final boolean failed;
 
@@ -54,7 +54,7 @@ public final class GridJobFutureAdapter<R> implements GridJobFuture<R> {
         this.failed = false;
     }
 
-    public GridJobFutureAdapter(@Nonnull Exception exception) {
+    public GridJobFutureAdapter(@Nonnull Throwable exception) {
         if(exception == null) {
             throw new IllegalArgumentException();
         }
@@ -63,7 +63,7 @@ public final class GridJobFutureAdapter<R> implements GridJobFuture<R> {
         this.failed = true;
     }
 
-    public void setException(Exception ex) {
+    public void setException(Throwable ex) {
         this.exception = ex;
     }
 

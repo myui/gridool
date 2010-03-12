@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.logging.LogFactory;
 
@@ -61,6 +62,9 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
 
     private long startedTime = -1L;
     private long finishedTime = -1L;
+
+    @Nullable
+    private transient GridNode assignedNode;
 
     @GridRegistryResource
     private transient GridResourceRegistry registry;
@@ -102,6 +106,14 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
 
     public GridNode getSenderNode() {
         return senderNode;
+    }
+
+    public void setAssignedNode(GridNode assignedNode) {
+        this.assignedNode = assignedNode;
+    }
+
+    public GridNode getAssignedNode() {
+        return assignedNode;
     }
 
     public boolean isAsyncTask() {

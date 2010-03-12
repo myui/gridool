@@ -66,7 +66,12 @@ public interface GridTask extends GridLocatable, GridAnnotatable {
 
     @CheckForNull
     GridNode getSenderNode();
-
+    
+    void setAssignedNode(GridNode node);
+    
+    @Nullable
+    GridNode getAssignedNode();    
+    
     // ----------------------
     // optional task information
 

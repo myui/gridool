@@ -116,6 +116,17 @@ public final class GridUtils {
         return macAddrStr + '/' + ipAddr + ':' + port;
     }
 
+    /**
+     * @return hostname(255.255.255.255):77777
+     */
+    public static String toHostNameAddrPort(@Nonnull final GridNode node) {
+        InetAddress addr = node.getPhysicalAdress();
+        String hostname = addr.getHostName();
+        String ipAddr = addr.getHostAddress();
+        int port = node.getPort();
+        return hostname + '(' + ipAddr + "):" + port;
+    }
+
     public static GridNode fromNodeInfo(@Nonnull final String nodeInfo) {
         int slashPos = nodeInfo.indexOf('/');
         if(slashPos < 1) {

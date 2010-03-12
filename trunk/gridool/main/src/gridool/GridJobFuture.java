@@ -30,7 +30,7 @@ import java.util.concurrent.Future;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public interface GridJobFuture<R> extends Future<R> {
-    
-    void setException(Exception ex);
+
+    void setException(Throwable ex);
 
 }

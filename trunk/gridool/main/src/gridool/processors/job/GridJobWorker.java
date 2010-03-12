@@ -38,8 +38,10 @@ import gridool.processors.task.GridTaskProcessor;
 import gridool.routing.GridNodeSelector;
 import gridool.routing.GridTaskRouter;
 import gridool.taskqueue.sender.SenderResponseTaskQueue;
+import gridool.util.GridUtils;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -48,6 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -56,11 +59,13 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import xbird.config.Settings;
 import xbird.util.concurrent.CancellableTask;
 import xbird.util.concurrent.ExecutorFactory;
 import xbird.util.datetime.StopWatch;
 import xbird.util.datetime.TextProgressBar;
 import xbird.util.lang.ClassUtils;
+import xbird.util.primitive.Primitives;
 import xbird.util.struct.Pair;
 
 /**
@@ -72,6 +77,10 @@ import xbird.util.struct.Pair;
  */
 public final class GridJobWorker<A, R> implements CancellableTask<R> {
     private static final Log LOG = LogFactory.getLog(GridJobWorker.class);
+    private static final long JOB_INSPECTION_INTERVAL_SEC;
+    static {
+        JOB_INSPECTION_INTERVAL_SEC = Primitives.parseLong(Settings.get("gridool.job.inspection_interval"), 300);
+    }
 
     private final GridJob<A, R> job;
     private final A arg;
@@ -234,6 +243,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
             }
 
             GridTaskAssignor workerTask = new GridTaskAssignor(task, node, taskProc, communicationMgr, resultQueue);
+            task.setAssignedNode(node);
             List<Future<?>> futureList = new ArrayList<Future<?>>(3);
             Future<?> future = execPool.submit(workerTask);
             futureList.add(future);
@@ -245,9 +255,17 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
             throws GridException {
         final int numTasks = taskMap.size();
         for(int finishedTasks = 0; finishedTasks < numTasks; finishedTasks++) {
-            final GridTaskResult result;
+            GridTaskResult result = null;
             try {
-                result = resultQueue.take();
+                while(true) {
+                    result = resultQueue.poll(JOB_INSPECTION_INTERVAL_SEC, TimeUnit.SECONDS);
+                    if(result != null) {
+                        break;
+                    }
+                    if(LOG.isInfoEnabled()) {
+                        showRemainingTasks(job, taskMap);
+                    }
+                }
             } catch (InterruptedException e) {
                 LOG.warn("GridTask is interrupted", e);
                 throw new GridException("GridTask is interrupted", e);
@@ -364,6 +382,35 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
         }
         GridTaskAssignor workerTask = new GridTaskAssignor(task, node, taskProc, communicationMgr, resultQueue);
         return execPool.submit(workerTask);
+    }
+
+    private static void showRemainingTasks(final GridJob<?, ?> job, final Map<String, Pair<GridTask, List<Future<?>>>> taskMap) {
+        final StringBuilder buf = new StringBuilder(256);
+        String jobClassName = ClassUtils.getSimpleClassName(job);
+        buf.append("Inspecting job... ");
+        buf.append(jobClassName);
+        buf.append(" [");
+        buf.append(job.getJobId());
+        buf.append("] Pending tasks: ");
+        final Iterator<Pair<GridTask, List<Future<?>>>> itor = taskMap.values().iterator();
+        boolean first = true;
+        while(itor.hasNext()) {
+            if(first) {
+                first = false;
+            } else {
+                buf.append(", ");
+            }
+            Pair<GridTask, List<Future<?>>> e = itor.next();
+            GridTask task = e.getFirst();
+            String taskClassName = ClassUtils.getSimpleClassName(task);
+            buf.append(taskClassName);
+            buf.append('/');
+            GridNode node = task.getAssignedNode();
+            String nodeinfo = GridUtils.toHostNameAddrPort(node);
+            buf.append(nodeinfo);
+        }
+        buf.append(']');
+        LOG.info(buf.toString());
     }
 
 }
