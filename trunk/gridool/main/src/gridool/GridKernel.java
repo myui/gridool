@@ -39,6 +39,7 @@ import gridool.replication.ReplicationService;
 import gridool.routing.GridTaskRouter;
 import gridool.routing.GridTaskRouterFactory;
 import gridool.taskqueue.GridTaskQueueManager;
+import gridool.tools.GridDeadlockDetectionService;
 
 import java.util.concurrent.ExecutionException;
 
@@ -109,8 +110,9 @@ public final class GridKernel {
         GridTaskProcessorService taskProcServ = GridProcessorProvider.createTaskProcessorService(communicationMgr, monitor, resourceRegistry, config);
         DirectoryService dirServ = new DirectoryService(config, resourceRegistry);
         GridDFSService dfsServ = new GridDFSService(config);
+        GridDeadlockDetectionService deadlockServ = new GridDeadlockDetectionService();
 
-        registerServices(metricsServ, discoveryServ, communicationServ, taskProcServ, dirServ, dfsServ);
+        registerServices(metricsServ, discoveryServ, communicationServ, taskProcServ, dirServ, dfsServ, deadlockServ);
 
         // DB services
         if(config.isDbFeatureEnabled()) {
