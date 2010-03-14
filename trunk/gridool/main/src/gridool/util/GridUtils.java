@@ -91,14 +91,18 @@ public final class GridUtils {
     public static String generateJobId(@Nonnull String localNodeId, @Nonnull GridJob job) {
         final long time = System.nanoTime();
         final int hashcode = System.identityHashCode(job);
-        return localNodeId + '#' + Long.toString(time) + '/' + Integer.toString(hashcode);
+        long tid = Thread.currentThread().getId();
+        return localNodeId + '#' + Long.toString(time) + '/' + Integer.toString(hashcode) + 'T'
+                + Long.toString(tid);
     }
 
     @Nonnull
     public static String generateTaskId(@Nonnull final String jobId, @Nonnull final GridTask task) {
         final long time = System.nanoTime();
         final int hashcode = System.identityHashCode(task);
-        return jobId + '#' + Long.toString(time) + '/' + Integer.toString(hashcode);
+        long tid = Thread.currentThread().getId();
+        return jobId + '#' + Long.toString(time) + '/' + Integer.toString(hashcode) + 'T'
+                + Long.toString(tid);
     }
 
     public static String getNodeIdentifier(@Nonnull final byte[] mac, final int port) {
