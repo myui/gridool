@@ -31,6 +31,7 @@ import gridool.deployment.GridPerNodeClassLoader;
 import gridool.deployment.PeerClassLoader;
 import gridool.marshaller.GridMarshaller;
 
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import javax.annotation.Nonnull;
@@ -40,7 +41,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import xbird.util.concurrent.jsr166.LinkedTransferQueue;
 import xbird.util.lang.PrintUtils;
 
 /**
@@ -60,7 +60,7 @@ public final class ReceiverIncomingTaskQueue implements TaskReceiverListener {
     private final GridMarshaller<GridTask> marshaller;
 
     public ReceiverIncomingTaskQueue(@Nonnull GridResourceRegistry resourceRegistry) {
-        this.waitingTaskQueue = new LinkedTransferQueue<GridTask>();
+        this.waitingTaskQueue = new ArrayBlockingQueue<GridTask>(Integer.MAX_VALUE);//new LinkedTransferQueue<GridTask>();
         this.marshaller = resourceRegistry.getTaskMarshaller();
         this.resourceRegistry = resourceRegistry;
     }
