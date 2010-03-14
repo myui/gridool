@@ -225,7 +225,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
 
     private void assignMappedTasks(final Map<GridTask, GridNode> mappedTasks, final Map<String, Pair<GridTask, List<Future<?>>>> taskMap, final BlockingQueue<GridTaskResult> resultQueue)
             throws GridException {
-        for(Map.Entry<GridTask, GridNode> mappedTask : mappedTasks.entrySet()) {
+        for(final Map.Entry<GridTask, GridNode> mappedTask : mappedTasks.entrySet()) {
             GridTask task = mappedTask.getKey();
             GridNode node = mappedTask.getValue();
 
@@ -244,12 +244,12 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
 
             GridTaskAssignor workerTask = new GridTaskAssignor(task, node, taskProc, communicationMgr, resultQueue);
             task.setAssignedNode(node);
-            List<Future<?>> futureList = new ArrayList<Future<?>>(3);
-            Future<?> future = execPool.submit(workerTask);
-            futureList.add(future);
+            List<Future<?>> futureList = new ArrayList<Future<?>>(2);
             if(taskMap.put(task.getTaskId(), new Pair<GridTask, List<Future<?>>>(task, futureList)) != null) {
                 throw new GridException("Found duplicate taskId: " + task.getTaskId());
             }
+            Future<?> future = execPool.submit(workerTask);
+            futureList.add(future);
         }
     }
 
@@ -397,14 +397,14 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
         buf.append(jobClassName);
         buf.append(" [");
         buf.append(job.getJobId());
-        buf.append("] Pending tasks: ");
+        buf.append("] Pending tasks: \n");
         final Iterator<Pair<GridTask, List<Future<?>>>> itor = taskMap.values().iterator();
         boolean first = true;
         while(itor.hasNext()) {
             if(first) {
                 first = false;
             } else {
-                buf.append(", ");
+                buf.append(",\n");
             }
             Pair<GridTask, List<Future<?>>> e = itor.next();
             GridTask task = e.getFirst();
