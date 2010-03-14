@@ -73,6 +73,7 @@ public final class ReplicateTaskJob extends GridJobBase<ReplicateTaskJob.JobConf
         return map;
     }
 
+    @Override
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         assert (replicatedTask != null);
         final GridNode executedNode = result.getExecutedNode();

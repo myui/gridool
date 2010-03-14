@@ -73,7 +73,7 @@ public final class GridTaskWorker implements Runnable {
     private final ReplicationManager replicationMgr;
     @Nonnull
     private final GridNodeInfo localNode;
-    
+
     private final long createTime;
 
     public GridTaskWorker(@CheckForNull GridTask task, @Nonnull GridTaskMetricsCounter metrics, @Nonnull GridExecutionMonitor monitor, @Nonnull GridAnnotationProcessor annotationProc, @Nonnull TaskResponseListener respListener) {
@@ -121,15 +121,19 @@ public final class GridTaskWorker implements Runnable {
             }
         }
         metrics.taskStarted(waitTime);
-        
+
         final String taskClassName = ClassUtils.getSimpleClassName(task);
-        if(LOG.isDebugEnabled()) {
-            LOG.debug(taskClassName + " [" + task.getTaskId() + "] is started");
+        if(LOG.isInfoEnabled()) {
+            LOG.info(taskClassName + " [" + task.getTaskId() + "] is started");
         }
-        
+
         // replication
         if(task.isReplicatable()) {
             if(!replicationMgr.replicateTask(task, localNode)) {
+                if(LOG.isWarnEnabled()) {
+                    LOG.warn("failed to replicate a task: " + taskClassName + " ["
+                            + task.getTaskId() + ']');
+                }
                 respListener.onCaughtException(task, new GridReplicationException("Replication failed"));
                 return;
             }
@@ -171,9 +175,9 @@ public final class GridTaskWorker implements Runnable {
             if(task.isCanceled()) {
                 monitor.onTaskCanceled(task);
             } else {
-                if(LOG.isDebugEnabled()) {
+                if(LOG.isInfoEnabled()) {
                     long elapsedTime = endTime - startTime;
-                    LOG.debug(taskClassName + " [" + task.getTaskId() + "] is finished in .. "
+                    LOG.info(taskClassName + " [" + task.getTaskId() + "] is finished in .. "
                             + StopWatch.elapsedTime(elapsedTime));
                 }
                 monitor.onTaskFinished(task);
