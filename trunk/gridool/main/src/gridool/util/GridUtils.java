@@ -38,7 +38,10 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -60,6 +63,7 @@ import xbird.util.io.FastMultiByteArrayOutputStream;
 import xbird.util.io.IOUtils;
 import xbird.util.lang.ClassUtils;
 import xbird.util.lang.ObjectUtils;
+import xbird.util.lang.PrintUtils;
 import xbird.util.net.NetUtils;
 import xbird.util.primitive.Primitives;
 import xbird.util.string.StringUtils;
@@ -406,4 +410,29 @@ public final class GridUtils {
         return colDir.getAbsolutePath();
     }
 
+    public static void accquireLock(final Lock lock, final String targetLabel, final long timeoutInSec, final int maxWaitIntSec)
+            throws InterruptedException {
+        if(lock.tryLock() == false) {
+            if(lock.tryLock(timeoutInSec, TimeUnit.SECONDS) == false) {
+                final Random rand = new Random();
+                if(LOG.isInfoEnabled()) {
+                    StackTraceElement[] traces = Thread.currentThread().getStackTrace();
+                    final String traceStr = PrintUtils.toString(traces, 10);
+                    int retry = 1;
+                    do {
+                        int time = rand.nextInt(maxWaitIntSec);
+                        LOG.info("Try lock on '" + targetLabel + "' failed " + retry
+                                + " times. Sleep " + time + " seconds.\n" + traceStr);
+                        Thread.sleep(time * 1000L);
+                        retry++;
+                    } while(lock.tryLock(timeoutInSec, TimeUnit.SECONDS) == false);
+                } else {
+                    do {
+                        int time = rand.nextInt(maxWaitIntSec);
+                        Thread.sleep(time * 1000L);
+                    } while(lock.tryLock(timeoutInSec, TimeUnit.SECONDS) == false);
+                }
+            }
+        }
+    }
 }

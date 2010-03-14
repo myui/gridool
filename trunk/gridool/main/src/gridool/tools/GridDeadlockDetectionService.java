@@ -43,7 +43,7 @@ public final class GridDeadlockDetectionService implements GridService {
 
     private static final long detectionPeriod;
     static {
-        detectionPeriod = Primitives.parseLong(Settings.get("gridool.deadlock_detection_period"), 120000L);
+        detectionPeriod = Primitives.parseLong(Settings.get("gridool.deadlock_detection_period"), 180000L);
     }
     private final ThreadDeadlockDetector deadlockDetector;
 

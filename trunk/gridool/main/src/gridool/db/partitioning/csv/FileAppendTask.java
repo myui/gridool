@@ -96,7 +96,8 @@ public final class FileAppendTask extends GridTaskAdapter {
         return null;
     }
 
-    private static File appendToFile(final String fileName, final byte[] data, final boolean append, final LockManager lockMgr) {
+    private static File appendToFile(final String fileName, final byte[] data, final boolean append, final LockManager lockMgr)
+            throws GridException {
         final File colDir = GridUtils.getWorkDir(true);
         final File file = new File(colDir, fileName);
         String filepath = file.getAbsolutePath();
@@ -104,13 +105,14 @@ public final class FileAppendTask extends GridTaskAdapter {
         final Lock fileLock = lock.writeLock();
         FileOutputStream fos = null;
         try {
-            fileLock.lock();
+            GridUtils.accquireLock(fileLock, filepath, 5L, 20);
             fos = new FileOutputStream(file, append); // note that FileOutputStream takes exclusive lock            
             fos.write(data, 0, data.length); // REVIEWME 
             fos.flush();
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to write data into file: "
-                    + file.getAbsolutePath(), e);
+        } catch (InterruptedException ie) {
+            throw new GridException("failed to accquire a lock on " + filepath, ie);
+        } catch (IOException ioe) {
+            throw new GridException("Failed to write data into file: " + filepath, ioe);
         } finally {
             IOUtils.closeQuietly(fos);
             fileLock.unlock();
