@@ -123,8 +123,8 @@ public final class GridTaskWorker implements Runnable {
         metrics.taskStarted(waitTime);
 
         final String taskClassName = ClassUtils.getSimpleClassName(task);
-        if(LOG.isInfoEnabled()) {
-            LOG.info(taskClassName + " [" + task.getTaskId() + "] is started");
+        if(LOG.isDebugEnabled()) {
+            LOG.debug(taskClassName + " [" + task.getTaskId() + "] is started");
         }
 
         // replication
