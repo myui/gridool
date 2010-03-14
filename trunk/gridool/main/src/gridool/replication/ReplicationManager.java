@@ -51,6 +51,7 @@ import xbird.config.Settings;
 import xbird.util.jdbc.JDBCUtils;
 import xbird.util.jdbc.ResultSetHandler;
 import xbird.util.jdbc.handlers.ScalarHandler;
+import xbird.util.lang.ClassUtils;
 
 /**
  * 
@@ -173,7 +174,8 @@ public final class ReplicationManager {
             return false;
         }
         if(LOG.isInfoEnabled()) {
-            LOG.info("Replicated a task '" + task.getTaskId() + "' to slave nodes: " + replicas);
+            LOG.info("Replicated a task " + ClassUtils.getSimpleClassName(task) + '['
+                    + task.getTaskId() + "] to slave nodes: " + replicas);
         }
         return true;
     }

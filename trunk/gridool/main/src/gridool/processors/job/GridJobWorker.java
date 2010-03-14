@@ -247,7 +247,9 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
             List<Future<?>> futureList = new ArrayList<Future<?>>(3);
             Future<?> future = execPool.submit(workerTask);
             futureList.add(future);
-            taskMap.put(task.getTaskId(), new Pair<GridTask, List<Future<?>>>(task, futureList));
+            if(taskMap.put(task.getTaskId(), new Pair<GridTask, List<Future<?>>>(task, futureList)) != null) {
+                throw new GridException("Found duplicate taskId: " + task.getTaskId());
+            }
         }
     }
 
@@ -391,7 +393,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
     private static void showRemainingTasks(final GridJob<?, ?> job, final Map<String, Pair<GridTask, List<Future<?>>>> taskMap) {
         final StringBuilder buf = new StringBuilder(256);
         String jobClassName = ClassUtils.getSimpleClassName(job);
-        buf.append("Run Job inspection... ");
+        buf.append("Start a job inspection... ");
         buf.append(jobClassName);
         buf.append(" [");
         buf.append(job.getJobId());
@@ -408,12 +410,15 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
             GridTask task = e.getFirst();
             String taskClassName = ClassUtils.getSimpleClassName(task);
             buf.append(taskClassName);
-            buf.append('/');
+            buf.append('[');
+            String taskId = task.getTaskId();
+            buf.append(taskId);
+            buf.append(']');
+            buf.append(" on ");
             GridNode node = task.getAssignedNode();
             String nodeinfo = GridUtils.toHostNameAddrPort(node);
             buf.append(nodeinfo);
         }
-        buf.append(']');
         LOG.info(buf.toString());
     }
 

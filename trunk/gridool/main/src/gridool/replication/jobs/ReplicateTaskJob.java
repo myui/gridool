@@ -38,6 +38,8 @@ import javax.annotation.Nonnull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import xbird.util.lang.ClassUtils;
+
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -70,6 +72,12 @@ public final class ReplicateTaskJob extends GridJobBase<ReplicateTaskJob.JobConf
         }
         this.replicatedTask = taskToReplicate;
         this.replicaList = destNodes;
+
+        if(LOG.isInfoEnabled()) {
+            LOG.info("Start a replication [" + getJobId() + "] of a task "
+                    + ClassUtils.getSimpleClassName(replicatedTask) + '['
+                    + replicatedTask.getTaskId() + "] to slave nodes: " + replicaList);
+        }
         return map;
     }
 
