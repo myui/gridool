@@ -89,6 +89,7 @@ public final class InvokeLocalCsvPartitioningTask extends GridTaskAdapter {
         Pair<PartitioningJobConf, GridTaskRouter> args = new Pair<PartitioningJobConf, GridTaskRouter>(conf, router);
         GridJobFuture<HashMap<GridNode, MutableInt>> future = kernel.execute(LocalCsvHashPartitioningJob.class, args);
         HashMap<GridNode, MutableInt> result = GridUtils.invokeGet(future);
+        this.lines = null; // help GC
         return result;
     }
 

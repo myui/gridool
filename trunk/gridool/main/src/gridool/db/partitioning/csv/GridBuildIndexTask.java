@@ -28,7 +28,10 @@ import gridool.construct.GridTaskAdapter;
 import gridool.db.partitioning.csv.LocalCsvHashPartitioningJob.DerivedFragmentInfo;
 import gridool.directory.ILocalDirectory;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +50,7 @@ import xbird.storage.DbException;
 public final class GridBuildIndexTask extends GridTaskAdapter {
     private static final long serialVersionUID = 7085923588933253600L;
 
-    private final List<DerivedFragmentInfo> storeList;
+    private/* final */List<DerivedFragmentInfo> storeList;
 
     @GridRegistryResource
     private transient GridResourceRegistry registry;
@@ -94,7 +97,30 @@ public final class GridBuildIndexTask extends GridTaskAdapter {
                 throw new GridException("failed to build an index: " + idxName, dbe);
             }
         }
+        this.storeList = null; // help GC
         return Boolean.TRUE;
     }
 
+    private void readObject(ObjectInputStream s) throws java.io.IOException, ClassNotFoundException {
+        s.defaultReadObject();
+
+        final int size = s.readInt();
+        final DerivedFragmentInfo[] infos = new DerivedFragmentInfo[size];
+        for(int i = 0; i < size; i++) {
+            infos[i] = DerivedFragmentInfo.readFrom(s);
+        }
+        this.storeList = Arrays.asList(infos);
+    }
+
+    private void writeObject(ObjectOutputStream s) throws java.io.IOException {
+        s.defaultWriteObject();
+
+        final List<DerivedFragmentInfo> list = storeList;
+        final int size = list.size();
+        s.writeInt(size);
+        for(int i = 0; i < size; i++) {
+            DerivedFragmentInfo info = list.get(i);
+            info.writeExternal(s);
+        }
+    }
 }

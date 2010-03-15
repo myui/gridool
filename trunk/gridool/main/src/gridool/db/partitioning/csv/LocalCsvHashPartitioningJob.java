@@ -589,5 +589,12 @@ public final class LocalCsvHashPartitioningJob extends
             IOUtils.writeBytes(value, out);
         }
 
+        static DerivedFragmentInfo readFrom(ObjectInput in) throws IOException,
+                ClassNotFoundException {
+            DerivedFragmentInfo info = new DerivedFragmentInfo();
+            info.readExternal(in);
+            return info;
+        }
+
     }
 }
