@@ -104,6 +104,7 @@ public interface ILocalDirectory {
     public void retrieve(@Nonnull String idxName, @Nonnull IndexQuery query, @Nonnull BTreeCallback callback)
             throws DbException;
 
+    @Deprecated
     @Nullable
     public byte[] getValue(@Nonnull String idxName, @Nonnull byte[] key) throws DbException;
 
