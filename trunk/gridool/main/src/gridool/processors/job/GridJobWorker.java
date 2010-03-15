@@ -183,16 +183,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
         if(LOG.isInfoEnabled()) {
             LOG.info(jobClassName + " [" + jobId + "] is mapped to " + numTasks + " tasks (nodes)");
         }
-        final TextProgressBar progressBar = new TextProgressBar(jobClassName + " [" + jobId + ']',
-                numTasks) {
-            protected void show() {
-                if(LOG.isInfoEnabled()) {
-                    LOG.info(getInfo());
-                }
-            }
-        };
-        progressBar.setRefreshTime(5000L);
-        progressBar.setRefreshFluctations(20);
+        final TextProgressBar progressBar = new JobProgressBar(jobClassName + " [" + jobId + ']', numTasks);
 
         final BlockingQueue<GridTaskResult> resultQueue = new ArrayBlockingQueue<GridTaskResult>(numTasks);
         taskResponseQueue.addResponseQueue(jobId, resultQueue);
@@ -421,6 +412,23 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
             buf.append(nodeinfo);
         }
         LOG.info(buf.toString());
+    }
+
+    private static final class JobProgressBar extends TextProgressBar {
+        private static final Log JP_LOG = LogFactory.getLog(JobProgressBar.class);
+
+        JobProgressBar(String title, int totalSteps) {
+            super(title, totalSteps);
+            setRefreshTime(5000L);
+            setRefreshFluctations(20);
+        }
+
+        @Override
+        protected void show() {
+            if(JP_LOG.isDebugEnabled()) {
+                JP_LOG.debug(getInfo());
+            }
+        }
     }
 
 }
