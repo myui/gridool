@@ -37,6 +37,7 @@ import org.apache.commons.logging.LogFactory;
 
 import xbird.storage.DbException;
 import xbird.storage.index.BIndexFile;
+import xbird.storage.index.BIndexMultiValueFile;
 import xbird.storage.index.BTreeCallback;
 import xbird.storage.index.Paged;
 import xbird.storage.index.Value;
@@ -245,11 +246,12 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory {
         Integer cacheSize = getCacheSize(name);
         final BIndexFile btree;
         if(cacheSize == null) {
-            btree = new BIndexFile(idxFile, true);
+            btree = new BIndexMultiValueFile(idxFile); //new BIndexFile(idxFile, true);
         } else {
             int idxCaches = cacheSize.intValue();
             int dataCaches = (int) (idxCaches * 0.6);
-            btree = new BIndexFile(idxFile, Paged.DEFAULT_PAGESIZE, idxCaches, dataCaches, true);
+            //btree = new BIndexFile(idxFile, Paged.DEFAULT_PAGESIZE, idxCaches, dataCaches, true);
+            btree = new BIndexMultiValueFile(idxFile, Paged.DEFAULT_PAGESIZE, idxCaches, dataCaches);
         }
         if(DELETE_IDX_ON_EXIT) {
             if(idxFile.exists()) {
