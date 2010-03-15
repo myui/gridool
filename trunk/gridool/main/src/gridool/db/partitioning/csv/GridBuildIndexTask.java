@@ -32,6 +32,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +83,7 @@ public final class GridBuildIndexTask extends GridTaskAdapter {
         final ILocalDirectory index = registry.getDirectory();
         for(final Map.Entry<String, List<DerivedFragmentInfo>> e : map.entrySet()) {
             List<DerivedFragmentInfo> list = e.getValue();
+            Collections.sort(list);
             int size = list.size();
             final byte[][] keys = new byte[size][];
             final byte[][] values = new byte[size][];

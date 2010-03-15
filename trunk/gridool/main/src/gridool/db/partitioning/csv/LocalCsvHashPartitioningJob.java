@@ -64,6 +64,7 @@ import xbird.util.collections.LRUMap;
 import xbird.util.csv.CsvUtils;
 import xbird.util.io.FastByteArrayOutputStream;
 import xbird.util.io.IOUtils;
+import xbird.util.lang.ArrayUtils;
 import xbird.util.primitive.MutableInt;
 import xbird.util.primitive.Primitives;
 import xbird.util.string.StringUtils;
@@ -550,7 +551,7 @@ public final class LocalCsvHashPartitioningJob extends
         }
     }
 
-    static final class DerivedFragmentInfo implements Externalizable {
+    static final class DerivedFragmentInfo implements Externalizable, Comparable<DerivedFragmentInfo> {
         private static final long serialVersionUID = -4472952971698389386L;
 
         private/* final */String fkIdxName;
@@ -594,6 +595,11 @@ public final class LocalCsvHashPartitioningJob extends
             DerivedFragmentInfo info = new DerivedFragmentInfo();
             info.readExternal(in);
             return info;
+        }
+
+        @Override
+        public int compareTo(DerivedFragmentInfo other) {
+            return ArrayUtils.compareTo(distkey, other.distkey);
         }
 
     }
