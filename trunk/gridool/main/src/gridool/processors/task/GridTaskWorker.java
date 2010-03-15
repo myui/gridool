@@ -22,6 +22,7 @@ package gridool.processors.task;
 
 import gridool.GridConfiguration;
 import gridool.GridException;
+import gridool.GridJobFuture;
 import gridool.GridResourceRegistry;
 import gridool.GridTask;
 import gridool.annotation.GridAnnotationProcessor;
@@ -128,15 +129,9 @@ public final class GridTaskWorker implements Runnable {
         }
 
         // replication
+        GridJobFuture<Boolean> replicationFuture = null;
         if(task.isReplicatable()) {
-            if(!replicationMgr.replicateTask(task, localNode)) {
-                if(LOG.isWarnEnabled()) {
-                    LOG.warn("failed to replicate a task: " + taskClassName + " ["
-                            + task.getTaskId() + ']');
-                }
-                respListener.onCaughtException(task, new GridReplicationException("Replication failed"));
-                return;
-            }
+            replicationFuture = replicationMgr.replicateTask(task, localNode);
         }
 
         // dependency injection
@@ -183,7 +178,16 @@ public final class GridTaskWorker implements Runnable {
                 monitor.onTaskFinished(task);
             }
         }
-        assert (!task.isCanceled());
+        if(replicationFuture != null) {
+            if(!ReplicationManager.waitForReplicationToFinish(task, replicationFuture)) {
+                if(LOG.isWarnEnabled()) {
+                    LOG.warn("failed to replicate a task: " + taskClassName + " ["
+                            + task.getTaskId() + ']');
+                }
+                respListener.onCaughtException(task, new GridReplicationException("Replication failed"));
+                return;
+            }
+        }
         if(!task.isAsyncTask()) {
             respListener.onResponse(task, result);
         }

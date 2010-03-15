@@ -50,7 +50,7 @@ import xbird.storage.DbException;
 public final class GridBuildIndexTask extends GridTaskAdapter {
     private static final long serialVersionUID = 7085923588933253600L;
 
-    private/* final */List<DerivedFragmentInfo> storeList;
+    private transient/* final */List<DerivedFragmentInfo> storeList;
 
     @GridRegistryResource
     private transient GridResourceRegistry registry;

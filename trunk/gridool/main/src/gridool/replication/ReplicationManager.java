@@ -148,17 +148,25 @@ public final class ReplicationManager {
     /**
      * @see GridTaskProcessor#processTask(GridTask)
      */
-    public boolean replicateTask(@Nonnull GridTask task, @Nonnull GridNodeInfo masterNode) {
+    public GridJobFuture<Boolean> replicateTask(@Nonnull GridTask task, @Nonnull GridNodeInfo masterNode) {
         if(!task.isReplicatable()) {// sanity check
             throw new IllegalStateException();
         }
         final List<GridNode> replicas = masterNode.getReplicas();
         if(replicas.isEmpty()) {
-            return true; // there is no replica
+            return null; // there is no replica
         }
 
         task.setTransferToReplica(masterNode);
         final GridJobFuture<Boolean> future = kernel.execute(ReplicateTaskJob.class, new ReplicateTaskJob.JobConf(task, replicas));
+        if(LOG.isInfoEnabled()) {
+            LOG.info("Start replicating a task " + ClassUtils.getSimpleClassName(task) + '['
+                    + task.getTaskId() + "] to slave nodes: " + replicas);
+        }
+        return future;
+    }
+
+    public static boolean waitForReplicationToFinish(final GridTask task, final GridJobFuture<Boolean> future) {
         final Boolean succeed;
         try {
             succeed = future.get();
@@ -170,12 +178,7 @@ public final class ReplicationManager {
             return false;
         }
         if(succeed == null || !succeed.booleanValue()) {
-            LOG.error("Replication of a task failed: " + task.getTaskId());
             return false;
-        }
-        if(LOG.isInfoEnabled()) {
-            LOG.info("Replicated a task " + ClassUtils.getSimpleClassName(task) + '['
-                    + task.getTaskId() + "] to slave nodes: " + replicas);
         }
         return true;
     }
