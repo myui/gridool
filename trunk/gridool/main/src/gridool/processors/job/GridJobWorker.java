@@ -191,7 +191,8 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
                 }
             }
         };
-        progressBar.setRefreshFluctations(10);
+        progressBar.setRefreshTime(5000L);
+        progressBar.setRefreshFluctations(20);
 
         final BlockingQueue<GridTaskResult> resultQueue = new ArrayBlockingQueue<GridTaskResult>(numTasks);
         taskResponseQueue.addResponseQueue(jobId, resultQueue);
