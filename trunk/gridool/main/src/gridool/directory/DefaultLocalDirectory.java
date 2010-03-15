@@ -266,4 +266,22 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory {
         return btree;
     }
 
+    @Override
+    public void setBulkloading(boolean enable, String... idxNames) {
+        if(idxNames.length == 0) {
+            for(BIndexFile bfile : map.values()) {
+                if(bfile != null) {
+                    bfile.setBulkloading(enable, 0.2f, 0.1f);
+                }
+            }
+        } else {
+            for(String idxName : idxNames) {
+                BIndexFile bfile = map.get(idxName);
+                if(bfile != null) {
+                    bfile.setBulkloading(enable, 0.2f, 0.1f);
+                }
+            }
+        }
+    }
+
 }

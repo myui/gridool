@@ -127,6 +127,7 @@ public final class MonetDBParallelLoadOperation extends DBOperation {
         final ILocalDirectory index = registry.getDirectory();
         try {
             index.purgeAll(true);
+            index.setBulkloading(false);
         } catch (DbException dbe) {
             LOG.error(dbe);
         }

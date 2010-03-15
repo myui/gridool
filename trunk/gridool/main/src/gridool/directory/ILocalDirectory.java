@@ -45,6 +45,8 @@ public interface ILocalDirectory {
 
     @Nullable
     public <T> T getInternalIndex(@Nonnull String idxName);
+    
+    public void setBulkloading(boolean enable, String...idxNames);
 
     public void start() throws DbException;
 

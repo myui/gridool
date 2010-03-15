@@ -57,6 +57,8 @@ public abstract class AbstractLocalDirectory implements ILocalDirectory {
         this.cacheSizes = new ConcurrentHashMap<String, Integer>(16);
     }
 
+    public void setBulkloading(boolean enable, String...idxNames) {}
+
     @Nonnull
     public final LockManager getLockManager() {
         return lockManager;
@@ -94,12 +96,12 @@ public abstract class AbstractLocalDirectory implements ILocalDirectory {
         addMapping(idxName, new byte[][] { key }, value);
     }
 
-    public void setCacheSize(@Nonnull String idxName, int cacheSize) {
+    public final void setCacheSize(@Nonnull String idxName, int cacheSize) {
         cacheSizes.put(idxName, cacheSize);
     }
 
     @Nullable
-    public Integer getCacheSize(@Nonnull String idxName) {
+    public final Integer getCacheSize(@Nonnull String idxName) {
         return cacheSizes.get(idxName);
     }
 }

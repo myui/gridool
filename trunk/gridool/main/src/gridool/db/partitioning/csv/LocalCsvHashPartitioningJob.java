@@ -145,7 +145,7 @@ public final class LocalCsvHashPartitioningJob extends
         // working resources
         final ILocalDirectory index = registry.getDirectory();
         for(String idxName : fkIdxNames) {
-            setFkIndexCacheSizes(index, idxName, FK_INDEX_CACHE_SIZE);
+            configureFkIndex(index, idxName, FK_INDEX_CACHE_SIZE);
         }
         final GridNode localNode = config.getLocalNode();
         final String[] fields = new String[getMaxColumnCount(primaryKey, foreignKeys)];
@@ -500,8 +500,9 @@ public final class LocalCsvHashPartitioningJob extends
         return node;
     }
 
-    private static void setFkIndexCacheSizes(final ILocalDirectory index, final String idxName, final int cacheSize) {
+    private static void configureFkIndex(final ILocalDirectory index, final String idxName, final int cacheSize) {
         index.setCacheSize(idxName, cacheSize);
+        index.setBulkloading(true, idxName);
     }
 
     private static final class NodeWithPartitionNo {
@@ -551,7 +552,8 @@ public final class LocalCsvHashPartitioningJob extends
         }
     }
 
-    static final class DerivedFragmentInfo implements Externalizable, Comparable<DerivedFragmentInfo> {
+    static final class DerivedFragmentInfo
+            implements Externalizable, Comparable<DerivedFragmentInfo> {
         private static final long serialVersionUID = -4472952971698389386L;
 
         private/* final */String fkIdxName;
