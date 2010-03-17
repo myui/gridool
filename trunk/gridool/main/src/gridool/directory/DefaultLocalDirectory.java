@@ -35,6 +35,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import xbird.config.Settings;
 import xbird.storage.DbException;
 import xbird.storage.index.BIndexFile;
 import xbird.storage.index.BIndexMultiValueFile;
@@ -44,6 +45,7 @@ import xbird.storage.index.Value;
 import xbird.storage.indexer.IndexQuery;
 import xbird.storage.indexer.BasicIndexQuery.IndexConditionEQ;
 import xbird.storage.indexer.BasicIndexQuery.IndexConditionSW;
+import xbird.util.primitive.Primitives;
 
 /**
  * 
@@ -56,6 +58,14 @@ import xbird.storage.indexer.BasicIndexQuery.IndexConditionSW;
 public final class DefaultLocalDirectory extends AbstractLocalDirectory {
     private static final Log LOG = LogFactory.getLog(DefaultLocalDirectory.class);
     private static final String IDX_SUFFIX_NAME = ".bfile";
+    
+    private static final float dataCacheRatio;
+    private static final float nodeCachePurgePerc, datacachePurgePerc;
+    static {
+        dataCacheRatio = Primitives.parseFloat("gridool.directory.ld.bfile.bulkload.datacache_ratio", 0.4f);
+        nodeCachePurgePerc = Primitives.parseFloat(Settings.get("gridool.directory.ld.bfile.bulkload.nodecache_purgeperc"), 0.1f);
+        datacachePurgePerc = Primitives.parseFloat(Settings.get("gridool.directory.ld.bfile.bulkload.datacache_purgeperc"), 0.2f);
+    }
 
     @Nonnull
     private final ConcurrentMap<String, BIndexFile> map;
@@ -249,7 +259,7 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory {
             btree = new BIndexMultiValueFile(idxFile); //new BIndexFile(idxFile, true);
         } else {
             int idxCaches = cacheSize.intValue();
-            int dataCaches = (int) (idxCaches * 0.6);
+            int dataCaches = (int) (idxCaches * dataCacheRatio);
             //btree = new BIndexFile(idxFile, Paged.DEFAULT_PAGESIZE, idxCaches, dataCaches, true);
             btree = new BIndexMultiValueFile(idxFile, Paged.DEFAULT_PAGESIZE, idxCaches, dataCaches);
         }
@@ -273,14 +283,14 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory {
         if(idxNames.length == 0) {
             for(BIndexFile bfile : map.values()) {
                 if(bfile != null) {
-                    bfile.setBulkloading(enable, 0.1f, 0.1f);
+                    bfile.setBulkloading(enable, nodeCachePurgePerc, datacachePurgePerc);
                 }
             }
         } else {
             for(String idxName : idxNames) {
                 BIndexFile bfile = map.get(idxName);
                 if(bfile != null) {
-                    bfile.setBulkloading(enable, 0.1f, 0.1f);
+                    bfile.setBulkloading(enable, nodeCachePurgePerc, datacachePurgePerc);
                 }
             }
         }
