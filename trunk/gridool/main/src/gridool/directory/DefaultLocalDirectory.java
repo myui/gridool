@@ -58,11 +58,11 @@ import xbird.util.primitive.Primitives;
 public final class DefaultLocalDirectory extends AbstractLocalDirectory {
     private static final Log LOG = LogFactory.getLog(DefaultLocalDirectory.class);
     private static final String IDX_SUFFIX_NAME = ".bfile";
-    
+
     private static final float dataCacheRatio;
     private static final float nodeCachePurgePerc, datacachePurgePerc;
     static {
-        dataCacheRatio = Primitives.parseFloat("gridool.directory.ld.bfile.bulkload.datacache_ratio", 0.4f);
+        dataCacheRatio = Primitives.parseFloat(Settings.get("gridool.directory.ld.bfile.bulkload.datacache_ratio"), 0.4f);
         nodeCachePurgePerc = Primitives.parseFloat(Settings.get("gridool.directory.ld.bfile.bulkload.nodecache_purgeperc"), 0.1f);
         datacachePurgePerc = Primitives.parseFloat(Settings.get("gridool.directory.ld.bfile.bulkload.datacache_purgeperc"), 0.2f);
     }
