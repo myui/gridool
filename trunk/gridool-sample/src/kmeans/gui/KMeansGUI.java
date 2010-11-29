@@ -37,6 +37,7 @@ import org.kohsuke.args4j.Option;
  * <DIV lang="ja"></DIV>
  * 
  * @author Kohsuke Morimoto
+ * @author Naoyoshi Aikawa
  */
 public class KMeansGUI implements KMeansListener {
 

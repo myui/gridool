@@ -29,6 +29,7 @@ import xbird.util.primitive.Primitives;
  * <DIV lang="ja"></DIV>
  * 
  * @author Kohsuke Morimoto
+ * @author Naoyoshi Aikawa 
  */
 public class Initializer {
     public static String getDataInfo(double[][] data, int K) throws RemoteException {
