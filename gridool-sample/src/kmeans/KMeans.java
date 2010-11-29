@@ -196,7 +196,7 @@ public class KMeans implements Runnable {
         for(int i = 1; i < maxIteration; i++) {
             System.out.printf("Iteration : %2d\n", i);
 
-            System.out.println("     Begin Mstep");
+            System.out.println("    Begin Mstep");
             long mstepStart = System.nanoTime();
             Mstep.MstepConf mstepConf = new Mstep.MstepConf(preInputDataDhtName, dimension);
             String newCentroidDhtName = client.execute(DhtMapReduceJob.class.getName(), ObjectUtils.toBytes(mstepConf));
@@ -289,29 +289,12 @@ public class KMeans implements Runnable {
 
     private double[][] getCentorids(GridClient client, String centroidDhtName)
             throws RemoteException {
-        //		client.deployClass(GetAllCentroids.class);
-        //    	ArrayList<Pair<Integer, double[]>> centroids = client.execute(GetAllCentroids.class.getName(), centroidDhtName);
-        //		
-        //    	if (centroids.size() != K) {
-        //    		for (Pair<Integer, double[]> centroid: centroids) {
-        //        		System.err.print(centroid.first + " : ");
-        //        		for (double d: centroid.second) {
-        //            		System.err.print(d + " ");
-        //        		}
-        //        		System.err.println();
-        //        	}
-        //    		throw new IllegalStateException("Cannot get all centroids at KMeans!!");
-        //    	}
-        //    	
-        double[][] ret = new double[K][];
-        //    	for (Pair<Integer, double[]> centroid: centroids) ret[centroid.first] = centroid.second;
+        final double[][] ret = new double[K][];
         for(int k = 0; k < K; ++k) {
-            final GetOperation op = new GetOperation(centroidDhtName, Primitives.toBytes(k));
+            GetOperation op = new GetOperation(centroidDhtName, Primitives.toBytes(k));
             byte[][] result = client.execute(DirectoryGetJob.class, op);
-            //System.out.printf("%2d: %d", k, Primitives.getInt(result[0]));
             ret[k] = ObjectUtils.readObjectQuietly(result[0]);
         }
-
         return ret;
     }
 

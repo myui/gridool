@@ -13,7 +13,7 @@ import xbird.util.lang.ObjectUtils;
 import xbird.util.primitive.Primitives;
 
 /**
- * 
+ * Calculate the new means to be the centroid of the observations in the cluster.
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
@@ -50,12 +50,12 @@ public class Mstep {
             public MstepMapTask(GridJob job, String inputDhtName, String destDhtName) {
                 super(job, inputDhtName, destDhtName, false);
             }
-
-            @Override
+          
             /**
              * @param key 座標
              * @param value ラベル
              */
+            @Override
             protected boolean process(byte[] key, byte[] value) {
                 shuffle(value, key);
                 return false;
@@ -76,12 +76,12 @@ public class Mstep {
             protected boolean process(byte[] key, Iterator<byte[]> values) {
                 throw new IllegalStateException();
             }
-
-            @Override
+            
             /**
              * @param key ラベル
              * @param values ラベルがおなじ座標群
              */
+            @Override
             protected boolean process(byte[] key, Collection<byte[]> values) {
                 double[] centroid = new double[dimension];
                 assert (values.size() > 0);
