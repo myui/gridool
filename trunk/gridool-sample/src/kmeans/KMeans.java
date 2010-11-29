@@ -214,7 +214,7 @@ public class KMeans implements Runnable {
                 break;
             }
 
-            System.out.println("     Begin Estep");
+            System.out.println("    Begin Estep");
             final long estepStart = System.nanoTime();
             Estep.EstepConf estepConf = new Estep.EstepConf(preInputDataDhtName, newCentroidDhtName, K);
             String newInputDataDhtName = client.execute(DhtMapJob.class.getName(), ObjectUtils.toBytes(estepConf));
