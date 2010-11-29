@@ -2,6 +2,13 @@ package kmeans.util;
 
 import java.util.Random;
 
+/**
+ * 
+ * <DIV lang="en"></DIV>
+ * <DIV lang="ja"></DIV>
+ * 
+ * @author Kohsuke Morimoto
+ */
 public class RandomGaussian2D {
     private final Random rand;
     private final double[] mu;

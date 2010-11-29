@@ -10,6 +10,13 @@ import java.util.Collection;
 
 import xbird.util.primitive.Primitives;
 
+/**
+ * 
+ * <DIV lang="en"></DIV>
+ * <DIV lang="ja"></DIV>
+ * 
+ * @author Kohsuke Morimoto
+ */
 public class Sampling {
 
     public static class SamplingConf extends DhtMapReduceJobConf {

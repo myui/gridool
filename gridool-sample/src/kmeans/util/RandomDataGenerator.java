@@ -3,7 +3,11 @@ package kmeans.util;
 import java.util.Random;
 
 /**
- * @author morimoto
+ * 
+ * <DIV lang="en"></DIV>
+ * <DIV lang="ja"></DIV>
+ * 
+ * @author Kohsuke Morimoto
  */
 public class RandomDataGenerator {
 

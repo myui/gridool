@@ -2,6 +2,13 @@ package kmeans.util;
 
 import java.io.Serializable;
 
+/**
+ * 
+ * <DIV lang="en"></DIV>
+ * <DIV lang="ja"></DIV>
+ * 
+ * @author Kohsuke Morimoto
+ */
 public class Triad<T1, T2, T3> implements Serializable {
 
     private static final long serialVersionUID = -1125789505944625007L;
