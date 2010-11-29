@@ -33,6 +33,13 @@ import xbird.util.lang.ObjectUtils;
 import xbird.util.primitive.Primitives;
 import xbird.util.struct.ByteArray;
 
+/**
+ * 
+ * <DIV lang="en"></DIV>
+ * <DIV lang="ja"></DIV>
+ * 
+ * @author Kohsuke Morimoto
+ */
 public class KMeans implements Runnable {
 
     private Sync sync = null;

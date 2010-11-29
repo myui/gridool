@@ -2,6 +2,13 @@ package kmeans.gui;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * 
+ * <DIV lang="en"></DIV>
+ * <DIV lang="ja"></DIV>
+ * 
+ * @author Kohsuke Morimoto
+ */
 public class Sync {
 
     private final AtomicBoolean locked;

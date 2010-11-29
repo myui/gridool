@@ -11,6 +11,13 @@ import java.util.StringTokenizer;
 
 import xbird.util.io.FileUtils;
 
+/**
+ * 
+ * <DIV lang="en"></DIV>
+ * <DIV lang="ja"></DIV>
+ * 
+ * @author Kohsuke Morimoto
+ */
 public class DataLoader {
     public static double[][] loader(String rootDirPath, String suffix) {
         File root = new File(rootDirPath);

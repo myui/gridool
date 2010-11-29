@@ -13,6 +13,13 @@ import java.rmi.RemoteException;
 import xbird.util.lang.ObjectUtils;
 import xbird.util.primitive.Primitives;
 
+/**
+ * 
+ * <DIV lang="en"></DIV>
+ * <DIV lang="ja"></DIV>
+ * 
+ * @author Kohsuke Morimoto
+ */
 public class Estep {
     public static class EstepConf extends DhtMapReduceJobConf {
         private static final long serialVersionUID = -1552952354858102245L;

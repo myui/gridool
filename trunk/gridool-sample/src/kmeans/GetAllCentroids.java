@@ -25,6 +25,13 @@ import xbird.util.lang.ObjectUtils;
 import xbird.util.primitive.Primitives;
 import xbird.util.struct.Pair;
 
+/**
+ * 
+ * <DIV lang="en"></DIV>
+ * <DIV lang="ja"></DIV>
+ * 
+ * @author Kohsuke Morimoto
+ */
 public class GetAllCentroids extends GridJobBase<String, ArrayList<Pair<Integer, double[]>>> {
     private static final long serialVersionUID = -5958188465961032014L;
     private ArrayList<Pair<Integer, double[]>> centroids = new ArrayList<Pair<Integer, double[]>>();

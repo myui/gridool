@@ -23,6 +23,13 @@ import kmeans.util.Triad;
 import xbird.util.lang.ObjectUtils;
 import xbird.util.primitive.Primitives;
 
+/**
+ * 
+ * <DIV lang="en"></DIV>
+ * <DIV lang="ja"></DIV>
+ * 
+ * @author Kohsuke Morimoto
+ */
 public class Initializer {
     public static String getDataInfo(double[][] data, int K) throws RemoteException {
         System.out.println("Begin getDataInfo");
