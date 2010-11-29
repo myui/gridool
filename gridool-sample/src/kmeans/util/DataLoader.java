@@ -17,6 +17,7 @@ import xbird.util.io.FileUtils;
  * <DIV lang="ja"></DIV>
  * 
  * @author Kohsuke Morimoto
+ * @author Naoyoshi Aikawa
  */
 public class DataLoader {
     public static double[][] loader(String rootDirPath, String suffix) {

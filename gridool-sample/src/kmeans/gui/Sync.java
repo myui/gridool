@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <DIV lang="ja"></DIV>
  * 
  * @author Kohsuke Morimoto
+ * @author Naoyoshi Aikawa
  */
 public class Sync {
 

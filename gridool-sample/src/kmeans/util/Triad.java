@@ -8,6 +8,7 @@ import java.io.Serializable;
  * <DIV lang="ja"></DIV>
  * 
  * @author Kohsuke Morimoto
+ * @author Naoyoshi Aikawa
  */
 public class Triad<T1, T2, T3> implements Serializable {
 

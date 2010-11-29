@@ -39,6 +39,7 @@ import xbird.util.struct.ByteArray;
  * <DIV lang="ja"></DIV>
  * 
  * @author Kohsuke Morimoto
+ * @author Naoyoshi Aikawa
  */
 public class KMeans implements Runnable {
 

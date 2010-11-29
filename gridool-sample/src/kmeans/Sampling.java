@@ -16,6 +16,7 @@ import xbird.util.primitive.Primitives;
  * <DIV lang="ja"></DIV>
  * 
  * @author Kohsuke Morimoto
+ * @author Naoyoshi Aikawa
  */
 public class Sampling {
 
