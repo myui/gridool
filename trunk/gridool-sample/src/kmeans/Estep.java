@@ -14,7 +14,7 @@ import xbird.util.lang.ObjectUtils;
 import xbird.util.primitive.Primitives;
 
 /**
- * 
+ * Assign each observation to the cluster with the closest mean. 
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
@@ -76,6 +76,10 @@ public class Estep {
                 this.centroids = centroids;
             }
 
+            /**
+             * @param key 座標
+             * @param value ラベル
+             */
             @Override
             protected boolean process(byte[] key, byte[] value) {
                 final double[] data = ObjectUtils.readObjectQuietly(key);
@@ -92,7 +96,7 @@ public class Estep {
                 return false;
             }
 
-            // とりあえずユークリッド距離
+              // とりあえずユークリッド距離
             private double distance(double[] data, double[] centroid) {
                 assert (data.length == centroid.length);
                 double d = 0.0;
