@@ -99,7 +99,7 @@ public class GridJobDesc implements Externalizable {
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.jobClass = IOUtils.readString(in);
-        final int numUrls = classSearchPaths.size();
+        final int numUrls = in.readInt();
         for(int i = 0; i < numUrls; i++) {
             URL url = (URL) in.readObject();
             classSearchPaths.add(url);
