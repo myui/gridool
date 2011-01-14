@@ -38,10 +38,10 @@ public interface Grid extends Remote {
 
     public GridNode delegate(boolean onlySuperNode) throws RemoteException;
 
-    public <A extends Serializable, R extends Serializable> R execute(@Nonnull String jobClassName, @Nullable A arg)
+    public <A extends Serializable, R extends Serializable> R execute(@Nonnull Class<? extends GridJob<A, R>> jobClass, @Nullable A arg)
             throws RemoteException;
 
-    public <A extends Serializable, R extends Serializable> R execute(@Nonnull Class<? extends GridJob<A, R>> jobClass, @Nullable A arg)
+    public <A extends Serializable, R extends Serializable> R execute(@Nonnull GridJobDesc jobDesc, @Nullable A arg)
             throws RemoteException;
 
 }

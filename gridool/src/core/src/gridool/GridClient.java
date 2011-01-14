@@ -30,7 +30,6 @@ import java.rmi.RemoteException;
 
 import javax.annotation.Nonnull;
 
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -74,18 +73,21 @@ public final class GridClient implements Grid {
         }
     }
 
-    public <A extends Serializable, R extends Serializable> R execute(String jobClassName, A arg)
-            throws RemoteException {
-        prepare();
-        return gridRef.<A, R> execute(jobClassName, arg);
-    }
-
+    @Override
     public <A extends Serializable, R extends Serializable> R execute(Class<? extends GridJob<A, R>> jobClass, A arg)
             throws RemoteException {
-        prepare();
-        return gridRef.<A, R> execute(jobClass, arg);
+        GridJobDesc jobDesc = new GridJobDesc(jobClass);
+        return execute(jobDesc, arg);
     }
 
+    @Override
+    public <A extends Serializable, R extends Serializable> R execute(GridJobDesc jobDesc, A arg)
+            throws RemoteException {
+        prepare();
+        return gridRef.<A, R> execute(jobDesc, arg);
+    }
+
+    @Override
     public GridNode delegate(boolean onlySuperNode) throws RemoteException {
         prepare();
         GridNode node = gridRef.delegate(onlySuperNode);

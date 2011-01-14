@@ -1,4 +1,5 @@
 import gridool.GridClient;
+import gridool.GridJobDesc;
 
 import java.rmi.RemoteException;
 
@@ -36,7 +37,7 @@ public class HelloWorldSample1 {
 
     public static void main(String[] args) throws RemoteException {
         GridClient grid = new GridClient();
-        String result = grid.execute(Sample1.class.getName(), "Hello World!");
+        String result = grid.execute(new GridJobDesc(Sample1.class), "Hello World!");
         System.out.println(result);
         //Integer count = grid.execute(Sample1.class, "Hello World!");
         //System.out.println("Total word count: " + count);

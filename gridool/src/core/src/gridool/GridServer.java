@@ -24,10 +24,13 @@ import gridool.routing.GridNodeSelector;
 import gridool.routing.GridNodeSelectorFactory;
 import gridool.routing.GridRouter;
 import gridool.util.GridUtils;
+import gridool.util.lang.ArrayUtils;
 import gridool.util.remoting.InternalException;
 import gridool.util.remoting.RemoteBase;
 
 import java.io.Serializable;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.List;
@@ -80,18 +83,7 @@ public final class GridServer extends RemoteBase implements Grid {
         super.shutdown(forceExit);
     }
 
-    @SuppressWarnings("unchecked")
-    public <A extends Serializable, R extends Serializable> R execute(String jobClassName, A arg)
-            throws RemoteException {
-        final Class<? extends GridJob<A, R>> jobClass;
-        try {
-            jobClass = (Class<? extends GridJob<A, R>>) Class.forName(jobClassName);
-        } catch (ClassNotFoundException e) {
-            throw new RemoteException("Class not found: " + jobClassName, e);
-        }
-        return execute(jobClass, arg);
-    }
-
+    @Override
     public <A extends Serializable, R extends Serializable> R execute(Class<? extends GridJob<A, R>> jobClass, A arg)
             throws RemoteException {
         final GridJobFuture<R> future = kernel.execute(jobClass, arg);
@@ -106,6 +98,27 @@ public final class GridServer extends RemoteBase implements Grid {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public <A extends Serializable, R extends Serializable> R execute(GridJobDesc jobDesc, A arg)
+            throws RemoteException {
+        String jobClassName = jobDesc.getJobClass();
+        List<URL> urls = jobDesc.getClassSearchPaths();
+
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        if(!urls.isEmpty()) {
+            cl = new URLClassLoader(ArrayUtils.toArray(urls, URL[].class), cl);
+        }
+        final Class<? extends GridJob<A, R>> jobClass;
+        try {
+            jobClass = (Class<? extends GridJob<A, R>>) cl.loadClass(jobClassName);
+        } catch (ClassNotFoundException e) {
+            throw new RemoteException("Class not found: " + jobClassName, e);
+        }
+        return execute(jobClass, arg);
+    }
+
+    @Override
     public GridNode delegate(boolean onlySuperNode) throws RemoteException {
         final GridRouter router = kernel.getResourceRegistry().getRouter();
         final GridNode[] nodes = router.getAllNodes();

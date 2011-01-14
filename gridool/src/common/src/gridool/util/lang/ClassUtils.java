@@ -26,6 +26,9 @@ import gridool.util.io.IOUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.LinkedHashMap;
@@ -34,7 +37,6 @@ import java.util.Map;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
 
 /**
  * 
@@ -83,7 +85,12 @@ public final class ClassUtils {
         String path = getRelativeClassFilePath(className);
         URL url = cl.getResource('/' + path);
         String absolutePath = url.getFile();
-        String decoded = URLDecoder.decode(absolutePath);
+        final String decoded;
+        try {
+            decoded = URLDecoder.decode(absolutePath, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException(e);
+        }
         return new File(decoded);
     }
 
@@ -97,6 +104,50 @@ public final class ClassUtils {
         String path = getRelativeClassFilePath(className);
         URL url = clazz.getResource('/' + path);
         return url.openStream();
+    }
+
+    public static File getJarFile(@Nonnull Class<?> clazz) {
+        File file = getClassFile(clazz);
+        String path = file.getPath();
+        final int idx = path.lastIndexOf('!');
+        if(idx == -1) {
+            return null;
+        }
+        String jarFilePath = path.substring(0, idx);
+        if(jarFilePath.startsWith("file:\\")) {// workaround for windows
+            jarFilePath = jarFilePath.substring(6);
+        } else if(jarFilePath.startsWith("file:/")) {
+            jarFilePath = jarFilePath.substring(5);
+        }
+        file = new File(jarFilePath);
+        return file;
+    }
+
+    public static URL getJarURL(@Nonnull Class<?> clazz) {
+        File file = getJarFile(clazz);
+        if(file == null) {
+            return null;
+        }
+        if(!file.exists()) {
+            return null;
+        }
+        URI uri = file.toURI();
+        try {
+            return uri.toURL();
+        } catch (MalformedURLException e) {
+            return null;
+        }
+    }
+
+    public static String getJarFilePath(@Nonnull Class<?> clazz) {
+        File file = getJarFile(clazz);
+        if(file == null) {
+            return null;
+        }
+        if(!file.exists()) {
+            return null;
+        }
+        return file.getAbsolutePath();
     }
 
     public static long getLastModified(@Nonnull Class<?> clazz) {
