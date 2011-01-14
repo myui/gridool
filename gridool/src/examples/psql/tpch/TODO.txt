@@ -1,0 +1,5 @@
+1. FIX not exists, not in semantics
+	Q16, Q21, Q22
+
+2. FIX partitioned by (primarykey) in subqueries
+	Q22
