@@ -37,7 +37,7 @@ public class HelloWorldSample1 {
 
     public static void main(String[] args) throws RemoteException {
         GridClient grid = new GridClient();
-        String result = grid.execute(new GridJobDesc(Sample1.class), "Hello World!");
+        String result = grid.execute(new GridJobDesc(Sample1.class), "H el lo Wo r ld !");
         System.out.println(result);
     }
 
