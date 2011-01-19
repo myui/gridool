@@ -13,8 +13,9 @@
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
         <javaElement handleIdentifier="=gridool/src\/common\/conf"/>
         <javaElement handleIdentifier="=gridool/src\/core\/src"/>
-        <javaElement handleIdentifier="=gridool/src\/contrib\/monetdb\/src"/>
+        <javaElement handleIdentifier="=gridool/src\/db\/src"/>
         <javaElement handleIdentifier="=gridool/src\/core\/conf"/>
         <javaElement handleIdentifier="=gridool/src\/common\/src"/>
+        <folder path="/gridool/etc/jardesc"/>
     </selectedElements>
 </jardesc>

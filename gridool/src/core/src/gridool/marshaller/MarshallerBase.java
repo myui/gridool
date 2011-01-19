@@ -43,6 +43,6 @@ public abstract class MarshallerBase implements GridMarshaller {
 
     @Override
     public <T> T unmarshall(byte[] ary) throws GridException {
-        return unmarshall(ary, null);
+        return this.<T> unmarshall(ary, null);
     }
 }

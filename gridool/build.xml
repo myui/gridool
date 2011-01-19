@@ -6,7 +6,6 @@
               as the first entry and export the buildfile again. -->
 <project basedir="." default="build" name="gridool">
     <property environment="env"/>
-    <property name="ECLIPSE_HOME" value="../../../../usr/lib/eclipse"/>
     <property name="debuglevel" value="source,lines,vars"/>
     <property name="target" value="1.6"/>
     <property name="source" value="1.6"/>
@@ -29,13 +28,7 @@
                 <exclude name="**/*.launch"/>
                 <exclude name="**/*.java"/>
             </fileset>
-        </copy>
-        <copy includeemptydirs="false" todir="build">
-            <fileset dir="src/contrib/monetdb/test">
-                <exclude name="**/*.launch"/>
-                <exclude name="**/*.java"/>
-            </fileset>
-        </copy>
+        </copy>        
         <copy includeemptydirs="false" todir="build">
             <fileset dir="src/contrib/monetdb/src">
                 <exclude name="**/*.launch"/>
@@ -49,25 +42,19 @@
             </fileset>
         </copy>
         <copy includeemptydirs="false" todir="build">
-            <fileset dir="src/common/test">
-                <exclude name="**/*.launch"/>
-                <exclude name="**/*.java"/>
-            </fileset>
-        </copy>
-        <copy includeemptydirs="false" todir="build">
             <fileset dir="src/common/conf">
                 <exclude name="**/*.launch"/>
                 <exclude name="**/*.java"/>
             </fileset>
         </copy>
         <copy includeemptydirs="false" todir="build">
-            <fileset dir="src/core/src">
+            <fileset dir="src/db/src">
                 <exclude name="**/*.launch"/>
                 <exclude name="**/*.java"/>
             </fileset>
         </copy>
         <copy includeemptydirs="false" todir="build">
-            <fileset dir="src/core/test">
+            <fileset dir="src/core/src">
                 <exclude name="**/*.launch"/>
                 <exclude name="**/*.java"/>
             </fileset>
@@ -81,51 +68,18 @@
     <target name="build-subprojects"/>
     <target depends="init" name="build-project">
         <echo message="${ant.project.name}: ${ant.file}"/>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="build" source="${source}" target="${target}">
-            <src path="src/core/conf"/>
-            <classpath refid="gridool.classpath"/>
-        </javac>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="build" source="${source}" target="${target}">
-            <src path="src/contrib/monetdb/test"/>
-            <classpath refid="gridool.classpath"/>
-        </javac>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="build" source="${source}" target="${target}">
-            <src path="src/contrib/monetdb/src"/>
-            <classpath refid="gridool.classpath"/>
-        </javac>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="build" source="${source}" target="${target}">
-            <src path="src/common/src"/>
-            <classpath refid="gridool.classpath"/>
-        </javac>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="build" source="${source}" target="${target}">
-            <src path="src/common/test"/>
-            <classpath refid="gridool.classpath"/>
-        </javac>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="build" source="${source}" target="${target}">
-            <src path="src/common/conf"/>
-            <classpath refid="gridool.classpath"/>
-        </javac>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="build" source="${source}" target="${target}">
-            <src path="src/core/src"/>
-            <classpath refid="gridool.classpath"/>
-        </javac>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="build" source="${source}" target="${target}">
-            <src path="src/core/test"/>
+    	<javac debug="true" debuglevel="${debuglevel}" destdir="build" source="${source}" target="${target}">
+        	<src path="src/common/src"/>
+    		<src path="src/core/src"/>
+        	<src path="src/db/src"/>        	
+        	<src path="src/contrib/monetdb/src"/>
             <classpath refid="gridool.classpath"/>
         </javac>
     </target>
     <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
-    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
-        <copy todir="${ant.library.dir}">
-            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
-        </copy>
-        <unzip dest="${ant.library.dir}">
-            <patternset includes="jdtCompilerAdapter.jar"/>
-            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
-        </unzip>
-    </target>
-    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
-        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
-        <antcall target="build"/>
+    <target name="GridMain">
+        <java classname="gridool.GridMain" failonerror="true" fork="yes">
+            <classpath refid="gridool.classpath"/>
+        </java>
     </target>
 </project>
