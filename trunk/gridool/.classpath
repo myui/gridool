@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src/core/conf"/>
-	<classpathentry kind="src" path="src/db/src"/>
-	<classpathentry kind="src" path="src/db/test"/>
 	<classpathentry kind="src" path="src/contrib/monetdb/test"/>
 	<classpathentry kind="src" path="src/contrib/monetdb/src"/>
 	<classpathentry kind="src" path="src/common/src"/>
 	<classpathentry kind="src" path="src/common/test"/>
 	<classpathentry kind="src" path="src/common/conf"/>
+	<classpathentry kind="src" path="src/db/src"/>
 	<classpathentry kind="src" path="src/core/src"/>
 	<classpathentry kind="src" path="src/core/test"/>
+	<classpathentry kind="src" path="src/db/test"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/jsr305.jar"/>
 	<classpathentry kind="lib" path="lib/optional/junit-4.1.jar"/>

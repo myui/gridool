@@ -77,7 +77,7 @@ public final class GridClient implements Grid {
     public <A extends Serializable, R extends Serializable> R execute(Class<? extends GridJob<A, R>> jobClass, A arg)
             throws RemoteException {
         GridJobDesc jobDesc = new GridJobDesc(jobClass);
-        return execute(jobDesc, arg);
+        return this.<A, R> execute(jobDesc, arg);
     }
 
     @Override
