@@ -71,7 +71,6 @@ import javax.annotation.Nonnull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -209,19 +208,19 @@ public class CsvPartitioningTask extends GridTaskAdapter {
         final String fileName = csvFileName;
         if(isFirstShuffle) {
             PartitioningJobConf conf = new PartitioningJobConf(lines, fileName, true, primaryForeignKeys, jobConf);
-            runShuffleJob(kernel, conf, assignMap);
+            runShuffleJob(kernel, conf, assignMap, deploymentGroup);
             this.isFirstShuffle = false;
         } else {
             shuffleExecPool.execute(new Runnable() {
                 public void run() {
                     PartitioningJobConf conf = new PartitioningJobConf(lines, fileName, false, primaryForeignKeys, jobConf);
-                    runShuffleJob(kernel, conf, assignMap);
+                    runShuffleJob(kernel, conf, assignMap, deploymentGroup);
                 }
             });
         }
     }
 
-    private static void runShuffleJob(final GridKernel kernel, final PartitioningJobConf conf, final Map<GridNode, MutableLong> recMap) {
+    private static void runShuffleJob(final GridKernel kernel, final PartitioningJobConf conf, final Map<GridNode, MutableLong> recMap, final String deploymentGroup) {
         PartitioningJobType jobType = conf.getJobConf().getJobType();
         Class<? extends GridJob<PartitioningJobConf, Map<GridNode, MutableInt>>> jobClass = jobType.getFirstPartitioningJobClass();
         //final GridJobFuture<Map<GridNode, MutableInt>> future = kernel.execute(CsvHashPartitioningJob.class, conf);

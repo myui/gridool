@@ -35,7 +35,6 @@
  */
 package gridool.util.io;
 
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -43,6 +42,9 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -245,6 +247,15 @@ public final class FileUtils {
     public static File resolvePath(File base, String path) {
         File f = new File(path);
         return f.isAbsolute() ? f : new File(base, path);
+    }
+
+    public static URL toURL(File file) {
+        final URI uri = file.toURI();
+        try {
+            return uri.toURL();
+        } catch (MalformedURLException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public interface IOFileFilter extends FileFilter, FilenameFilter {

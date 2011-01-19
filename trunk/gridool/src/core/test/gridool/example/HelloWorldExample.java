@@ -20,12 +20,12 @@
  */
 package gridool.example;
 
-import java.util.concurrent.ExecutionException;
-
 import gridool.GridException;
 import gridool.GridFactory;
 import gridool.GridJobFuture;
 import gridool.GridKernel;
+
+import java.util.concurrent.ExecutionException;
 
 /**
  * 
@@ -42,9 +42,10 @@ public class HelloWorldExample {
         GridJobFuture<Integer> future = grid.execute(GridHelloWorldJob.class, "Hello World");
         System.out.println("Total word count: " + future.get());
     }
-    
-    public static void main(String[] args) throws GridException, InterruptedException, ExecutionException {
-        final GridKernel grid = GridFactory.makeGrid();        
+
+    public static void main(String[] args) throws GridException, InterruptedException,
+            ExecutionException {
+        final GridKernel grid = GridFactory.makeGrid();
         grid.start();
         try {
             doWork(grid);

@@ -26,10 +26,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.annotation.Nonnull;
 
@@ -40,42 +36,38 @@ import javax.annotation.Nonnull;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public class GridJobDesc implements Externalizable {
+public final class GridJobDesc implements Externalizable {
+    private static final long serialVersionUID = -99505792234098119L;
 
+    public static final String DEFAULT_DEPLOYMENT_GROUP = "default";
+
+    @Nonnull
+    private/* final */String deploymentGroup;
     @Nonnull
     private/* final */String jobClass;
-    @Nonnull
-    private/* final */List<URL> classSearchPaths;
 
-    public GridJobDesc() {
-        this.classSearchPaths = new ArrayList<URL>(4);
-    } // for Externalizable
+    public GridJobDesc() {} // for Externalizable
 
     public GridJobDesc(@Nonnull Class<? extends GridJob<?, ?>> jobClass) {
-        this(jobClass.getName());
+        this(jobClass.getName(), DEFAULT_DEPLOYMENT_GROUP);
     }
 
     public GridJobDesc(@Nonnull String jobClass) {
-        this.jobClass = jobClass;
-        this.classSearchPaths = new ArrayList<URL>(4);
-        setDefaultSearchPaths();
+        this(jobClass, DEFAULT_DEPLOYMENT_GROUP);
     }
 
-    private void setDefaultSearchPaths() {
-        String conf = Settings.get("gridool.libjars");
-        if(conf != null) {
-            String[] paths = conf.split(";");
-            for(String path : paths) {
-                if(path != null) {
-                    try {
-                        URL url = new URL(path);
-                        classSearchPaths.add(url);
-                    } catch (MalformedURLException e) {
-                        ;
-                    }
-                }
-            }
-        }
+    public GridJobDesc(@Nonnull Class<? extends GridJob<?, ?>> jobClass, @Nonnull String deploymentGroup) {
+        this(jobClass.getName(), deploymentGroup);
+    }
+
+    public GridJobDesc(@Nonnull String jobClass, @Nonnull String deploymentGroup) {
+        this.jobClass = jobClass;
+        this.deploymentGroup = deploymentGroup;
+    }
+
+    @Nonnull
+    public String getDeploymentGroup() {
+        return deploymentGroup;
     }
 
     @Nonnull
@@ -83,38 +75,16 @@ public class GridJobDesc implements Externalizable {
         return jobClass;
     }
 
-    @Nonnull
-    public List<URL> getClassSearchPaths() {
-        return classSearchPaths;
-    }
-
-    public void addClassSearchPaths(URL... urls) {
-        for(URL url : urls) {
-            if(url != null) {
-                classSearchPaths.add(url);
-            }
-        }
-    }
-
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        this.deploymentGroup = IOUtils.readString(in);
         this.jobClass = IOUtils.readString(in);
-        final int numUrls = in.readInt();
-        for(int i = 0; i < numUrls; i++) {
-            URL url = (URL) in.readObject();
-            classSearchPaths.add(url);
-        }
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
+        IOUtils.writeString(deploymentGroup, out);
         IOUtils.writeString(jobClass, out);
-        final int numUrls = classSearchPaths.size();
-        out.writeInt(numUrls);
-        for(int i = 0; i < numUrls; i++) {
-            URL url = classSearchPaths.get(i);
-            out.writeObject(url);
-        }
     }
 
 }

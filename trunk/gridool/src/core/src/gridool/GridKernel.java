@@ -93,7 +93,7 @@ public final class GridKernel {
         }
 
         GridTaskQueueManager taskManager = new GridTaskQueueManager(resourceRegistry);
-        GridCommunicationService communicationServ = CommunicationServiceProvider.createService(taskManager, config);
+        GridCommunicationService communicationServ = CommunicationServiceProvider.createService(taskManager, resourceRegistry, config);
         GridCommunicationManager communicationMgr = new GridCommunicationManager(resourceRegistry, communicationServ);
 
         GridExecutionMonitor monitor = GridMonitorFactory.createExecutionMonitor(resourceRegistry);
@@ -160,7 +160,11 @@ public final class GridKernel {
     }
 
     public <A, R> GridJobFuture<R> execute(@Nonnull Class<? extends GridJob<A, R>> jobClass, @Nullable A arg) {
-        return jobProcessor.execute(jobClass, arg);
+        return execute(jobClass, arg, null);
+    }
+
+    public <A, R> GridJobFuture<R> execute(@Nonnull Class<? extends GridJob<A, R>> jobClass, @Nullable A arg, @Nullable String deploymentGroup) {
+        return jobProcessor.execute(jobClass, arg, deploymentGroup);
     }
 
 }

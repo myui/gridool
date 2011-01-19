@@ -63,6 +63,8 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
     @Nonnull
     protected final String taskId;
     @Nonnull
+    protected final String deploymentGroup;
+    @Nonnull
     protected final GridNode senderNode;
     protected int taskNumber = -1;
 
@@ -91,17 +93,10 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
         this.jobId = job.getJobId();
         assert (jobId != null);
         this.taskId = GridUtils.generateTaskId(jobId, this);
+        this.deploymentGroup = job.getDeploymentGroup();
         this.senderNode = job.getJobNode();
         this.isFailoverActive = failover;
         this.handleNodeFailure = job.handleNodeFailure();
-    }
-
-    protected GridTaskAdapter(@Nonnull String jobId, @Nonnull GridNode senderNode, boolean failover, boolean handleNodeFailure) {
-        this.jobId = jobId;
-        this.taskId = GridUtils.generateTaskId(jobId, this);
-        this.senderNode = senderNode;
-        this.isFailoverActive = failover;
-        this.handleNodeFailure = handleNodeFailure;
     }
 
     public boolean injectResources() {
@@ -116,13 +111,16 @@ public abstract class GridTaskAdapter implements GridTask, Callable<Serializable
         return handleNodeFailure;
     }
 
+    public final String getJobId() {
+        return jobId;
+    }
+
     public final String getTaskId() {
-        assert (taskId != null);
         return taskId;
     }
 
-    public final String getJobId() {
-        return jobId;
+    public final String getDeploymentGroup() {
+        return deploymentGroup;
     }
 
     public int getTaskNumber() {

@@ -40,7 +40,6 @@ import javax.annotation.Nonnull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -99,10 +98,9 @@ public abstract class Dht2DBReduceTaskBase<IN_TYPE, OUT_TYPE> extends DhtReduceT
         throw new UnsupportedOperationException();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected boolean process(byte[] key, Collection<byte[]> values) {
-        GridMarshaller<IN_TYPE> marshaller = jobConf.getMapOutputMarshaller();
+        GridMarshaller marshaller = jobConf.getMapOutputMarshaller();
         DecodingIterator<IN_TYPE> itor = new DecodingIterator<IN_TYPE>(values.iterator(), marshaller);
         return processRecord(key, itor);
     }
@@ -112,9 +110,9 @@ public abstract class Dht2DBReduceTaskBase<IN_TYPE, OUT_TYPE> extends DhtReduceT
     private static final class DecodingIterator<IN_TYPE> implements Iterator<IN_TYPE> {
 
         private final Iterator<byte[]> delegate;
-        private final GridMarshaller<IN_TYPE> marshaller;
+        private final GridMarshaller marshaller;
 
-        public DecodingIterator(Iterator<byte[]> itor, GridMarshaller<IN_TYPE> marshaller) {
+        public DecodingIterator(Iterator<byte[]> itor, GridMarshaller marshaller) {
             this.delegate = itor;
             this.marshaller = marshaller;
         }

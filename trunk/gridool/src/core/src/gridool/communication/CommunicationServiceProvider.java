@@ -23,6 +23,7 @@ package gridool.communication;
 import javax.annotation.Nonnull;
 
 import gridool.GridConfiguration;
+import gridool.GridResourceRegistry;
 import gridool.communication.listeners.TaskMessageListener;
 import gridool.communication.transport.srv.TcpCommunicationService;
 import gridool.taskqueue.GridTaskQueueManager;
@@ -38,9 +39,9 @@ public final class CommunicationServiceProvider {
 
     private CommunicationServiceProvider() {}
 
-    public static GridCommunicationService createService(@Nonnull GridTaskQueueManager taskMgr, @Nonnull GridConfiguration config) {
+    public static GridCommunicationService createService(@Nonnull GridTaskQueueManager taskMgr, @Nonnull GridResourceRegistry resourceRegistry, @Nonnull GridConfiguration config) {
         GridCommunicationService srv = new TcpCommunicationService(config);
-        srv.addListener(GridTopic.TASK, new TaskMessageListener(srv, taskMgr));
+        srv.addListener(GridTopic.TASK, new TaskMessageListener(srv, taskMgr, resourceRegistry));
         return srv;
     }
 

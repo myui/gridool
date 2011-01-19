@@ -60,7 +60,6 @@ import javax.annotation.Nonnull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -104,7 +103,8 @@ public final class CoordinateReplicaTaskHandler implements ReplicaCoordinatorLis
             return true; // no need to run a ConfigureReplicaJob.
         }
 
-        final GridJobFuture<GridNode[]> future = kernel.execute(ConfigureReplicaJob.class, new JobConf(masterNode, addedReplicas, removedReplicas, jobConf));
+        JobConf newConf = new JobConf(masterNode, addedReplicas, removedReplicas, jobConf);
+        final GridJobFuture<GridNode[]> future = kernel.execute(ConfigureReplicaJob.class, newConf);
         final GridNode[] succeedNodes;
         try {
             succeedNodes = future.get();

@@ -20,15 +20,15 @@
  */
 package gridool;
 
+import gridool.annotation.GridAnnotatable;
+import gridool.routing.GridRouter;
+
 import java.io.Serializable;
 import java.util.Map;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import gridool.annotation.GridAnnotatable;
-import gridool.routing.GridRouter;
 
 /**
  * The business logic of {@link GridJob} is breakdown into multiple {@link GridTask}s.
@@ -40,10 +40,15 @@ import gridool.routing.GridRouter;
 public interface GridJob<A, R> extends Serializable, GridAnnotatable {
 
     boolean logJobInfo();
-    
+
     boolean handleNodeFailure();
-    
+
     boolean isAsyncOps();
+
+    @Nullable
+    String getDeploymentGroup();
+
+    void setDeploymentGroup(@Nullable String deployGroup);
 
     @CheckForNull
     String getJobId();
@@ -56,8 +61,7 @@ public interface GridJob<A, R> extends Serializable, GridAnnotatable {
     /**
      * Split a {@link GridJob} into multiple {@link GridTask}s and map them to {@link GridNode}s.
      */
-    Map<GridTask, GridNode> map(@Nonnull GridRouter router, @Nullable A arg)
-            throws GridException;
+    Map<GridTask, GridNode> map(@Nonnull GridRouter router, @Nullable A arg) throws GridException;
 
     /**
      * Asynchronous callback invoked every time a response from remote execution is returned.
@@ -65,8 +69,7 @@ public interface GridJob<A, R> extends Serializable, GridAnnotatable {
      * 
      * @return Result policy that tells how to process further upcoming task results.
      */
-    GridTaskResultPolicy result(@Nonnull GridTaskResult result)
-            throws GridException;
+    GridTaskResultPolicy result(@Nonnull GridTaskResult result) throws GridException;
 
     /**
      * Synchronously aggregates all results without a timeout.

@@ -108,6 +108,10 @@ public final class ReplicatedGridTaskAdapter implements GridTask, Serializable {
         return jobId;
     }
 
+    public String getDeploymentGroup() {
+        return delegated.getDeploymentGroup();
+    }
+
     public GridNode getSenderNode() {
         return senderNode;
     }

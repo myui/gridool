@@ -35,7 +35,6 @@ import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Nonnull;
 
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -47,12 +46,12 @@ public class DBMapShuffleTask extends DBMapShuffleTaskBase<DBRecord, DBRecord> {
     private static final long serialVersionUID = -269939175231317044L;
 
     private transient boolean firstShuffleAttempt = true;
-    
+
     @SuppressWarnings("unchecked")
     public DBMapShuffleTask(GridJob job, DBMapReduceJobConf jobConf) {
         super(job, jobConf);
     }
-    
+
     @Override
     protected boolean process(final DBRecord record) {
         shuffle(record);
@@ -66,7 +65,7 @@ public class DBMapShuffleTask extends DBMapShuffleTaskBase<DBRecord, DBRecord> {
     protected final void shuffle(@Nonnull final byte[] key, @Nonnull final Object[] columns, @Nonnull final int[] sqlTypes) {
         shuffle(new GenericDBRecord(key, columns, sqlTypes));
     }
-    
+
     @Override
     protected void invokeShuffle(final ExecutorService shuffleExecPool, final ArrayQueue<DBRecord> queue) {
         assert (kernel != null);

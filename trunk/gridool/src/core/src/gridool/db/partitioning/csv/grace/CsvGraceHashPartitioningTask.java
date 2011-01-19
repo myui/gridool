@@ -88,7 +88,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -411,19 +410,19 @@ public class CsvGraceHashPartitioningTask extends GridTaskAdapter {
         final String fileName = csvFileName;
         if(isFirstShuffle) {
             PartitioningJobConf conf = new PartitioningJobConf(lines, fileName, true, primaryForeignKeys, jobConf, bucket);
-            runShuffleJob(kernel, conf, assignMap, outputMap);
+            runShuffleJob(kernel, conf, assignMap, outputMap, deploymentGroup);
             this.isFirstShuffle = false;
         } else {
             shuffleExecPool.execute(new Runnable() {
                 public void run() {
                     PartitioningJobConf conf = new PartitioningJobConf(lines, fileName, false, primaryForeignKeys, jobConf, bucket);
-                    runShuffleJob(kernel, conf, assignMap, outputMap);
+                    runShuffleJob(kernel, conf, assignMap, outputMap, deploymentGroup);
                 }
             });
         }
     }
 
-    private static void runShuffleJob(final GridKernel kernel, final PartitioningJobConf conf, final Map<GridNode, MutableLong> recMap, final Map<String, OutputStream> outputMap) {
+    private static void runShuffleJob(final GridKernel kernel, final PartitioningJobConf conf, final Map<GridNode, MutableLong> recMap, final Map<String, OutputStream> outputMap, final String deploymentGroup) {
         if(outputMap != null) {
             conf.setOutputMap(outputMap);
         }

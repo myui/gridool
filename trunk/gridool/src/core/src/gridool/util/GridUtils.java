@@ -36,6 +36,7 @@ import gridool.util.datetime.DateTimeFormatter;
 import gridool.util.io.FastByteArrayInputStream;
 import gridool.util.io.FastByteArrayOutputStream;
 import gridool.util.io.FastMultiByteArrayOutputStream;
+import gridool.util.io.FileUtils;
 import gridool.util.io.IOUtils;
 import gridool.util.lang.ObjectUtils;
 import gridool.util.lang.PrintUtils;
@@ -47,6 +48,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -389,6 +391,51 @@ public final class GridUtils {
     public static String getWorkDirPath() {
         File colDir = Settings.getDataDirectory();
         return colDir.getAbsolutePath();
+    }
+
+    public static File getDeploymentBaseDir() {
+        String prop = Settings.get("gridool.deployment.basedir");
+        if(prop != null) {
+            File file = new File(prop);
+            if(file.exists()) {
+                return file;
+            } else {
+                if(file.mkdir()) {
+                    return file;
+                } else {
+                    throw new IllegalStateException("Cannot prepare `gridool.deployment.basedir': "
+                            + file.getAbsolutePath());
+                }
+            }
+        }
+        File colDir = Settings.getDataDirectory();
+        File basedir = new File(colDir, "_deploy");
+        if(!basedir.exists()) {
+            if(!basedir.mkdir()) {
+                throw new IllegalStateException("Cannot prepare a deploymemt base directory: "
+                        + basedir.getAbsolutePath());
+            }
+        }
+        return basedir;
+    }
+
+    @Nullable
+    public static URL[] findJars(@Nonnull String deploymentGroup) {
+        File baseDir = GridUtils.getDeploymentBaseDir();
+        File deployDir = new File(baseDir, deploymentGroup);
+        if(!deployDir.exists()) {
+            List<File> jarFiles = FileUtils.listFiles(deployDir, ".jar", false);
+            if(jarFiles.isEmpty()) {
+                return null;
+            }
+            final URL[] jarUrls = new URL[jarFiles.size()];
+            int i = 0;
+            for(File jarFile : jarFiles) {
+                jarUrls[i++] = FileUtils.toURL(jarFile);
+            }
+            return jarUrls;
+        }
+        return null;
     }
 
     public static void accquireLock(final Lock lock, final String targetLabel, final long timeoutInSec, final int maxWaitIntSec)

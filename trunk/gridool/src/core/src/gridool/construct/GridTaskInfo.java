@@ -98,6 +98,10 @@ public final class GridTaskInfo implements GridTask {
         throw new UnsupportedOperationException();
     }
 
+    public String getDeploymentGroup() {
+        throw new UnsupportedOperationException();
+    }
+
     public GridTaskRelocatability getRelocatability() {
         throw new UnsupportedOperationException();
     }

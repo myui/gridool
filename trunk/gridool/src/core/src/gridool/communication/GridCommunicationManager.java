@@ -45,7 +45,7 @@ public final class GridCommunicationManager {
     private final GridCommunicationService service;
     private final TaskSenderListener senderListener;
     private final GridNode localNode;
-    private final GridMarshaller<GridTask> marshaller;
+    private final GridMarshaller marshaller;
 
     public GridCommunicationManager(@Nonnull GridResourceRegistry resourceRegistry, @Nonnull GridCommunicationService srvc) {
         this.service = srvc;
@@ -53,7 +53,7 @@ public final class GridCommunicationManager {
         this.senderListener = taskMgr.getSenderResponseQueue();
         assert (senderListener != null);
         this.localNode = srvc.getLocalNode();
-        this.marshaller = resourceRegistry.getTaskMarshaller();
+        this.marshaller = resourceRegistry.getMarshaller();
         resourceRegistry.setCommunicationManager(this);
     }
 
@@ -65,17 +65,21 @@ public final class GridCommunicationManager {
             throws GridException {// TODO REVIEWME DESIGN create shortcut here?
         String taskId = task.getTaskId();
         byte[] b = marshaller.marshall(task);
-        GridTaskRequestMessage msg = new GridTaskRequestMessage(taskId, b);
+        String deployGroup = task.getDeploymentGroup();
+        GridTaskRequestMessage msg = new GridTaskRequestMessage(taskId, b, deployGroup);
         service.sendMessage(dstNode, msg);
     }
 
-    public void sendTaskResponse(@Nonnull GridTaskResult result, @Nonnull GridNode dstNode)
+    public void sendTaskResponse(@Nonnull GridTask task, @Nonnull GridTaskResult result, @Nonnull GridNode dstNode)
             throws GridException {
-        final GridTaskResponseMessage msg = new GridTaskResponseMessage(result);
         if(localNode.equals(dstNode)) {
-            msg.setSenderNode(localNode);
-            senderListener.onResponse(msg);
+            String jobId = task.getJobId();
+            senderListener.onResponse(jobId, result);
         } else {
+            String taskId = task.getTaskId();
+            byte[] b = marshaller.marshall(result);
+            String deployGroup = task.getDeploymentGroup();
+            GridTaskResponseMessage msg = new GridTaskResponseMessage(taskId, b, deployGroup);
             service.sendMessage(dstNode, msg);
         }
     }

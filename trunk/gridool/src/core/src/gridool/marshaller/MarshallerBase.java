@@ -30,19 +30,19 @@ import gridool.util.io.FastMultiByteArrayOutputStream;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public abstract class MarshallerBase<BASE_TYPE> implements GridMarshaller<BASE_TYPE> {
+public abstract class MarshallerBase implements GridMarshaller {
 
     public MarshallerBase() {}
 
     @Override
-    public <T extends BASE_TYPE> byte[] marshall(T obj) throws GridException {
+    public <T> byte[] marshall(T obj) throws GridException {
         FastMultiByteArrayOutputStream bos = new FastMultiByteArrayOutputStream();
         marshall(obj, bos);
         return bos.toByteArray();
     }
 
     @Override
-    public <T extends BASE_TYPE> T unmarshall(byte[] ary) throws GridException {
+    public <T> T unmarshall(byte[] ary) throws GridException {
         return unmarshall(ary, null);
     }
 }

@@ -54,7 +54,6 @@ import javax.annotation.concurrent.GuardedBy;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -163,7 +162,7 @@ public final class ReplicationManager {
         }
 
         task.setTransferToReplica(trgNode);
-        final GridJobFuture<Boolean> future = kernel.execute(ReplicateTaskJob.class, new ReplicateTaskJob.JobConf(task, replicas));
+        final GridJobFuture<Boolean> future = kernel.execute(ReplicateTaskJob.class, new ReplicateTaskJob.JobConf(task, replicas), task.getDeploymentGroup());
         if(LOG.isDebugEnabled()) {
             LOG.debug("Start replicating a task " + ClassUtils.getSimpleClassName(task) + '['
                     + task.getTaskId() + "] to slave nodes: " + replicas);

@@ -24,7 +24,7 @@ import gridool.tools.cmd.CoordinateReplicaCommand;
 import gridool.tools.cmd.ParallelSQLExecCommand;
 import gridool.tools.cmd.RegisterPartitionedTableCommand;
 import gridool.tools.cmd.RegisterReplicaDbCommand;
-import gridool.tools.cmd.RemoveInMemoryCacheCommand;
+import gridool.tools.cmd.DeletenMemoryCacheCommand;
 import gridool.util.cmdline.Command;
 import gridool.util.cmdline.CommandInvokerBase;
 
@@ -44,7 +44,7 @@ public final class GridCommandInvoker extends CommandInvokerBase {
     private static Command[] listCommands() {
         return new Command[] { new RegisterReplicaDbCommand(), new CoordinateReplicaCommand(),
                 new ParallelSQLExecCommand(), new RegisterPartitionedTableCommand(),
-                new RemoveInMemoryCacheCommand() };
+                new DeletenMemoryCacheCommand() };
     }
 
     public static void main(String[] args) {

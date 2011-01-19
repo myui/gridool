@@ -39,7 +39,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -52,16 +51,21 @@ public final class ReceiverIncomingTaskQueue implements TaskReceiverListener {
     private static final Log LOG = LogFactory.getLog(ReceiverIncomingTaskQueue.class);
 
     private final BlockingQueue<GridTask> waitingTaskQueue;
-    private final GridMarshaller<GridTask> marshaller;
+    private final GridMarshaller marshaller;
+    private final GridResourceRegistry registry;
 
     public ReceiverIncomingTaskQueue(@Nonnull GridResourceRegistry resourceRegistry) {
         this.waitingTaskQueue = new LinkedTransferQueue<GridTask>(); //new LinkedBlockingDeque<GridTask>();
-        this.marshaller = resourceRegistry.getTaskMarshaller();
+        this.marshaller = resourceRegistry.getMarshaller();
+        this.registry = resourceRegistry;
     }
 
+    @Override
     public void onRequest(@Nonnull GridTaskRequestMessage request) throws GridException {
         byte[] b = request.getMessage();
-        final GridTask task = marshaller.unmarshall(b);
+        String deployGroup = request.getDeploymentGroup();
+        ClassLoader ldr = registry.getDeploymentGroupClassLoader(deployGroup);
+        final GridTask task = marshaller.unmarshall(b, ldr);
         try {
             waitingTaskQueue.put(task);
         } catch (InterruptedException ex) {
@@ -71,6 +75,7 @@ public final class ReceiverIncomingTaskQueue implements TaskReceiverListener {
         }
     }
 
+    @Override
     public void onCancelRequest(GridTaskCancelMessage request) {
         String taskId = request.getTaskId();
         GridTask taskProbe = new GridTaskInfo(taskId);

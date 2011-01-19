@@ -20,13 +20,15 @@
  */
 package gridool.communication.messages;
 
+import gridool.GridTaskResult;
+import gridool.util.io.IOUtils;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 import javax.annotation.Nonnull;
-
-import gridool.GridTaskResult;
+import javax.annotation.Nullable;
 
 /**
  * 
@@ -38,35 +40,52 @@ import gridool.GridTaskResult;
 public final class GridTaskResponseMessage extends GridTaskMessage {
     private static final long serialVersionUID = -8561114374143574865L;
 
-    private/* final */GridTaskResult result;
+    @Nonnull
+    private/* final */byte[] result;
+    @Nullable
+    private/* final */String deploymentGroup;
 
     public GridTaskResponseMessage() {// for Externalizable
         super();
     }
 
-    public GridTaskResponseMessage(@Nonnull GridTaskResult result) {
-        super(result.getTaskId());
-        this.result = result;
+    public GridTaskResponseMessage(@Nonnull String taskId, @Nonnull byte[] taskResult, @Nullable String deploymentGroup) {
+        super(taskId);
+        this.result = taskResult;
+        this.deploymentGroup = deploymentGroup;
     }
 
+    @Override
     public GridMessageType getMessageType() {
         return GridMessageType.taskResponse;
     }
 
-    public GridTaskResult getMessage() {
+    /**
+     * Get bytes of {@link GridTaskResult}.
+     */
+    @Override
+    @Nonnull
+    public byte[] getMessage() {
         return result;
+    }
+
+    @Nullable
+    public String getDeploymentGroup() {
+        return deploymentGroup;
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
-        this.result = (GridTaskResult) in.readObject();
+        this.result = IOUtils.readBytes(in);
+        this.deploymentGroup = IOUtils.readString(in);
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
-        out.writeObject(result);
+        IOUtils.writeBytes(result, out);
+        IOUtils.writeString(deploymentGroup, out);
     }
 
 }

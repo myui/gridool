@@ -133,7 +133,6 @@ public abstract class DBMapReduceJobConf implements Serializable {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
     public GridMarshaller getMapOutputMarshaller() {
         return new JdkMarshaller();
     }

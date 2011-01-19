@@ -20,9 +20,10 @@
  */
 package gridool.taskqueue.sender;
 
-import javax.annotation.Nonnull;
-
+import gridool.GridTaskResult;
 import gridool.communication.messages.GridTaskResponseMessage;
+
+import javax.annotation.Nonnull;
 
 /**
  * 
@@ -32,6 +33,8 @@ import gridool.communication.messages.GridTaskResponseMessage;
  * @author Makoto YUI (yuin405@gmail.com)
  */
 public interface TaskSenderListener {
+
+    void onResponse(@Nonnull String jobId, @Nonnull GridTaskResult result);
 
     void onResponse(@Nonnull GridTaskResponseMessage response);
 
