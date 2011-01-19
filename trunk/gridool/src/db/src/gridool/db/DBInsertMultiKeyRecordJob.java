@@ -101,6 +101,7 @@ public final class DBInsertMultiKeyRecordJob extends GridJobBase<DBInsertOperati
         return map;
     }
 
+    @Override
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         return GridTaskResultPolicy.CONTINUE;
     }

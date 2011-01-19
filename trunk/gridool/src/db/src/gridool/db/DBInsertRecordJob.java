@@ -80,6 +80,7 @@ public final class DBInsertRecordJob extends GridJobBase<DBInsertOperation, Seri
         return map;
     }
 
+    @Override
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         return GridTaskResultPolicy.CONTINUE;
     }
