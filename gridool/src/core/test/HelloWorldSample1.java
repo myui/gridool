@@ -39,8 +39,6 @@ public class HelloWorldSample1 {
         GridClient grid = new GridClient();
         String result = grid.execute(new GridJobDesc(Sample1.class), "Hello World!");
         System.out.println(result);
-        //Integer count = grid.execute(Sample1.class, "Hello World!");
-        //System.out.println("Total word count: " + count);
     }
 
 }
