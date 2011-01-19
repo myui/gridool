@@ -42,16 +42,21 @@ import gridool.replication.ReplicationManager;
 import gridool.routing.GridRouter;
 import gridool.routing.GridRouterFactory;
 import gridool.taskqueue.GridTaskQueueManager;
+import gridool.util.GridUtils;
 import gridool.util.primitive.Primitives;
 
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-
+import javax.annotation.Nullable;
 
 /**
  * 
@@ -64,7 +69,8 @@ public final class GridResourceRegistry {
 
     private final GridKernel kernel;
     private final Map<String, GridService> serviceRegistry;
-    private final GridMarshaller<GridTask> marshaller;
+    private final GridMarshaller marshaller;
+    private final ConcurrentMap<String, URLClassLoader> ldrMap;
     private final AtomicReference<GridTaskMetricsCounter> taskMetricsCounter;
     private final LockManager lockManager;
 
@@ -92,6 +98,7 @@ public final class GridResourceRegistry {
         this.kernel = kernel;
         this.serviceRegistry = new HashMap<String, GridService>();
         this.marshaller = GridMarshallerFactory.createMarshaller();
+        this.ldrMap = new ConcurrentHashMap<String, URLClassLoader>(32);
         GridTaskMetricsCounter counter = new GridTaskMetricsCounter();
         this.taskMetricsCounter = new AtomicReference<GridTaskMetricsCounter>(counter);
         this.lockManager = LockManagerFactory.createLockManager(config);
@@ -197,8 +204,48 @@ public final class GridResourceRegistry {
         this.taskProcessor = taskProcessor;
     }
 
-    public GridMarshaller<GridTask> getTaskMarshaller() {
+    public GridMarshaller getMarshaller() {
         return marshaller;
+    }
+
+    @Nonnull
+    public ClassLoader getDeploymentGroupClassLoader(@Nullable String group) {
+        if(group == null) {
+            return Thread.currentThread().getContextClassLoader();
+        }
+        URLClassLoader ldr = ldrMap.get(group);
+        if(ldr == null) {
+            URL[] jarUrls = GridUtils.findJars(group);
+            if(jarUrls == null) {
+                return Thread.currentThread().getContextClassLoader();
+            }
+            ldr = new URLClassLoader(jarUrls);
+            URLClassLoader prevLdr = ldrMap.putIfAbsent(group, ldr);
+            if(prevLdr != null) {
+                ldr = prevLdr;
+            }
+        }
+        return ldr;
+    }
+
+    @Nonnull
+    public ClassLoader getDeploymentGroupClassLoader(@Nullable String group, @Nonnull ClassLoader defaultLdr) {
+        if(group == null) {
+            return defaultLdr;
+        }
+        URLClassLoader ldr = ldrMap.get(group);
+        if(ldr == null) {
+            URL[] jarUrls = GridUtils.findJars(group);
+            if(jarUrls == null) {
+                return defaultLdr;
+            }
+            ldr = new URLClassLoader(jarUrls);
+            URLClassLoader prevLdr = ldrMap.putIfAbsent(group, ldr);
+            if(prevLdr != null) {
+                ldr = prevLdr;
+            }
+        }
+        return ldr;
     }
 
     @Nonnull

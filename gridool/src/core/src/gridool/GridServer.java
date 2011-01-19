@@ -24,19 +24,17 @@ import gridool.routing.GridNodeSelector;
 import gridool.routing.GridNodeSelectorFactory;
 import gridool.routing.GridRouter;
 import gridool.util.GridUtils;
-import gridool.util.lang.ArrayUtils;
 import gridool.util.remoting.InternalException;
 import gridool.util.remoting.RemoteBase;
 
 import java.io.Serializable;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -56,15 +54,17 @@ public final class GridServer extends RemoteBase implements Grid {
     private static final int exportPort = Integer.parseInt(Settings.get("gridool.server.port", "0"));
 
     private final GridKernel kernel;
+    private final GridResourceRegistry registry;
 
     public GridServer() {
         super(bindName, exportPort);
         this.kernel = GridFactory.makeGrid();
+        this.registry = kernel.getResourceRegistry();
     }
 
     @Nonnull
     public GridResourceRegistry getResourceRegistry() {
-        return kernel.getResourceRegistry();
+        return registry;
     }
 
     @Override
@@ -86,7 +86,29 @@ public final class GridServer extends RemoteBase implements Grid {
     @Override
     public <A extends Serializable, R extends Serializable> R execute(Class<? extends GridJob<A, R>> jobClass, A arg)
             throws RemoteException {
-        final GridJobFuture<R> future = kernel.execute(jobClass, arg);
+        return execute(jobClass, arg, GridJobDesc.DEFAULT_DEPLOYMENT_GROUP);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <A extends Serializable, R extends Serializable> R execute(GridJobDesc jobDesc, A arg)
+            throws RemoteException {
+        String jobClassName = jobDesc.getJobClass();
+        String deployGroup = jobDesc.getDeploymentGroup();
+
+        ClassLoader cl = registry.getDeploymentGroupClassLoader(deployGroup);
+        final Class<? extends GridJob<A, R>> jobClass;
+        try {
+            jobClass = (Class<? extends GridJob<A, R>>) cl.loadClass(jobClassName);
+        } catch (ClassNotFoundException e) {
+            throw new RemoteException("Class not found: " + jobClassName, e);
+        }
+        return execute(jobClass, arg, deployGroup);
+    }
+
+    private <A extends Serializable, R extends Serializable> R execute(@Nonnull Class<? extends GridJob<A, R>> jobClass, @Nullable A arg, @Nonnull String deploymentGroup)
+            throws RemoteException {
+        final GridJobFuture<R> future = kernel.execute(jobClass, arg, deploymentGroup);
         try {
             return future.get();
         } catch (InterruptedException e) {
@@ -96,26 +118,6 @@ public final class GridServer extends RemoteBase implements Grid {
             LOG.error(e.getMessage(), e);
             throw new RemoteException(e.getMessage(), e);
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <A extends Serializable, R extends Serializable> R execute(GridJobDesc jobDesc, A arg)
-            throws RemoteException {
-        String jobClassName = jobDesc.getJobClass();
-        List<URL> urls = jobDesc.getClassSearchPaths();
-
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        if(!urls.isEmpty()) {
-            cl = new URLClassLoader(ArrayUtils.toArray(urls, URL[].class), cl);
-        }
-        final Class<? extends GridJob<A, R>> jobClass;
-        try {
-            jobClass = (Class<? extends GridJob<A, R>>) cl.loadClass(jobClassName);
-        } catch (ClassNotFoundException e) {
-            throw new RemoteException("Class not found: " + jobClassName, e);
-        }
-        return execute(jobClass, arg);
     }
 
     @Override

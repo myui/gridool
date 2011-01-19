@@ -33,10 +33,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 
 /**
  * 
@@ -48,9 +48,9 @@ import org.apache.commons.logging.LogFactory;
 public final class GridJobProcessor extends AbstractGridProcessor {
     private static final Log LOG = LogFactory.getLog(GridJobProcessor.class);
 
-    @Nonnull 
+    @Nonnull
     private final GridExecutionMonitor monitor;
-    @Nonnull 
+    @Nonnull
     private final ExecutorService execPool;
 
     public GridJobProcessor(@Nonnull GridExecutionMonitor monitor, @Nonnull GridResourceRegistry resourceRegistry, @Nonnull GridConfiguration config) {
@@ -68,13 +68,14 @@ public final class GridJobProcessor extends AbstractGridProcessor {
         }
     }
 
-    public <A, R> GridJobFuture<R> execute(Class<? extends GridJob<A, R>> jobClass, A arg) {
+    public <A, R> GridJobFuture<R> execute(Class<? extends GridJob<A, R>> jobClass, A arg, @Nullable String deploymentGroup) {
         final GridJob<A, R> job;
         try {
             job = newJobInstance(jobClass);
         } catch (GridException e) {
             return new GridJobFutureAdapter<R>(e);
         }
+        job.setDeploymentGroup(deploymentGroup);
 
         GridJobWorker<A, R> worker = new GridJobWorker<A, R>(job, arg, monitor, resourceRegistry, config);
         final FutureTask<R> future = worker.newTask();

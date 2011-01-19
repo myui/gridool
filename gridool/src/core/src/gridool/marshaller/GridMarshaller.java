@@ -34,18 +34,14 @@ import javax.annotation.Nullable;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public interface GridMarshaller<BASE_TYPE> {
+public interface GridMarshaller {
 
-    <T extends BASE_TYPE> T createObject();
+    <T> byte[] marshall(@Nonnull T obj) throws GridException;
 
-    <T extends BASE_TYPE> byte[] marshall(@Nonnull T obj) throws GridException;
+    <T> void marshall(@Nonnull T obj, @Nonnull OutputStream out) throws GridException;
 
-    <T extends BASE_TYPE> void marshall(@Nonnull T obj, @Nonnull OutputStream out)
-            throws GridException;
+    <T> T unmarshall(@Nonnull byte[] ary) throws GridException;
 
-    <T extends BASE_TYPE> T unmarshall(@Nonnull byte[] ary) throws GridException;
-
-    <T extends BASE_TYPE> T unmarshall(@Nonnull byte[] ary, @Nullable ClassLoader cl)
-            throws GridException;
+    <T> T unmarshall(@Nonnull byte[] ary, @Nullable ClassLoader cl) throws GridException;
 
 }

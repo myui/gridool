@@ -31,9 +31,8 @@ public final class GridMarshallerFactory {
 
     private GridMarshallerFactory() {}
 
-    @SuppressWarnings("unchecked")
-    public static <T> GridMarshaller<T> createMarshaller() {
-        return (GridMarshaller<T>) new JdkMarshaller();
+    public static GridMarshaller createMarshaller() {
+        return new JdkMarshaller();
     }
 
 }

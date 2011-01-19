@@ -39,6 +39,8 @@ import javax.annotation.Nullable;
  */
 public interface GridTask extends GridLocatable, GridAnnotatable {
 
+    String getDeploymentGroup();
+
     // ----------------------
     // task properties
 

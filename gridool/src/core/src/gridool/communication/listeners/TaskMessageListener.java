@@ -20,13 +20,9 @@
  */
 package gridool.communication.listeners;
 
-import javax.annotation.Nonnull;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import gridool.GridException;
 import gridool.GridNode;
+import gridool.GridResourceRegistry;
 import gridool.GridTaskResult;
 import gridool.communication.CommunicationMessageListener;
 import gridool.communication.GridCommunicationMessage;
@@ -34,13 +30,18 @@ import gridool.communication.GridCommunicationService;
 import gridool.communication.GridTopic;
 import gridool.communication.GridCommunicationMessage.GridMessageType;
 import gridool.communication.messages.GridTaskCancelMessage;
-import gridool.communication.messages.GridTaskMessage;
 import gridool.communication.messages.GridTaskRequestMessage;
 import gridool.communication.messages.GridTaskResponseMessage;
 import gridool.communication.payload.GridTaskResultImpl;
+import gridool.marshaller.GridMarshaller;
 import gridool.taskqueue.GridTaskQueueManager;
 import gridool.taskqueue.receiver.ReceiverIncomingTaskQueue;
 import gridool.taskqueue.sender.SenderResponseTaskQueue;
+
+import javax.annotation.Nonnull;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * 
@@ -58,13 +59,16 @@ public final class TaskMessageListener implements CommunicationMessageListener {
     private final SenderResponseTaskQueue senderRespListener;
     @Nonnull
     private final ReceiverIncomingTaskQueue receiverListener;
+    @Nonnull
+    private final GridMarshaller marshaller;
 
-    public TaskMessageListener(@Nonnull GridCommunicationService srv, @Nonnull GridTaskQueueManager taskMgr) {
+    public TaskMessageListener(@Nonnull GridCommunicationService srv, @Nonnull GridTaskQueueManager taskMgr, @Nonnull GridResourceRegistry resourceRegistry) {
         assert (srv != null);
         assert (taskMgr != null);
         this.communicationServ = srv;
         this.senderRespListener = taskMgr.getSenderResponseQueue();
         this.receiverListener = taskMgr.getReceiverIncomingQueue();
+        this.marshaller = resourceRegistry.getMarshaller();
     }
 
     public GridTopic getSubcribingTopic() {
@@ -80,7 +84,7 @@ public final class TaskMessageListener implements CommunicationMessageListener {
                 try {
                     receiverListener.onRequest(reqMsg);
                 } catch (GridException e) {
-                    onFailure(reqMsg, localNode, e);
+                    onRequestFailure(reqMsg, localNode, e);
                 }
                 break;
             case taskCancelRequest:
@@ -98,10 +102,17 @@ public final class TaskMessageListener implements CommunicationMessageListener {
         }
     }
 
-    private void onFailure(GridTaskMessage msg, GridNode localNode, GridException exception) {
+    private void onRequestFailure(GridTaskRequestMessage msg, GridNode localNode, GridException exception) {
         String taskId = msg.getTaskId();
         GridTaskResult result = new GridTaskResultImpl(taskId, localNode, exception);
-        final GridTaskResponseMessage response = new GridTaskResponseMessage(result);
+        final byte[] rawResult;
+        try {
+            rawResult = marshaller.marshall(result);
+        } catch (GridException e) {
+            throw new IllegalStateException("Failed to marshall a GridTaskResult", e);
+        }
+        String deployGroup = msg.getDeploymentGroup();
+        final GridTaskResponseMessage response = new GridTaskResponseMessage(taskId, rawResult, deployGroup);
         final GridNode sender = msg.getSenderNode();
         try {
             communicationServ.sendMessage(sender, response);

@@ -41,7 +41,7 @@ public final class GridTaskQueueManager {
     private final ReceiverIncomingTaskQueue receiverQueue;
 
     public GridTaskQueueManager(@Nonnull GridResourceRegistry resourceRegistry) {
-        this.senderResponseQueue = new SenderResponseTaskQueue();        
+        this.senderResponseQueue = new SenderResponseTaskQueue(resourceRegistry);        
         this.receiverQueue = new ReceiverIncomingTaskQueue(resourceRegistry);
         resourceRegistry.setTaskManager(this);
     }

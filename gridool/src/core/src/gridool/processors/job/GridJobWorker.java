@@ -67,7 +67,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -93,6 +92,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
     private final GridDiscoveryService discoveryService;
     private final SenderResponseTaskQueue taskResponseQueue;
     private final GridAnnotationProcessor annotationProc;
+    private final GridResourceRegistry registry;
     private final GridConfiguration config;
 
     private final ThreadPoolExecutor execPool;
@@ -107,6 +107,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
         this.discoveryService = resourceRegistry.getDiscoveryService();
         this.taskResponseQueue = resourceRegistry.getTaskManager().getSenderResponseQueue();
         this.annotationProc = resourceRegistry.getAnnotationProcessor();
+        this.registry = resourceRegistry;
         this.config = config;
         int poolSize = config.getTaskAssignorPoolSize();
         this.execPool = ExecutorFactory.newFixedThreadPool(poolSize, "GridTaskAssignor");
@@ -135,6 +136,11 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
 
     public R call() throws Exception {
         final long startTime = System.currentTimeMillis();
+
+        String deployGroup = job.getDeploymentGroup();
+        ClassLoader origLdr = Thread.currentThread().getContextClassLoader();
+        ClassLoader newLdr = registry.getDeploymentGroupClassLoader(deployGroup, origLdr);
+        Thread.currentThread().setContextClassLoader(newLdr);
         try {
             monitor.onJobStarted(job);
             return runJob();
@@ -145,6 +151,7 @@ public final class GridJobWorker<A, R> implements CancellableTask<R> {
             LOG.fatal(e.getMessage(), e);
             throw new GridException(e);
         } finally {
+            Thread.currentThread().setContextClassLoader(origLdr);
             if(job.logJobInfo()) {
                 long elapsedTime = System.currentTimeMillis() - startTime;
                 LOG.info(ClassUtils.getSimpleClassName(job) + " [" + job.getJobId()

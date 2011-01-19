@@ -44,7 +44,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -145,6 +144,10 @@ public final class GridTaskWorker implements Runnable {
             }
         }
 
+        String deployGroup = task.getDeploymentGroup();
+        ClassLoader origLdr = Thread.currentThread().getContextClassLoader();
+        ClassLoader newLdr = registry.getDeploymentGroupClassLoader(deployGroup, origLdr);
+        Thread.currentThread().setContextClassLoader(newLdr);
         final Serializable result;
         try {
             monitor.onTaskStarted(task);
@@ -161,6 +164,8 @@ public final class GridTaskWorker implements Runnable {
             respListener.onCaughtException(task, new GridException(ex));
             return;
         } finally {
+            Thread.currentThread().setContextClassLoader(origLdr);
+
             long endTime = System.currentTimeMillis();
             task.setFinishedTime(endTime);
             long execTime = endTime - createTime;

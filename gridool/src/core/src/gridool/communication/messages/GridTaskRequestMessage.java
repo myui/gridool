@@ -27,7 +27,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 import javax.annotation.Nonnull;
-
+import javax.annotation.Nullable;
 
 /**
  * 
@@ -41,34 +41,46 @@ public final class GridTaskRequestMessage extends GridTaskMessage {
 
     @Nonnull
     private/* final */byte[] task;
+    @Nullable
+    private/* final */String deploymentGroup;
 
     public GridTaskRequestMessage() {// for Externalizable
         super();
     }
 
-    public GridTaskRequestMessage(@Nonnull String taskId, @Nonnull byte[] task) {
+    public GridTaskRequestMessage(@Nonnull String taskId, @Nonnull byte[] task, @Nullable String deploymentGroup) {
         super(taskId);
         this.task = task;
+        this.deploymentGroup = deploymentGroup;
     }
 
+    @Override
     public GridMessageType getMessageType() {
         return GridMessageType.taskRequest;
     }
 
+    @Override
     public byte[] getMessage() {
         return task;
+    }
+
+    @Nullable
+    public String getDeploymentGroup() {
+        return deploymentGroup;
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
         this.task = IOUtils.readBytes(in);
+        this.deploymentGroup = IOUtils.readString(in);
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
         IOUtils.writeBytes(task, out);
+        IOUtils.writeString(deploymentGroup, out);
     }
 
 }

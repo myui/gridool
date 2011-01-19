@@ -51,42 +51,62 @@ public abstract class GridJobDelegate<A, R> implements GridJob<A, R> {
         this.job = job;
     }
 
-    public String getJobId() {
-        return job.getJobId();
-    }
-
-    public GridNode getJobNode() {
-        return job.getJobNode();
-    }
-
-    public void setJobNode(GridNode node) {
-        job.setJobNode(node);
-    }
-
+    @Override
     public boolean logJobInfo() {
         return job.logJobInfo();
     }
 
+    @Override
     public boolean handleNodeFailure() {
         return job.handleNodeFailure();
     }
 
+    @Override
     public boolean isAsyncOps() {
         return job.isAsyncOps();
     }
 
+    @Override
     public boolean injectResources() {
         return job.injectResources();
     }
 
+    @Override
+    public String getJobId() {
+        return job.getJobId();
+    }
+
+    @Override
+    public String getDeploymentGroup() {
+        return job.getDeploymentGroup();
+    }
+
+    @Override
+    public void setDeploymentGroup(String deployGroup) {
+        job.setDeploymentGroup(deployGroup);
+    }
+
+    @Override
+    public GridNode getJobNode() {
+        return job.getJobNode();
+    }
+
+    @Override
+    public void setJobNode(GridNode node) {
+        job.setJobNode(node);
+    }
+
+    @Override
     public Map<GridTask, GridNode> map(GridRouter router, A arg) throws GridException {
         return job.map(router, arg);
     }
 
+    @Override
     public R reduce() throws GridException {
         return job.reduce();
     }
 
+    @Override
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         return job.result(result);
     }

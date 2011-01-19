@@ -40,7 +40,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -134,7 +133,7 @@ public final class DBTableAdvPartitioningTask extends
         shuffleExecPool.execute(new Runnable() {
             public void run() {
                 String driverClassName = jobConf.getDriverClassName();
-                String connectUrl = jobConf.getConnectUrl();                
+                String connectUrl = jobConf.getConnectUrl();
                 final String createTableDDL;
                 if(firstShuffleAttempt) {
                     createTableDDL = jobConf.getCreateMapOutputTableDDL();

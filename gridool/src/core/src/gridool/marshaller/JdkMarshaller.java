@@ -27,10 +27,8 @@ import gridool.util.lang.ObjectUtils;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.Serializable;
 
 import org.apache.commons.logging.LogFactory;
-
 
 /**
  * 
@@ -39,17 +37,12 @@ import org.apache.commons.logging.LogFactory;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public final class JdkMarshaller extends MarshallerBase<Serializable> {
+public final class JdkMarshaller extends MarshallerBase {
 
     public JdkMarshaller() {}
 
     @Override
-    public <T extends Serializable> T createObject() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public <T extends Serializable> void marshall(T obj, OutputStream out) throws GridException {
+    public <T> void marshall(T obj, OutputStream out) throws GridException {
         try {
             ObjectUtils.toStream(obj, out);
         } catch (Throwable e) {
@@ -60,7 +53,7 @@ public final class JdkMarshaller extends MarshallerBase<Serializable> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T extends Serializable> T unmarshall(byte[] ary, ClassLoader cl) throws GridException {
+    public <T> T unmarshall(byte[] ary, ClassLoader cl) throws GridException {
         if(cl == null) {
             cl = Thread.currentThread().getContextClassLoader();
         }

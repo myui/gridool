@@ -20,6 +20,8 @@
  */
 package gridool.construct;
 
+import javax.annotation.Nullable;
+
 import gridool.GridException;
 import gridool.GridJob;
 import gridool.GridNode;
@@ -38,20 +40,25 @@ import gridool.util.GridUtils;
 public abstract class GridJobBase<A, R> implements GridJob<A, R> {
     private static final long serialVersionUID = 7625192468381092435L;
     private static final boolean logJobInfo = Boolean.parseBoolean(Settings.get("gridool.job.log_jobinfo"));
-    
+
     private String jobId;
     private GridNode jobNode;
+    @Nullable
+    private String deploymentGroup;
 
     public GridJobBase() {}
 
+    @Override
     public boolean logJobInfo() {
         return logJobInfo;
     }
 
+    @Override
     public boolean handleNodeFailure() {
         return true;
     }
 
+    @Override
     public String getJobId() {
         if(jobId == null) {
             throw new IllegalStateException();
@@ -59,6 +66,17 @@ public abstract class GridJobBase<A, R> implements GridJob<A, R> {
         return jobId;
     }
 
+    @Override
+    public String getDeploymentGroup() {
+        return deploymentGroup;
+    }
+
+    @Override
+    public void setDeploymentGroup(@Nullable String deployGroup) {
+        this.deploymentGroup = deployGroup;
+    }
+
+    @Override
     public GridNode getJobNode() {
         if(jobNode == null) {
             throw new IllegalStateException();
@@ -66,6 +84,7 @@ public abstract class GridJobBase<A, R> implements GridJob<A, R> {
         return jobNode;
     }
 
+    @Override
     public void setJobNode(GridNode node) {
         if(node == null) {
             throw new IllegalArgumentException();
@@ -75,14 +94,17 @@ public abstract class GridJobBase<A, R> implements GridJob<A, R> {
         this.jobId = GridUtils.generateJobId(nodeId, this);
     }
 
+    @Override
     public boolean isAsyncOps() {
         return false;
     }
 
+    @Override
     public boolean injectResources() {
         return false;
     }
 
+    @Override
     public GridTaskResultPolicy result(GridTaskResult result) throws GridException {
         GridException err = result.getException();
         if(err != null) {

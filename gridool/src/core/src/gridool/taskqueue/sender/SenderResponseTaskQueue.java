@@ -20,9 +20,12 @@
  */
 package gridool.taskqueue.sender;
 
+import gridool.GridException;
 import gridool.GridNode;
+import gridool.GridResourceRegistry;
 import gridool.GridTaskResult;
 import gridool.communication.messages.GridTaskResponseMessage;
+import gridool.marshaller.GridMarshaller;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,10 +47,14 @@ import org.apache.commons.logging.LogFactory;
 public final class SenderResponseTaskQueue implements TaskSenderListener {
     private static final Log LOG = LogFactory.getLog(SenderResponseTaskQueue.class);
 
+    private final GridMarshaller marshaller;
     private final ConcurrentMap<String, BlockingQueue<GridTaskResult>> queueMap;
+    private final GridResourceRegistry registry;
 
-    public SenderResponseTaskQueue() {
+    public SenderResponseTaskQueue(@Nonnull GridResourceRegistry resourceRegistry) {
+        this.marshaller = resourceRegistry.getMarshaller();
         this.queueMap = new ConcurrentHashMap<String, BlockingQueue<GridTaskResult>>(16);
+        this.registry = resourceRegistry;
     }
 
     public void addResponseQueue(@Nonnull String jobId, @Nonnull BlockingQueue<GridTaskResult> queue) {
@@ -60,6 +67,22 @@ public final class SenderResponseTaskQueue implements TaskSenderListener {
         return queueMap.get(jobId);
     }
 
+    @Override
+    public void onResponse(@Nonnull String jobId, @Nonnull GridTaskResult result) {
+        final BlockingQueue<GridTaskResult> queue = queueMap.get(jobId);
+        if(queue != null) {
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("Received a GridTaskResponseMessage for a task: " + result.getTaskId()
+                        + " of Job [" + jobId + "] that was executed locally");
+            }
+            queue.add(result);
+        } else {
+            LOG.error("SenderResponseQueue is not found for a task: " + result.getTaskId()
+                    + " of Job [" + jobId + "] that was executed locally");
+        }
+    }
+
+    @Override
     public void onResponse(@Nonnull GridTaskResponseMessage response) {
         final String jobId = response.getJobId();
         final GridNode senderNode = response.getSenderNode();
@@ -70,7 +93,16 @@ public final class SenderResponseTaskQueue implements TaskSenderListener {
                         + " of Job [" + jobId + "] that was executed on "
                         + (senderNode == null ? "localhost" : senderNode));
             }
-            GridTaskResult result = response.getMessage();
+            byte[] resultBytes = response.getMessage();
+            String deployGroup = response.getDeploymentGroup();
+            ClassLoader ldr = registry.getDeploymentGroupClassLoader(deployGroup);
+            final GridTaskResult result;
+            try {
+                result = marshaller.unmarshall(resultBytes, ldr);
+            } catch (GridException e) {
+                throw new IllegalStateException("failed to unmarshall message from node: "
+                        + senderNode, e);
+            }
             queue.add(result);
         } else {
             LOG.error("SenderResponseQueue is not found for a task: " + response.getTaskId()

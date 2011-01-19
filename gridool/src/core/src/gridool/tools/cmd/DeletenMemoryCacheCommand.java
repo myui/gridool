@@ -41,24 +41,23 @@ import java.rmi.RemoteException;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-
 /**
- * remove cache NAME1 NAME2 .. NAMEn
+ * delete cache NAME1 NAME2 .. NAMEn
  * <DIV lang="en"></DIV>
  * <DIV lang="ja"></DIV>
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public final class RemoveInMemoryCacheCommand extends CommandBase {
+public final class DeletenMemoryCacheCommand extends CommandBase {
 
-    public RemoveInMemoryCacheCommand() {}
+    public DeletenMemoryCacheCommand() {}
 
     @Override
     public boolean match(String[] args) {
         if(args.length < 3) {
             return false;
         }
-        if(!"remove".equalsIgnoreCase(args[0])) {
+        if(!"delete".equalsIgnoreCase(args[0])) {
             return false;
         }
         if(!"cache".equalsIgnoreCase(args[1])) {
@@ -138,7 +137,7 @@ public final class RemoveInMemoryCacheCommand extends CommandBase {
 
     @Override
     public String usage() {
-        return constructHelp("remove in-memory cache", "remove cache NAME1 NAME2 .. NAMEn");
+        return constructHelp("delete in-memory cache", "delete cache NAME1 NAME2 .. NAMEn");
     }
 
 }

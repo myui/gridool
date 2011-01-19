@@ -40,7 +40,7 @@ public abstract class DhtGatherReduceTask extends DhtScatterReduceTask {
     public DhtGatherReduceTask(GridJob job, String inputTblName, String destTblName, boolean removeInputDhtOnFinish) {
         super(job, inputTblName, destTblName, removeInputDhtOnFinish);
     }
-    
+
     @Override
     protected final boolean collectOutputKeys() {
         return false;
