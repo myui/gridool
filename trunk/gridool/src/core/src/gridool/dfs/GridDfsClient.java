@@ -25,9 +25,7 @@ import gridool.util.concurrent.ExecutorFactory;
 import gridool.util.io.FastByteArrayOutputStream;
 import gridool.util.primitive.Primitives;
 import gridool.util.xfer.RunnableFileSender;
-import gridool.util.xfer.TransferClientHandler;
 
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -36,7 +34,6 @@ import java.util.concurrent.Future;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
 
 /**
  * 
@@ -61,7 +58,6 @@ public final class GridDfsClient {
     public Future<?> sendfile(@Nonnull final File file, @Nullable final String writeDirPath, @Nonnull final InetAddress dstAddr, final int dstPort, final boolean append, final boolean sync)
             throws IOException {
         RunnableFileSender run = new RunnableFileSender(file, writeDirPath, dstAddr, dstPort, append, sync);
-        //run.setTransferHandler(new HeaderWriter(true));
         return sencExecs.submit(run);
     }
 
@@ -73,24 +69,7 @@ public final class GridDfsClient {
 
     public Future<?> send(@Nonnull final FastByteArrayOutputStream data, @Nonnull final String fileName, @Nullable final String writeDirPath, @Nonnull final InetAddress dstAddr, final int dstPort, final boolean append, final boolean sync) {
         RunnableFileSender run = new RunnableFileSender(data, fileName, writeDirPath, dstAddr, dstPort, append, sync);
-        //run.setTransferHandler(new HeaderWriter(true));
         return sencExecs.submit(run);
-    }
-
-    @Deprecated
-    private static final class HeaderWriter implements TransferClientHandler {
-
-        private final boolean replicate;
-
-        public HeaderWriter(boolean replicate) {
-            this.replicate = replicate;
-        }
-
-        @Override
-        public void writeAdditionalHeader(DataOutputStream out) throws IOException {
-            out.writeBoolean(replicate);
-        }
-
     }
 
 }
