@@ -1,7 +1,0 @@
-select
-    count(*)
-from
-    orders,
-    lineitem
-where
-    o_orderkey = l_orderkey
