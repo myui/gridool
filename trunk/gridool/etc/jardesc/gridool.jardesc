@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<jardesc>
+    <jar path="gridool/target/gridool-1.1.jar"/>
+    <options buildIfNeeded="true" compress="true" descriptionLocation="/gridool-aist/etc/jardesc/gridool.jardesc" exportErrors="false" exportWarnings="true" includeDirectoryEntries="false" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+    <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+    <selectedProjects/>
+    <manifest generateManifest="true" mainClassHandleIdentifier="=gridool-aist/src\/core\/src&lt;gridool{GridMain.java[GridMain" manifestLocation="" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
+        <sealing sealJar="false">
+            <packagesToSeal/>
+            <packagesToUnSeal/>
+        </sealing>
+    </manifest>
+    <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+        <javaElement handleIdentifier="=gridool-aist/src\/db\/src"/>
+        <javaElement handleIdentifier="=gridool-aist/src\/core\/src"/>
+        <javaElement handleIdentifier="=gridool-aist/src\/common\/src"/>
+        <javaElement handleIdentifier="=gridool-aist/src\/core\/conf"/>
+    </selectedElements>
+</jardesc>
