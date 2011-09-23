@@ -41,9 +41,9 @@ public final class CollectionUtils {
 
     public static <T> Collection<T> eliminateDuplication(List<T> list, boolean equalsByIdentity) {
         if(list.size() < 12) {
-            return _eliminateDuplicationForSmall(list, equalsByIdentity);
+            return eliminateDuplicationForSmall(list, equalsByIdentity);
         } else {
-            return _eliminateDuplication(list, equalsByIdentity);
+            return eliminateDuplicationForLarge(list, equalsByIdentity);
         }
     }
 
@@ -55,7 +55,7 @@ public final class CollectionUtils {
         return set;
     }
 
-    private static <T> List<T> _eliminateDuplicationForSmall(final List<T> list, final boolean equalsByIdentity) {
+    private static <T> List<T> eliminateDuplicationForSmall(final List<T> list, final boolean equalsByIdentity) {
         final int size = list.size();
         final List<T> newList;
         if(equalsByIdentity) {
@@ -74,7 +74,7 @@ public final class CollectionUtils {
         return newList;
     }
 
-    private static <T> Set<T> _eliminateDuplication(final List<T> list, final boolean equalsByIdentity) {
+    private static <T> Set<T> eliminateDuplicationForLarge(final List<T> list, final boolean equalsByIdentity) {
         final int size = Math.max(list.size() / 10, 32);
         final Set<T> newSet = equalsByIdentity ? new IdentityHashSet<T>(size)
                 : new HashSet<T>(size);

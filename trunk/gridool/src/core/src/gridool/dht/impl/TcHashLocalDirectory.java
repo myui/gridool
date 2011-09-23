@@ -60,9 +60,9 @@ public final class TcHashLocalDirectory extends AbstractLocalDirectory {
     private static final long RECORD_MMAP_SIZE;
     private static final boolean USE_DEFLATE;
     static {
-        NUM_HASH_BUCKETS = Primitives.parseLong(Settings.get("gridool.directory.ld.tokyocabinet.hashbuckets"), 2000000L);
-        RECORD_MMAP_SIZE = Primitives.parseLong(Settings.get("gridool.directory.ld.tokyocabinet.xms"), -1L);
-        USE_DEFLATE = Boolean.parseBoolean(Settings.get("gridool.directory.ld.tokyocabinet.enable_deflate"));
+        NUM_HASH_BUCKETS = Primitives.parseLong(Settings.get("gridool.dht.ld.tokyocabinet.hashbuckets"), 2000000L);
+        RECORD_MMAP_SIZE = Primitives.parseLong(Settings.get("gridool.dht.ld.tokyocabinet.xms"), -1L);
+        USE_DEFLATE = Boolean.parseBoolean(Settings.get("gridool.dht.ld.tokyocabinet.enable_deflate"));
     }
 
     private final ConcurrentMap<String, HDB> map;

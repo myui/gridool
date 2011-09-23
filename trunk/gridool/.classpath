@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src/core/conf"/>
+	<classpathentry kind="src" path="src/memcached/src"/>
 	<classpathentry kind="src" path="src/db/test"/>
 	<classpathentry kind="src" path="src/contrib/monetdb/test"/>
 	<classpathentry kind="src" path="src/contrib/monetdb/src"/>
@@ -24,5 +25,6 @@
 	<classpathentry kind="lib" path="lib/optional/tokyocabinet-1.22.jar"/>
 	<classpathentry kind="lib" path="lib/optional/jdbc/monetdb-1.15-jdbc.jar"/>
 	<classpathentry kind="lib" path="lib/jgroups-2.6.15.GA.jar"/>
+	<classpathentry kind="lib" path="lib/optional/memcached/netty-3.2.4.Final.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>

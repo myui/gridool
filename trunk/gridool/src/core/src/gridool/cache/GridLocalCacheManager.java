@@ -33,11 +33,11 @@ import java.util.Map;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public final class GridCacheManager {
+public final class GridLocalCacheManager {
 
     private final Map<String, ObservableLRUMap<?, ?>> caches;
 
-    public GridCacheManager() {
+    public GridLocalCacheManager() {
         this.caches = new HashMap<String, ObservableLRUMap<?, ?>>(128);
     }
 

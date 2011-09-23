@@ -42,7 +42,7 @@ import javax.annotation.Nullable;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public final class GridDfsClient {
+public final class GridXferClient {
 
     public static final int SENDER_CONCURRENCY;
     static {
@@ -51,7 +51,7 @@ public final class GridDfsClient {
 
     private final ExecutorService sencExecs;
 
-    public GridDfsClient() {
+    public GridXferClient() {
         this.sencExecs = ExecutorFactory.newFixedThreadPool(SENDER_CONCURRENCY, "FileSender", true);
     }
 

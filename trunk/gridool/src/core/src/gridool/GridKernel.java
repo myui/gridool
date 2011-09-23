@@ -24,7 +24,7 @@ import gridool.communication.CommunicationServiceProvider;
 import gridool.communication.GridCommunicationManager;
 import gridool.communication.GridCommunicationService;
 import gridool.db.GridDatabaseService;
-import gridool.dfs.GridDfsService;
+import gridool.dfs.GridXferService;
 import gridool.dht.DirectoryService;
 import gridool.discovery.DiscoveryServiceProvider;
 import gridool.discovery.GridDiscoveryService;
@@ -102,7 +102,7 @@ public final class GridKernel {
 
         GridTaskProcessorService taskProcServ = GridProcessorProvider.createTaskProcessorService(communicationMgr, monitor, resourceRegistry, config);
         DirectoryService dirServ = new DirectoryService(config, resourceRegistry);
-        GridDfsService dfsServ = new GridDfsService(config, resourceRegistry);
+        GridXferService dfsServ = new GridXferService(config, resourceRegistry);
         GridDeadlockDetectionService deadlockServ = new GridDeadlockDetectionService();
 
         registerServices(metricsServ, discoveryServ, communicationServ, taskProcServ, dirServ, dfsServ, deadlockServ);

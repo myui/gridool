@@ -29,7 +29,7 @@ import gridool.db.partitioning.phihash.DBPartitioningJobConf;
 import gridool.db.partitioning.phihash.NodeWithPartitionNo;
 import gridool.db.partitioning.phihash.monetdb.MonetDBCsvLoadOperation;
 import gridool.db.partitioning.phihash.monetdb.MonetDBInvokeCsvLoadJob;
-import gridool.dfs.GridDfsClient;
+import gridool.dfs.GridXferClient;
 import gridool.util.GridUtils;
 import gridool.util.collections.LRUMap;
 import gridool.util.io.FastByteArrayOutputStream;
@@ -426,7 +426,7 @@ public final class GridDbUtils {
                 + jobConf.getStringQuote() + '\'';
     }
 
-    public static void sendfile(final ExecutorService sencExecs, final GridDfsClient dfsClient, final String fileName, final FastByteArrayOutputStream data, final GridNode dstNode, final int dstPort) {
+    public static void sendfile(final ExecutorService sencExecs, final GridXferClient dfsClient, final String fileName, final FastByteArrayOutputStream data, final GridNode dstNode, final int dstPort) {
         InetAddress dstAddr = dstNode.getPhysicalAdress();
         Runnable run = new RunnableFileSender(data, fileName, null, dstAddr, dstPort, true, true);
         sencExecs.submit(run);

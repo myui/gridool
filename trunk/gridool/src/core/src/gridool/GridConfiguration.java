@@ -24,7 +24,7 @@ import gridool.communication.payload.GridNodeInfo;
 import gridool.communication.transport.CommunicationServiceBase;
 import gridool.communication.transport.GridTransportClient;
 import gridool.communication.transport.tcp.GridMasterSlaveWorkerServer;
-import gridool.dfs.GridDfsService;
+import gridool.dfs.GridXferService;
 import gridool.dht.ILocalDirectory.DirectoryIndexType;
 import gridool.loadblancing.GridLoadProbe;
 import gridool.loadblancing.GridLoadProbeFactory;
@@ -101,14 +101,14 @@ public final class GridConfiguration implements GridConfigurationMBean {
         this.transportServerPort = Primitives.parseInt(Settings.get("gridool.transport.port"), CommunicationServiceBase.DEFAULT_PORT);
         this.transportChannelSweepInterval = Primitives.parseInt(Settings.get("gridool.transport.channel.sweep_interval"), GridTransportClient.DEFAULT_SWEEP_INTERVAL);
         this.transportChannelTTL = Primitives.parseInt(Settings.get("gridool.transport.channel.ttl"), GridTransportClient.DEFAULT_TTL);
-        this.fileReceiverPort = Primitives.parseInt(Settings.get("gridool.dfs.file_receiver.port"), GridDfsService.DEFAULT_RECV_PORT);
+        this.fileReceiverPort = Primitives.parseInt(Settings.get("gridool.dfs.file_receiver.port"), GridXferService.DEFAULT_RECV_PORT);
         this.socketReceiveBufferSize = Primitives.parseInt(Settings.get("gridool.transport.channel.rcvbufsz"), GridTransportClient.DEFAULT_RCVBUFSZ);
         this.selectorReadThreadsCount = Primitives.parseInt(Settings.get("gridool.transport.readThreads"), 6);
         this.readThreadsGrowThreshold = Primitives.parseInt(Settings.get("gridool.transport.readThreads.growThreshold"), GridMasterSlaveWorkerServer.READER_POOL_GROW_THRESHOLD);
         this.messageProcessorPoolSize = Primitives.parseInt(Settings.get("gridool.transport.msgproc.poolsize"), 6);
         this.joinToMembership = System.getProperty("gridool.kernel.nojoin") == null;
         this.superNode = Boolean.parseBoolean(Settings.getThroughSystemProperty("gridool.superNode"));
-        this.ldIdxType = DirectoryIndexType.resolve(Settings.get("gridool.directory.ld.idxtype"));
+        this.ldIdxType = DirectoryIndexType.resolve(Settings.get("gridool.dht.ld.idxtype"));
         this.localNode = new GridNodeInfo(transportServerPort, superNode);
     }
 

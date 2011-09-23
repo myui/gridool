@@ -18,7 +18,7 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.directory;
+package gridool.dht;
 
 import java.io.File;
 import java.util.ArrayList;

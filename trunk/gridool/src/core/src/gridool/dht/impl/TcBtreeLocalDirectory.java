@@ -60,8 +60,8 @@ public final class TcBtreeLocalDirectory extends AbstractLocalDirectory {
     private static final long RECORD_MMAP_SIZE;
     private static final boolean USE_DEFLATE;
     static {
-        RECORD_MMAP_SIZE = Primitives.parseLong(Settings.get("gridool.directory.ld.tokyocabinet.xms"), -1L);
-        USE_DEFLATE = Boolean.parseBoolean(Settings.get("gridool.directory.ld.tokyocabinet.enable_deflate"));
+        RECORD_MMAP_SIZE = Primitives.parseLong(Settings.get("gridool.dht.ld.tokyocabinet.xms"), -1L);
+        USE_DEFLATE = Boolean.parseBoolean(Settings.get("gridool.dht.ld.tokyocabinet.enable_deflate"));
     }
 
     private final Map<String, BDB> map;

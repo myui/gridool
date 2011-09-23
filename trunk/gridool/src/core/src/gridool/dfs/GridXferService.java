@@ -46,30 +46,30 @@ import javax.annotation.Nonnull;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public final class GridDfsService implements GridService {
+public final class GridXferService implements GridService {
     public static final int DEFAULT_RECV_PORT = 47110;
 
     private final GridConfiguration config;
 
-    private final GridDfsClient client;
+    private final GridXferClient client;
     private final ExecutorService recvExecs;
 
-    public GridDfsService(@Nonnull final GridConfiguration config, @Nonnull GridResourceRegistry resourceRegistry) {
+    public GridXferService(@Nonnull final GridConfiguration config, @Nonnull GridResourceRegistry resourceRegistry) {
         this.config = config;
-        this.client = new GridDfsClient();
+        this.client = new GridXferClient();
         this.recvExecs = ExecutorFactory.newSingleThreadExecutor("FileReceiver", true);
         resourceRegistry.setDfsService(this);
     }
 
     public String getServiceName() {
-        return GridDfsService.class.getName();
+        return GridXferService.class.getName();
     }
 
     public boolean isDaemon() {
         return true;
     }
 
-    public GridDfsClient getDFSClient() {
+    public GridXferClient getDFSClient() {
         return client;
     }
 
@@ -92,7 +92,7 @@ public final class GridDfsService implements GridService {
         recvExecs.shutdownNow();
     }
 
-    private static TransferServer createTransferServer(GridDfsClient client, @Nonnegative int concurrency, int fileRecvPort) {
+    private static TransferServer createTransferServer(GridXferClient client, @Nonnegative int concurrency, int fileRecvPort) {
         File colDir = GridUtils.getWorkDir(true);
         TransferRequestListener listener = new RecievedFileWriter(colDir);
         int priority = Primitives.parseInt(Settings.get("gridool.dfs.file_receiver.thread_priority"), Thread.NORM_PRIORITY);

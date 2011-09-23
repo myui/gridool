@@ -18,11 +18,11 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.directory.mapred;
+package gridool.dht.mapred;
 
 import gridool.GridJob;
-import gridool.directory.mapred.task.DhtMapShuffleTask;
-import gridool.directory.mapred.task.DhtReduceTask;
+import gridool.dht.mapred.task.DhtMapShuffleTask;
+import gridool.dht.mapred.task.DhtReduceTask;
 
 import java.io.Externalizable;
 import java.io.IOException;

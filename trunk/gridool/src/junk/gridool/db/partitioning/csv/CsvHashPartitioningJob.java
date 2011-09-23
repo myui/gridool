@@ -32,7 +32,7 @@ import gridool.db.helpers.ForeignKey;
 import gridool.db.helpers.PrimaryKey;
 import gridool.db.partitioning.DBPartitioningJobConf;
 import gridool.db.partitioning.FileAppendTask;
-import gridool.directory.ILocalDirectory;
+import gridool.dht.ILocalDirectory;
 import gridool.routing.GridTaskRouter;
 
 import java.nio.charset.Charset;
