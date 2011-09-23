@@ -62,9 +62,9 @@ public final class DefaultLocalDirectory extends AbstractLocalDirectory {
     private static final float dataCacheRatio;
     private static final float nodeCachePurgePerc, datacachePurgePerc;
     static {
-        dataCacheRatio = Primitives.parseFloat(Settings.get("gridool.directory.ld.bfile.bulkload.datacache_ratio"), 0.4f);
-        nodeCachePurgePerc = Primitives.parseFloat(Settings.get("gridool.directory.ld.bfile.bulkload.nodecache_purgeperc"), 0.1f);
-        datacachePurgePerc = Primitives.parseFloat(Settings.get("gridool.directory.ld.bfile.bulkload.datacache_purgeperc"), 0.2f);
+        dataCacheRatio = Primitives.parseFloat(Settings.get("gridool.dht.ld.bfile.bulkload.datacache_ratio"), 0.4f);
+        nodeCachePurgePerc = Primitives.parseFloat(Settings.get("gridool.dht.ld.bfile.bulkload.nodecache_purgeperc"), 0.1f);
+        datacachePurgePerc = Primitives.parseFloat(Settings.get("gridool.dht.ld.bfile.bulkload.datacache_purgeperc"), 0.2f);
     }
 
     @Nonnull

@@ -23,7 +23,7 @@ package gridool.db.partitioning.phihash.csv.distmm;
 import gridool.GridException;
 import gridool.GridResourceRegistry;
 import gridool.Settings;
-import gridool.cache.GridCacheManager;
+import gridool.cache.GridLocalCacheManager;
 import gridool.db.partitioning.phihash.NodeWithPartitionNo;
 import gridool.util.GridUtils;
 import gridool.util.codec.VariableByteCodec;
@@ -219,7 +219,7 @@ public final class InMemoryIndexHelper {
      */
     public static InMemoryMappingIndex loadIndex(final int bucket, final String[] parentTableFkIndexNames, final GridResourceRegistry registry)
             throws GridException {
-        GridCacheManager localCache = registry.getLocalCache();
+        GridLocalCacheManager localCache = registry.getLocalCache();
         LRUMap<String, InMemoryMappingIndex> idxCache = localCache.buildCache(InMemoryMappingIndex.class.getSimpleName(), CACHED_BUCKETS);
 
         String idxName = "InMemoryMappingIndex#" + bucket;

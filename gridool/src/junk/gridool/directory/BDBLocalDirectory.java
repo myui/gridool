@@ -18,7 +18,7 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.directory;
+package gridool.dht;
 
 import gridool.locking.LockManager;
 import gridool.util.GridUtils;
@@ -58,7 +58,7 @@ import com.sleepycat.db.OperationStatus;
  */
 public final class BDBLocalDirectory extends AbstractLocalDirectory {
     private static final String IDX_SUFFIX_NAME = ".bdb";
-    private static final long cacheSize = Primitives.parseLong(Settings.get("gridool.directory.ld.bdb.cachesize"), 268435456);
+    private static final long cacheSize = Primitives.parseLong(Settings.get("gridool.dht.ld.bdb.cachesize"), 268435456);
 
     private final Map<String, Database> map;
 

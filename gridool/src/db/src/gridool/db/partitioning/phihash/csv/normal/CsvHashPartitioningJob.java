@@ -36,7 +36,7 @@ import gridool.db.helpers.PrimaryKey;
 import gridool.db.partitioning.phihash.DBPartitioningJobConf;
 import gridool.db.partitioning.phihash.NodeWithPartitionNo;
 import gridool.db.partitioning.phihash.csv.PartitioningJobConf;
-import gridool.dfs.GridDfsClient;
+import gridool.dfs.GridXferClient;
 import gridool.dht.ILocalDirectory;
 import gridool.dht.btree.CallbackHandler;
 import gridool.dht.btree.IndexException;
@@ -226,8 +226,8 @@ public final class CsvHashPartitioningJob extends
             mappedNodes.clear();
         }
 
-        final ExecutorService sendExecs = ExecutorFactory.newFixedThreadPool(GridDfsClient.SENDER_CONCURRENCY, "FileSender", true);
-        final GridDfsClient dfsClient = registry.getDfsService().getDFSClient();
+        final ExecutorService sendExecs = ExecutorFactory.newFixedThreadPool(GridXferClient.SENDER_CONCURRENCY, "FileSender", true);
+        final GridXferClient dfsClient = registry.getDfsService().getDFSClient();
         final int recvPort = config.getFileReceiverPort();
         final Map<GridTask, GridNode> taskmap = new IdentityHashMap<GridTask, GridNode>(numNodes);
         final Map<GridNode, MutableInt> assignedRecMap = new HashMap<GridNode, MutableInt>(numNodes);

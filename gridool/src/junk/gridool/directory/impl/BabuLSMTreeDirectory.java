@@ -18,9 +18,9 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.directory.impl;
+package gridool.dht.impl;
 
-import gridool.directory.AbstractLocalDirectory;
+import gridool.dht.AbstractLocalDirectory;
 import gridool.locking.LockManager;
 import gridool.util.GridUtils;
 

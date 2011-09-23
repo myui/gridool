@@ -42,7 +42,7 @@ import javax.annotation.Nullable;
  */
 public abstract class AbstractLocalDirectory implements ILocalDirectory {
 
-    protected static final boolean DELETE_IDX_ON_EXIT = Boolean.parseBoolean(Settings.get("gridool.directory.btree.delete_on_exit"));
+    protected static final boolean DELETE_IDX_ON_EXIT = Boolean.parseBoolean(Settings.get("gridool.dht.btree.delete_on_exit"));
 
     @Nonnull
     protected final LockManager lockManager;

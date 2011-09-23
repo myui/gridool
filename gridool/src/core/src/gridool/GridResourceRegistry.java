@@ -21,13 +21,13 @@
 package gridool;
 
 import gridool.annotation.GridAnnotationProcessor;
-import gridool.cache.GridCacheManager;
+import gridool.cache.GridLocalCacheManager;
 import gridool.communication.GridCommunicationManager;
 import gridool.db.catalog.DistributionCatalog;
 import gridool.db.helpers.DBAccessor;
 import gridool.db.helpers.DBAccessorFactory;
 import gridool.db.partitioning.phihash.csv.distmm.InMemoryMappingIndex;
-import gridool.dfs.GridDfsService;
+import gridool.dfs.GridXferService;
 import gridool.dht.ILocalDirectory;
 import gridool.discovery.GridDiscoveryService;
 import gridool.locking.LockManager;
@@ -89,10 +89,10 @@ public final class GridResourceRegistry {
     private final ReplicationManager replicationManager;
     private final DistributionCatalog distributionCatalog;
 
-    private final GridCacheManager localCache;
+    private final GridLocalCacheManager localCache;
     private final InMemoryMappingIndex mappingIndex;
 
-    private GridDfsService dfsService;
+    private GridXferService dfsService;
 
     public GridResourceRegistry(@Nonnull GridKernel kernel, @Nonnull GridConfiguration config) {
         this.kernel = kernel;
@@ -106,7 +106,7 @@ public final class GridResourceRegistry {
         this.router = GridRouterFactory.createRouter(config);
         this.replicationManager = new ReplicationManager(kernel, dbAccessor, router, config);
         this.distributionCatalog = new DistributionCatalog(dbAccessor);
-        this.localCache = new GridCacheManager();
+        this.localCache = new GridLocalCacheManager();
         int expectedEntries = Primitives.parseInt(Settings.get("grid.ld.mapping_index.expected_entries"), 10000);
         this.mappingIndex = new InMemoryMappingIndex(expectedEntries);
     }
@@ -290,7 +290,7 @@ public final class GridResourceRegistry {
     }
 
     @Nonnull
-    public GridCacheManager getLocalCache() {
+    public GridLocalCacheManager getLocalCache() {
         return localCache;
     }
 
@@ -299,11 +299,11 @@ public final class GridResourceRegistry {
         return mappingIndex;
     }
 
-    public GridDfsService getDfsService() {
+    public GridXferService getDfsService() {
         return dfsService;
     }
 
-    public void setDfsService(GridDfsService dfsService) {
+    public void setDfsService(GridXferService dfsService) {
         this.dfsService = dfsService;
     }
 

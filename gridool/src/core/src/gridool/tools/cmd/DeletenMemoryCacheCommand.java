@@ -30,7 +30,7 @@ import gridool.GridTask;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridJobBase;
 import gridool.construct.GridTaskAdapter;
-import gridool.db.partitioning.csv.distmm.InMemoryMappingIndex;
+import gridool.db.partitioning.phihash.csv.distmm.InMemoryMappingIndex;
 import gridool.routing.GridRouter;
 import gridool.util.cmdline.CommandBase;
 import gridool.util.cmdline.CommandException;

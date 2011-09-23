@@ -78,7 +78,7 @@ public final class GridUtils {
     @Nullable
     private static final String idxDir;
     static {
-        idxDir = Settings.get("gridool.directory.ld.dir");
+        idxDir = Settings.get("gridool.dht.ld.dir");
     }
 
     private GridUtils() {}

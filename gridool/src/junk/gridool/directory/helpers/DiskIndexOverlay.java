@@ -18,7 +18,7 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.directory.helpers;
+package gridool.dht.helpers;
 
 import java.io.IOException;
 import java.util.ArrayList;

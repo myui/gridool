@@ -25,8 +25,8 @@ import gridool.GridClient;
 import gridool.GridException;
 import gridool.communication.payload.GridNodeInfo;
 import gridool.communication.transport.CommunicationServiceBase;
-import gridool.directory.job.DirectoryAddGridNodeJob;
-import gridool.directory.ops.AddGridNodeOperation;
+import gridool.dht.job.DirectoryAddGridNodeJob;
+import gridool.dht.ops.AddGridNodeOperation;
 
 import java.io.File;
 import java.rmi.RemoteException;
