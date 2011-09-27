@@ -32,7 +32,6 @@ import gridool.util.csv.CsvUtils;
 import gridool.util.csv.SimpleCsvReader;
 import gridool.util.io.FastBufferedInputStream;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -65,19 +64,19 @@ public final class CsvHashPartitioning extends
         if(partitions.isEmpty()) {
             throw new GridException("No partition is defined");
         }
-        
+
         final char filedSeparator = conf.filedSeparator;
         final char quoteChar = conf.quoteChar;
         final int[] partitioningColumns = conf.partitioningColumns;
         final FixedArrayList<String> fieldList = new FixedArrayList<String>(partitioningColumns.length);
-        
-        CsvReader reader = getCsvReader(conf.csvFile, filedSeparator, quoteChar);
+
+        final CsvReader reader = getCsvReader(conf.csvFile, filedSeparator, quoteChar);
         try {
             String line;
             while((line = reader.getNextLine()) != null) {
                 CsvUtils.retrieveFields(line, partitioningColumns, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
-                
+
             }
         } catch (IOException e) {
         }
