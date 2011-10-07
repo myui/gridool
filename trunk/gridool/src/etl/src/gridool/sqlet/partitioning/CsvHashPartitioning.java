@@ -76,7 +76,7 @@ public final class CsvHashPartitioning extends
             while((line = reader.getNextLine()) != null) {
                 CsvUtils.retrieveFields(line, partitioningColumns, fieldList, filedSeparator, quoteChar);
                 fieldList.trimToZero();
-
+                
             }
         } catch (IOException e) {
         }
