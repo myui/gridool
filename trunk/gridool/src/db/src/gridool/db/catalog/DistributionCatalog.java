@@ -50,7 +50,6 @@ import javax.annotation.concurrent.GuardedBy;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
 /**
  * Class to manage how tables are distributed among nodes as primary/replica.
  * <DIV lang="en"></DIV>
