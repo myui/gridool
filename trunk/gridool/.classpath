@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src/core/conf"/>
+	<classpathentry kind="src" path="src/etl/test"/>
 	<classpathentry kind="src" path="src/etl/src"/>
 	<classpathentry kind="src" path="src/memcached/src"/>
 	<classpathentry kind="src" path="src/db/test"/>
@@ -15,7 +16,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/jsr305.jar"/>
 	<classpathentry kind="lib" path="lib/optional/junit-4.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="lib/optional/log4j-1.2.13.jar"/>
 	<classpathentry kind="lib" path="lib/optional/sigar-1.6.3.jar">
 		<attributes>
@@ -27,5 +27,7 @@
 	<classpathentry kind="lib" path="lib/optional/jdbc/monetdb-1.15-jdbc.jar"/>
 	<classpathentry kind="lib" path="lib/jgroups-2.6.15.GA.jar"/>
 	<classpathentry kind="lib" path="lib/optional/memcached/netty-3.2.4.Final.jar"/>
+	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/optional/commons-vfs2-2.0.jar" sourcepath="lib/src/commons-vfs2-2.0-sources.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>

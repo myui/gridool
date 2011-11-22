@@ -22,6 +22,7 @@ package gridool.util.csv;
 
 import java.io.IOException;
 import java.io.PushbackReader;
+import java.io.Reader;
 
 import javax.annotation.Nonnull;
 
@@ -38,6 +39,13 @@ public class SimpleCsvReader implements CsvReader {
     protected final char fieldSeparator;
     protected final char quoteChar;
     private final StringBuilder lineBuf;
+
+    public SimpleCsvReader(@Nonnull Reader reader, char fieldSeparator, char quoteChar) {
+        this.reader = new PushbackReader(reader);
+        this.fieldSeparator = fieldSeparator;
+        this.quoteChar = quoteChar;
+        this.lineBuf = new StringBuilder(128);
+    }
 
     public SimpleCsvReader(@Nonnull PushbackReader reader, char fieldSeparator, char quoteChar) {
         this.reader = reader;
