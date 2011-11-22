@@ -22,27 +22,77 @@
 
 public class SqletParser {
 
-	public SqletExpression parse() {		
+    /** parse state variables */
+    private Token currentToken = null;
+
+	public CompilationUnit parse() {		
+	}
+
+	private static String unquote(String s) {
+        return s.substring(1, s.length() - 1);
+    }
+}PARSER_END(SqletParser)
+TOKEN_MGR_DECLS :
+{
+	final IntStack stateStack = new IntStack();
+
+	public void pushState(int state) {
+		stateStack.push(state);
+	}
+
+	private void pushState() {
+		pushState(curLexState);
 	}
 	
-}PARSER_END(SqletParser)
+	public void popState() {
+		if(stateStack.isEmpty()) {
+			System.err.println("Line: " + input_stream.getEndLine());
+		} else {
+			final int state = stateStack.pop();
+			SwitchTo(state);
+		}
+	}
+}
+
 TOKEN :
 {
-  < LoadPartitionFromFile : < LoadPartitionFrom > ( "FILE" | "file" ) >
-  < LoadPartitionFromTable : < LoadPartitionFrom > ( "TABLE" | "table" ) >  < #LoadPartitionFrom : ( "load" <Skip_> "partition" <Skip_> "from" ) | ( "LOAD" <Skip_> "PARTITION" <Skip_> "FROM" ) >
+  < LoadPartitionFromFile : < LoadPartitionFrom > ( "FILE" | "file" ) > { pushState(KEYWORD); }
+| < LoadPartitionFromTable : < LoadPartitionFrom > ( "TABLE" | "table" ) > { pushState(KEYWORD); }| < #LoadPartitionFrom : ( "load" <Skip_> "partition" <Skip_> "from" ) | ( "LOAD" <Skip_> "PARTITION" <Skip_> "FROM" ) >
+| < LoadReducersFromFile : < LoadReducersFrom >  ( "FILE" | "file" ) > { pushState(KEYWORD); }| < LoadReducersFromTable : < LoadReducersFrom > ( "TABLE" | "table" ) > { pushState(KEYWORD); }
+| < #LoadReducersFrom : ( "load" <Skip_> "reducers" <Skip_> "from" ) | ( "LOAD" <Skip_> "REDUCERS" <Skip_> "FROM" ) >
+}
+
+TOKEN:
+{  < BEGIN_MAP : "map" "{" > { pushState(MAP_DIRECTIVE); }
+| < BEGIN_MAP_RAW : "map#raw" "{" > { pushState(MAP_DIRECTIVE); }
+}
+
+< MAP_DIRECTIVE >
+TOKEN :
+{
+  < EndMapRbrace : "}" > { popState(); }| < OtherThanRbrace : ( ~["}"] | "\\}" )+ > { popState(); }
+}
+
+< KEYWORD >
+TOKEN :
+{
+  < QuotedIdentifier : "\"" < Identifier > "\"" >
+| < Identifier : ( < Letter > | "_") ( < Letter > | < Digit > | ["-","."] )* >
+| < URI : ("\"" < URILiteral > "\"") | ("'" < URILiteral > "'") >| < #URILiteral : ([ "0"-"9","a"-"z","A"-"Z","-", "_", ".", "#", ":", "/", "(", ")" ])+ >
 }
 
 TOKEN :
 {
   < #Skip_ : (<WhitespaceChar>)+ >
 | < #WhitespaceChar : ["\t", "\r", "\n", " "] >
-| < #Digit : [ "0"-"9" ] >
+| < #Letter: ["A"-"Z","a"-"z"]>
+| < #Digit : ["0"-"9"] >
 }
 
-SPECIAL_TOKEN:
+SPECIAL_TOKEN :
 {
-   <LINE_COMMENT: "--"(~["\r","\n"])*>
-|  <MULTI_LINE_COMMENT: "/*" (~["*"])* "*" ("*" | (~["*","/"] (~["*"])* "*"))* "/">
+  < LINE_COMMENT: "--"(~["\r","\n"])* >
+| < MULTI_LINE_COMMENT: "/*" (~["*"])* "*" ("*" | (~["*","/"] (~["*"])* "*"))* "/" >
 }
 
 < DEFAULT >
@@ -51,3 +101,105 @@ SKIP :
   < (<WhitespaceChar>)+ >
 }
 
+SqletModule parseCompilationUnit() throws SqletExpression:
+{
+  	SqletModule m = new SqletModule();}
+{
+ 	(		  parseLoadPartitions(m)
+		| parseLoadReducers(m)
+ 	)+	<EOF>
+	{
+		return m;
+	}
+}
+
+void parseLoadPartitions(SqletModule m) throws SqletException :
+{}
+{
+	parseLoadPartitionsFromFile(m) | paserLoadPartitionsFromTable(m)}
+
+void parseLoadPartitionsFromFile(SqletModule m) throws SqletException :
+{}
+{	currentToken = < LoadPartitionFromFile >
+	currentToken = < URI >
+	{		String filepath = unquote(currentToken.image);
+		m.getPartitioningConf().loadSettings(filepath);
+	}	
+}
+
+void paserLoadPartitionsFromTable(SqletModule m) throws SqletException :
+{
+	String tblName = null;
+}
+{
+  	currentToken = < LoadPartitionFromTable >
+	tblname = ObjectName()
+	{
+	  	assert (tblname != null);
+		m.getPartitioningConf().loadSettings(tblname);
+	}
+}
+
+void parseLoadReducers(SqletModule m) throws SqletException :
+{}
+{
+	parseLoadReducersFromFile(m) | parseLoadReducersFromTable(m)
+}
+
+void parseLoadReducersFromFile(SqletModule m) throws SqletException :
+{}
+{
+	currentToken = < LoadReducersFromFile >
+	currentToken = < URI >
+	{
+		String filepath = unquote(currentToken.image);
+		m.getMapReduceConf().loadReducers(filepath);
+	}	
+}
+
+void paserLoadReducersFromTable(SqletModule m) throws SqletException :
+{
+	String tblName = null;
+}
+{
+  	currentToken = < LoadPartitionFromTable >
+	tblname = ObjectName()
+	{
+	  	assert (tblname != null);
+		m.getMapReduceConf().loadReducers(tblname);
+	}
+}
+
+MapModule parseMapDirective() throws SqletException :
+{
+	MapModule m = new MapModule();
+}
+{
+	parseMapCompile(m) | parseMapNoCompiple(m)	
+  	< EndMapRbrace >
+  	{
+  	  	return m;  	}}
+
+void parseMapCompile(MapModule m) throws SqletException :
+{}
+{
+  	currentToken = < BEGIN_MAP >
+ 	 	
+}
+
+void parseMapNoCompiple(MapModule m) throws SqletException :
+{}
+{
+  	currentToken = < BEGIN_MAP_RAW >
+  	currentToken = < OtherThanRbrace >
+  	{
+  	  	String rawQuery = currentToken.image;
+  	  	m.addQuery(rawQuery);  	}
+}
+
+String ObjectName():
+{}
+{
+    <Identifier>       { return token.image; }
+  | <QuotedIdentifier> { String s = token.image; return s.substring(1, s.length() - 1); }
+}

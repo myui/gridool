@@ -21,11 +21,18 @@
 package gridool.sqlet.partitioning;
 
 import gridool.GridNode;
+import gridool.sqlet.SqletException;
+import gridool.sqlet.SqletException.ErrorType;
 import gridool.util.GridUtils;
+import gridool.util.csv.HeaderAwareCsvReader;
+import gridool.util.io.FastBufferedInputStream;
 import gridool.util.jdbc.JDBCUtils;
 import gridool.util.jdbc.ResultSetHandler;
+import gridool.util.lang.Preconditions;
 
-import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -41,6 +48,11 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.commons.vfs2.FileContent;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemManager;
+import org.apache.commons.vfs2.VFS;
 
 /**
  * 
@@ -58,14 +70,91 @@ public class PartitioningConf implements Serializable {
     public PartitioningConf() {
         this.list = new ArrayList<Partition>(8);
     }
-    
+
     @Nonnull
     public List<Partition> getPartitions() {
         return list;
     }
 
-    public void loadSettings(File file) {
-        throw new UnsupportedOperationException("not yet implemented");
+    public void loadSettings(@Nonnull String uri) throws SqletException {
+        if(uri.endsWith(".csv")) {
+            final InputStream is;
+            try {
+                FileSystemManager fsManager = VFS.getManager();
+                FileObject fileObj = fsManager.resolveFile(uri);
+                FileContent fileContent = fileObj.getContent();
+                is = fileContent.getInputStream();
+            } catch (FileSystemException e) {
+                throw new SqletException(ErrorType.configFailed, "failed to load a file: " + uri, e);
+            }
+            InputStreamReader reader = new InputStreamReader(new FastBufferedInputStream(is));
+            HeaderAwareCsvReader csvReader = new HeaderAwareCsvReader(reader, ',', '"');
+
+            final Map<String, Integer> headerMap;
+            try {
+                headerMap = csvReader.parseHeader();
+            } catch (IOException e) {
+                throw new SqletException(ErrorType.configFailed, "failed to parse a header: " + uri, e);
+            }
+
+            final Map<String, Partition> masterSlave = new HashMap<String, Partition>(128);
+            final int[] fieldIndexes = toFieldIndexes(headerMap);
+            while(csvReader.next()) {
+                String tblName = csvReader.get(fieldIndexes[0]);
+                String srcTable = csvReader.get(fieldIndexes[1]);
+                String masterStr = csvReader.get(fieldIndexes[2]);
+                String host = csvReader.get(fieldIndexes[3]);
+                String portStr = csvReader.get(fieldIndexes[4]);
+                String dbUrl = csvReader.get(fieldIndexes[5]);
+                String mapOutput = csvReader.get(fieldIndexes[6]);
+
+                Preconditions.checkNotNull(tblName, srcTable, masterStr, host, portStr, dbUrl);
+
+                int port = Integer.parseInt(portStr);
+                GridNode hostNode = GridUtils.getNode(host, port);
+                final boolean master = Boolean.parseBoolean(masterStr);
+                final Partition p = new Partition(tblName, master, hostNode, dbUrl, mapOutput);
+                if(master) {
+                    masterSlave.put(tblName, p);
+                    list.add(p);
+                } else {
+                    Partition masterPartition = masterSlave.get(tblName);
+                    if(masterPartition == null) {
+                        LOG.error("Master partition is not found for slave: " + p);
+                    } else {
+                        masterPartition.addSlave(p);
+                    }
+                }
+            }
+        } else {
+            throw new IllegalArgumentException("Unsupported URI: " + uri);
+        }
+    }
+
+    private static int[] toFieldIndexes(@Nullable Map<String, Integer> map) {
+        if(map == null) {
+            return new int[] { 0, 1, 2, 3, 4, 5, 6 };
+        } else {
+            Integer c0 = map.get("TBLNAME");
+            Integer c1 = map.get("SRCTABLE");
+            Integer c2 = map.get("MASTER");
+            Integer c3 = map.get("HOST");
+            Integer c4 = map.get("PORT");
+            Integer c5 = map.get("DBURL");
+            Integer c6 = map.get("MAPOUTPUT");
+
+            Preconditions.checkNotNull(c0, c1, c2, c3, c4, c5, c6);
+
+            final int[] indexes = new int[7];
+            indexes[0] = c0.intValue();
+            indexes[1] = c1.intValue();
+            indexes[2] = c2.intValue();
+            indexes[3] = c3.intValue();
+            indexes[4] = c4.intValue();
+            indexes[5] = c5.intValue();
+            indexes[6] = c6.intValue();
+            return indexes;
+        }
     }
 
     public void loadSettings(Connection conn, String defTable, String srcTable) throws SQLException {
@@ -117,16 +206,20 @@ public class PartitioningConf implements Serializable {
     public static final class Partition implements Serializable {
         private static final long serialVersionUID = -8774183764667248705L;
 
+        @Nonnull
         final String tblName;
         final boolean master;
+        @Nonnull
         final GridNode host;
+        @Nonnull
         final String dbUrl;
+        @Nullable
         final String mapOutput;
 
         @Nullable
         final List<Partition> slaves;
 
-        Partition(String tblName, boolean master, GridNode host, String dbUrl, String mapOutput) {
+        Partition(@Nonnull String tblName, boolean master, @Nonnull GridNode host, @Nonnull String dbUrl, @Nullable String mapOutput) {
             super();
             this.tblName = tblName;
             this.master = master;
@@ -140,10 +233,10 @@ public class PartitioningConf implements Serializable {
             if(slave.master) {
                 throw new IllegalArgumentException("Illegal as slave: " + slave);
             }
-            if(slave.tblName != tblName) {
+            if(!slave.tblName.equals(tblName)) {
                 throw new IllegalArgumentException("Partitioned table name differs");
             }
-            slave.addSlave(slave);
+            slaves.add(slave);
         }
 
         @Override

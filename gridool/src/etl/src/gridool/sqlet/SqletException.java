@@ -56,6 +56,6 @@ public class SqletException extends Exception {
     }
 
     public enum ErrorType {
-        parseError, execFailed;
+        parseError, execFailed, configFailed;
     }
 }
