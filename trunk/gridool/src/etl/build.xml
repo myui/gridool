@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="etl" default="thrift-gen">
+  <property name="src.dir" value="./src"/>
+  <property name="thrift.args" value="--gen java:beans --gen php -o ${src.dir}"/>
+
+  <target name="thrift-gen">
+    <echo>Executing thrift (which needs to be in your path) on idl/sqlet_service.thrift</echo>
+    <exec executable="thrift"  failonerror="true" dir=".">
+      <arg line="${thrift.args} idl/sqlet_service.thrift " />
+    </exec>
+  </target>
+
+</project>

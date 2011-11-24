@@ -1,0 +1,3 @@
+HOST,Port,DBURL,shuffleDataSink,Priority
+dc01.hpcc.jp,1999,tpch100,/work/shufflesink,
+dc02.hpcc.jp,1999,tpch100,,1
