@@ -9,17 +9,17 @@ include_once $GLOBALS['THRIFT_ROOT'].'/Thrift.php';
 
 $GLOBALS['E_CommandType'] = array(
   'MAP_SHUFFLE' => 0,
-  'MAP_ONLY' => 1,
+  'MAP_NO_COMPILE' => 1,
   'REDUCE' => 2,
 );
 
 final class CommandType {
   const MAP_SHUFFLE = 0;
-  const MAP_ONLY = 1;
+  const MAP_NO_COMPILE = 1;
   const REDUCE = 2;
   static public $__names = array(
     0 => 'MAP_SHUFFLE',
-    1 => 'MAP_ONLY',
+    1 => 'MAP_NO_COMPILE',
     2 => 'REDUCE',
   );
 }
@@ -61,7 +61,6 @@ final class InputOutputType {
 class CommandOption {
   static $_TSPEC;
 
-  public $catalogName = "default";
   public $properties = null;
   public $comment = null;
 
@@ -69,10 +68,6 @@ class CommandOption {
     if (!isset(self::$_TSPEC)) {
       self::$_TSPEC = array(
         1 => array(
-          'var' => 'catalogName',
-          'type' => TType::STRING,
-          ),
-        2 => array(
           'var' => 'properties',
           'type' => TType::MAP,
           'ktype' => TType::STRING,
@@ -84,16 +79,13 @@ class CommandOption {
             'type' => TType::STRING,
             ),
           ),
-        3 => array(
+        2 => array(
           'var' => 'comment',
           'type' => TType::STRING,
           ),
         );
     }
     if (is_array($vals)) {
-      if (isset($vals['catalogName'])) {
-        $this->catalogName = $vals['catalogName'];
-      }
       if (isset($vals['properties'])) {
         $this->properties = $vals['properties'];
       }
@@ -123,13 +115,6 @@ class CommandOption {
       switch ($fid)
       {
         case 1:
-          if ($ftype == TType::STRING) {
-            $xfer += $input->readString($this->catalogName);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        case 2:
           if ($ftype == TType::MAP) {
             $this->properties = array();
             $_size0 = 0;
@@ -149,7 +134,7 @@ class CommandOption {
             $xfer += $input->skip($ftype);
           }
           break;
-        case 3:
+        case 2:
           if ($ftype == TType::STRING) {
             $xfer += $input->readString($this->comment);
           } else {
@@ -169,16 +154,11 @@ class CommandOption {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('CommandOption');
-    if ($this->catalogName !== null) {
-      $xfer += $output->writeFieldBegin('catalogName', TType::STRING, 1);
-      $xfer += $output->writeString($this->catalogName);
-      $xfer += $output->writeFieldEnd();
-    }
     if ($this->properties !== null) {
       if (!is_array($this->properties)) {
         throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
       }
-      $xfer += $output->writeFieldBegin('properties', TType::MAP, 2);
+      $xfer += $output->writeFieldBegin('properties', TType::MAP, 1);
       {
         $output->writeMapBegin(TType::STRING, TType::STRING, count($this->properties));
         {
@@ -193,7 +173,7 @@ class CommandOption {
       $xfer += $output->writeFieldEnd();
     }
     if ($this->comment !== null) {
-      $xfer += $output->writeFieldBegin('comment', TType::STRING, 3);
+      $xfer += $output->writeFieldBegin('comment', TType::STRING, 2);
       $xfer += $output->writeString($this->comment);
       $xfer += $output->writeFieldEnd();
     }
@@ -209,6 +189,7 @@ class SqletCommand {
 
   public $cmdType = null;
   public $command = null;
+  public $catalogName = "default";
   public $option = null;
 
   public function __construct($vals=null) {
@@ -223,6 +204,10 @@ class SqletCommand {
           'type' => TType::STRING,
           ),
         3 => array(
+          'var' => 'catalogName',
+          'type' => TType::STRING,
+          ),
+        4 => array(
           'var' => 'option',
           'type' => TType::STRUCT,
           'class' => 'CommandOption',
@@ -235,6 +220,9 @@ class SqletCommand {
       }
       if (isset($vals['command'])) {
         $this->command = $vals['command'];
+      }
+      if (isset($vals['catalogName'])) {
+        $this->catalogName = $vals['catalogName'];
       }
       if (isset($vals['option'])) {
         $this->option = $vals['option'];
@@ -276,6 +264,13 @@ class SqletCommand {
           }
           break;
         case 3:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->catalogName);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 4:
           if ($ftype == TType::STRUCT) {
             $this->option = new CommandOption();
             $xfer += $this->option->read($input);
@@ -306,11 +301,16 @@ class SqletCommand {
       $xfer += $output->writeString($this->command);
       $xfer += $output->writeFieldEnd();
     }
+    if ($this->catalogName !== null) {
+      $xfer += $output->writeFieldBegin('catalogName', TType::STRING, 3);
+      $xfer += $output->writeString($this->catalogName);
+      $xfer += $output->writeFieldEnd();
+    }
     if ($this->option !== null) {
       if (!is_object($this->option)) {
         throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
       }
-      $xfer += $output->writeFieldBegin('option', TType::STRUCT, 3);
+      $xfer += $output->writeFieldBegin('option', TType::STRUCT, 4);
       $xfer += $this->option->write($output);
       $xfer += $output->writeFieldEnd();
     }

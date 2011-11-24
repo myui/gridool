@@ -30,32 +30,32 @@ package gridool.sqlet;
 public class SqletException extends Exception {
     private static final long serialVersionUID = -5155895009547145981L;
 
-    private final ErrorType type;
+    private final SqletErrorType type;
 
-    public SqletException(ErrorType err) {
+    public SqletException(SqletErrorType err) {
         this.type = err;
     }
 
-    public SqletException(ErrorType err, String message) {
+    public SqletException(SqletErrorType err, String message) {
         super(message);
         this.type = err;
     }
 
-    public SqletException(ErrorType err, Throwable cause) {
+    public SqletException(SqletErrorType err, Throwable cause) {
         super(cause);
         this.type = err;
     }
 
-    public SqletException(ErrorType err, String message, Throwable cause) {
+    public SqletException(SqletErrorType err, String message, Throwable cause) {
         super(message, cause);
         this.type = err;
     }
 
-    public ErrorType getErrorType() {
+    public SqletErrorType getErrorType() {
         return type;
     }
 
-    public enum ErrorType {
+    public enum SqletErrorType {
         parseError, execFailed, configFailed, unsupported;
     }
 }

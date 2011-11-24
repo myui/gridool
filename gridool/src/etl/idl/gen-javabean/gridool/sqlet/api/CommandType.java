@@ -12,7 +12,7 @@ import org.apache.thrift.TEnum;
 
 public enum CommandType implements org.apache.thrift.TEnum {
   MAP_SHUFFLE(0),
-  MAP_ONLY(1),
+  MAP_NO_COMPILE(1),
   REDUCE(2);
 
   private final int value;
@@ -37,7 +37,7 @@ public enum CommandType implements org.apache.thrift.TEnum {
       case 0:
         return MAP_SHUFFLE;
       case 1:
-        return MAP_ONLY;
+        return MAP_NO_COMPILE;
       case 2:
         return REDUCE;
       default:

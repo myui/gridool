@@ -23,19 +23,16 @@ import org.slf4j.LoggerFactory;
 public class CommandOption implements org.apache.thrift.TBase<CommandOption, CommandOption._Fields>, java.io.Serializable, Cloneable {
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("CommandOption");
 
-  private static final org.apache.thrift.protocol.TField CATALOG_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("catalogName", org.apache.thrift.protocol.TType.STRING, (short)1);
-  private static final org.apache.thrift.protocol.TField PROPERTIES_FIELD_DESC = new org.apache.thrift.protocol.TField("properties", org.apache.thrift.protocol.TType.MAP, (short)2);
-  private static final org.apache.thrift.protocol.TField COMMENT_FIELD_DESC = new org.apache.thrift.protocol.TField("comment", org.apache.thrift.protocol.TType.STRING, (short)3);
+  private static final org.apache.thrift.protocol.TField PROPERTIES_FIELD_DESC = new org.apache.thrift.protocol.TField("properties", org.apache.thrift.protocol.TType.MAP, (short)1);
+  private static final org.apache.thrift.protocol.TField COMMENT_FIELD_DESC = new org.apache.thrift.protocol.TField("comment", org.apache.thrift.protocol.TType.STRING, (short)2);
 
-  private String catalogName; // required
   private Map<String,String> properties; // required
   private String comment; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-    CATALOG_NAME((short)1, "catalogName"),
-    PROPERTIES((short)2, "properties"),
-    COMMENT((short)3, "comment");
+    PROPERTIES((short)1, "properties"),
+    COMMENT((short)2, "comment");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -50,11 +47,9 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // CATALOG_NAME
-          return CATALOG_NAME;
-        case 2: // PROPERTIES
+        case 1: // PROPERTIES
           return PROPERTIES;
-        case 3: // COMMENT
+        case 2: // COMMENT
           return COMMENT;
         default:
           return null;
@@ -100,8 +95,6 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.CATALOG_NAME, new org.apache.thrift.meta_data.FieldMetaData("catalogName", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.PROPERTIES, new org.apache.thrift.meta_data.FieldMetaData("properties", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.MapMetaData(org.apache.thrift.protocol.TType.MAP, 
             new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING), 
@@ -113,16 +106,12 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
   }
 
   public CommandOption() {
-    this.catalogName = "default";
-
   }
 
   public CommandOption(
-    String catalogName,
     Map<String,String> properties)
   {
     this();
-    this.catalogName = catalogName;
     this.properties = properties;
   }
 
@@ -130,9 +119,6 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
    * Performs a deep copy on <i>other</i>.
    */
   public CommandOption(CommandOption other) {
-    if (other.isSetCatalogName()) {
-      this.catalogName = other.catalogName;
-    }
     if (other.isSetProperties()) {
       Map<String,String> __this__properties = new HashMap<String,String>();
       for (Map.Entry<String, String> other_element : other.properties.entrySet()) {
@@ -159,33 +145,8 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
 
   @Override
   public void clear() {
-    this.catalogName = "default";
-
     this.properties = null;
     this.comment = null;
-  }
-
-  public String getCatalogName() {
-    return this.catalogName;
-  }
-
-  public void setCatalogName(String catalogName) {
-    this.catalogName = catalogName;
-  }
-
-  public void unsetCatalogName() {
-    this.catalogName = null;
-  }
-
-  /** Returns true if field catalogName is set (has been assigned a value) and false otherwise */
-  public boolean isSetCatalogName() {
-    return this.catalogName != null;
-  }
-
-  public void setCatalogNameIsSet(boolean value) {
-    if (!value) {
-      this.catalogName = null;
-    }
   }
 
   public int getPropertiesSize() {
@@ -247,14 +208,6 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case CATALOG_NAME:
-      if (value == null) {
-        unsetCatalogName();
-      } else {
-        setCatalogName((String)value);
-      }
-      break;
-
     case PROPERTIES:
       if (value == null) {
         unsetProperties();
@@ -276,9 +229,6 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case CATALOG_NAME:
-      return getCatalogName();
-
     case PROPERTIES:
       return getProperties();
 
@@ -296,8 +246,6 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
     }
 
     switch (field) {
-    case CATALOG_NAME:
-      return isSetCatalogName();
     case PROPERTIES:
       return isSetProperties();
     case COMMENT:
@@ -318,15 +266,6 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
   public boolean equals(CommandOption that) {
     if (that == null)
       return false;
-
-    boolean this_present_catalogName = true && this.isSetCatalogName();
-    boolean that_present_catalogName = true && that.isSetCatalogName();
-    if (this_present_catalogName || that_present_catalogName) {
-      if (!(this_present_catalogName && that_present_catalogName))
-        return false;
-      if (!this.catalogName.equals(that.catalogName))
-        return false;
-    }
 
     boolean this_present_properties = true && this.isSetProperties();
     boolean that_present_properties = true && that.isSetProperties();
@@ -362,16 +301,6 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
     int lastComparison = 0;
     CommandOption typedOther = (CommandOption)other;
 
-    lastComparison = Boolean.valueOf(isSetCatalogName()).compareTo(typedOther.isSetCatalogName());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetCatalogName()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.catalogName, typedOther.catalogName);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     lastComparison = Boolean.valueOf(isSetProperties()).compareTo(typedOther.isSetProperties());
     if (lastComparison != 0) {
       return lastComparison;
@@ -409,14 +338,7 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
         break;
       }
       switch (field.id) {
-        case 1: // CATALOG_NAME
-          if (field.type == org.apache.thrift.protocol.TType.STRING) {
-            this.catalogName = iprot.readString();
-          } else { 
-            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-          }
-          break;
-        case 2: // PROPERTIES
+        case 1: // PROPERTIES
           if (field.type == org.apache.thrift.protocol.TType.MAP) {
             {
               org.apache.thrift.protocol.TMap _map0 = iprot.readMapBegin();
@@ -435,7 +357,7 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 3: // COMMENT
+        case 2: // COMMENT
           if (field.type == org.apache.thrift.protocol.TType.STRING) {
             this.comment = iprot.readString();
           } else { 
@@ -455,11 +377,6 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
-    if (this.catalogName != null) {
-      oprot.writeFieldBegin(CATALOG_NAME_FIELD_DESC);
-      oprot.writeString(this.catalogName);
-      oprot.writeFieldEnd();
-    }
     if (this.properties != null) {
       oprot.writeFieldBegin(PROPERTIES_FIELD_DESC);
       {
@@ -489,14 +406,6 @@ public class CommandOption implements org.apache.thrift.TBase<CommandOption, Com
     StringBuilder sb = new StringBuilder("CommandOption(");
     boolean first = true;
 
-    sb.append("catalogName:");
-    if (this.catalogName == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.catalogName);
-    }
-    first = false;
-    if (!first) sb.append(", ");
     sb.append("properties:");
     if (this.properties == null) {
       sb.append("null");

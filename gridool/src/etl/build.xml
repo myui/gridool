@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project name="etl" default="thrift-gen">
-  <property name="src.dir" value="./src"/>
+  <property name="src.dir" value="./idl"/>
   <property name="thrift.args" value="--gen java:beans --gen php --gen rb --gen py -o ${src.dir}"/>
 
   <target name="thrift-gen">

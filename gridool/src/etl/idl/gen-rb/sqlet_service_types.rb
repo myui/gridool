@@ -7,10 +7,10 @@
 
 module CommandType
   MAP_SHUFFLE = 0
-  MAP_ONLY = 1
+  MAP_NO_COMPILE = 1
   REDUCE = 2
-  VALUE_MAP = {0 => "MAP_SHUFFLE", 1 => "MAP_ONLY", 2 => "REDUCE"}
-  VALID_VALUES = Set.new([MAP_SHUFFLE, MAP_ONLY, REDUCE]).freeze
+  VALUE_MAP = {0 => "MAP_SHUFFLE", 1 => "MAP_NO_COMPILE", 2 => "REDUCE"}
+  VALID_VALUES = Set.new([MAP_SHUFFLE, MAP_NO_COMPILE, REDUCE]).freeze
 end
 
 module ErrorType
@@ -31,12 +31,10 @@ end
 
 class CommandOption
   include ::Thrift::Struct, ::Thrift::Struct_Union
-  CATALOGNAME = 1
-  PROPERTIES = 2
-  COMMENT = 3
+  PROPERTIES = 1
+  COMMENT = 2
 
   FIELDS = {
-    CATALOGNAME => {:type => ::Thrift::Types::STRING, :name => 'catalogName', :default => %q"default"},
     PROPERTIES => {:type => ::Thrift::Types::MAP, :name => 'properties', :key => {:type => ::Thrift::Types::STRING}, :value => {:type => ::Thrift::Types::STRING}},
     COMMENT => {:type => ::Thrift::Types::STRING, :name => 'comment', :optional => true}
   }
@@ -53,11 +51,13 @@ class SqletCommand
   include ::Thrift::Struct, ::Thrift::Struct_Union
   CMDTYPE = 1
   COMMAND = 2
-  OPTION = 3
+  CATALOGNAME = 3
+  OPTION = 4
 
   FIELDS = {
     CMDTYPE => {:type => ::Thrift::Types::I32, :name => 'cmdType', :enum_class => CommandType},
     COMMAND => {:type => ::Thrift::Types::STRING, :name => 'command'},
+    CATALOGNAME => {:type => ::Thrift::Types::STRING, :name => 'catalogName', :default => %q"default", :optional => true},
     OPTION => {:type => ::Thrift::Types::STRUCT, :name => 'option', :class => CommandOption, :optional => true}
   }
 
