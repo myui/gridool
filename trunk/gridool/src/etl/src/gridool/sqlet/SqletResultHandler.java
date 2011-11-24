@@ -20,29 +20,9 @@
  */
 package gridool.sqlet;
 
-import javax.annotation.Nonnull;
-
-import gridool.sqlet.catalog.MapReduceConf;
-import gridool.sqlet.catalog.PartitioningConf;
-import gridool.sqlet.catalog.SystemCatalog;
-
 /**
  * @author Makoto YUI
  */
-public final class SqletModule {
-
-    private final SystemCatalog catalog;
-
-    public SqletModule(SystemCatalog catalog) {
-        this.catalog = catalog;
-    }
-
-    public PartitioningConf getPartitioningConf(@Nonnull String catalogName) {
-        return catalog.getPartitioningConf(catalogName);
-    }
-
-    public MapReduceConf getMapReduceConf(@Nonnull String catalogName) {
-        return catalog.getMapReduceConf(catalogName);
-    }
+public interface SqletResultHandler {
 
 }

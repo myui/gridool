@@ -2,7 +2,7 @@
 
 <project name="etl" default="thrift-gen">
   <property name="src.dir" value="./src"/>
-  <property name="thrift.args" value="--gen java:beans --gen php -o ${src.dir}"/>
+  <property name="thrift.args" value="--gen java:beans --gen php --gen rb --gen py -o ${src.dir}"/>
 
   <target name="thrift-gen">
     <echo>Executing thrift (which needs to be in your path) on idl/sqlet_service.thrift</echo>

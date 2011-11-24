@@ -64,15 +64,19 @@ TOKEN_MGR_DECLS :
 
 TOKEN :
 {
-  < LoadPartitionFromFile : < LoadPartitionFrom > ( "FILE" | "file" ) > { pushState(KEYWORD); }
-| < LoadPartitionFromTable : < LoadPartitionFrom > ( "TABLE" | "table" ) > { pushState(KEYWORD); }| < #LoadPartitionFrom : ( "load" <Skip_> "partition" <Skip_> "from" ) | ( "LOAD" <Skip_> "PARTITION" <Skip_> "FROM" ) >
-| < LoadReducersFromFile : < LoadReducersFrom >  ( "FILE" | "file" ) > { pushState(KEYWORD); }| < LoadReducersFromTable : < LoadReducersFrom > ( "TABLE" | "table" ) > { pushState(KEYWORD); }
-| < #LoadReducersFrom : ( "load" <Skip_> "reducers" <Skip_> "from" ) | ( "LOAD" <Skip_> "REDUCERS" <Skip_> "FROM" ) >
+  < StartLoadPartition : ("load" | "LOAD") <Skip_> ("partitions" | "PARTITIONS") <Skip_> > : LOAD_STMT | < StartLoadReducers : ("load" | "LOAD") <Skip_> ("reducers" | "REDUCERS") <Skip_> > : LOAD_STMT 
+}
+
+< LOAD_STMT >
+TOKEN :
+{  < LoadStmt_IntoCatalog : ("into" | "INTO") <Skip_> ("catalog" | "CATALOG") <Skip_> > { pushState(KEYWORD); } : LOAD_STMT
+| < LoadStmt_FromFile : ("from" | "FROM") <Skip_> ("file" | "FILE") <Skip_> > { pushState(KEYWORD); }
+| < LoadStmt_FromTable : ("from" | "FROM") <Skip_ > ("table" | "TABLE") <Skip_> > { pushState(KEYWORD); }
 }
 
 TOKEN:
-{  < BEGIN_MAP : "map" "{" > : IN_MAP_DIRECTIVE
-| < BEGIN_MAP_RAW : "map#raw" "{" > : IN_MAP_DIRECTIVE
+{  < BeginMapShuffle : "map-and-shuffle" "{" <Skip_> > : IN_MAP_DIRECTIVE
+| < BeginMapNoCompile : "map#no_compile" "{" <Skip_> > : IN_MAP_DIRECTIVE
 }
 
 < IN_MAP_DIRECTIVE >
@@ -129,17 +133,30 @@ SqletModule parseCompilationUnit() throws SqletException:
 }
 
 void parseLoadPartitions(SqletModule m) throws SqletException :
+{
+	String catalogName = SystemCatalog.DEFAULT_CATALOG_NAME;
+}
+{
+	currentToken = < StartLoadPartition >
+	[
+		currentToken = < LoadStmt_IntoCatalog >
+		catalogName = ObjectName()
+	]
+	(
+		parseLoadPartitionsFromFile(m, catalogName) | paserLoadPartitionsFromTable(m, catalogName)
+	)}
+
+void parseLoadPartitionsFromFile(SqletModule m, String catalogName) throws SqletException :
 {}
 {
-	parseLoadPartitionsFromFile(m) | paserLoadPartitionsFromTable(m)}
-
-void parseLoadPartitionsFromFile(SqletModule m) throws SqletException :
-{}
-{	currentToken = < LoadPartitionFromFile >
+  	currentToken = < LoadStmt_FromFile >
 	currentToken = < URI >
 	{		String filepath = unquote(currentToken.image);
-		m.getPartitioningConf().loadSettings(filepath);
-	}	
+		PartitioningConf conf = m.getPartitioningConf(catalogName);
+		if(conf == null) {			throw new SqletException(ErrorType.configFailed, "PartitioningConf is not found in catalog: " + catalogName);
+		}
+		conf.loadSettings(filepath);
+	}
 }
 
 void paserLoadPartitionsFromTable(SqletModule m) throws SqletException :
@@ -147,11 +164,15 @@ void paserLoadPartitionsFromTable(SqletModule m) throws SqletException :
 	String tblName = null;
 }
 {
-  	currentToken = < LoadPartitionFromTable >
+  	currentToken = < LoadStmt_FromTable >
 	tblName = ObjectName()
 	{
 	  	assert (tblName != null);
-		m.getPartitioningConf().loadSettings(tblName);
+		PartitioningConf conf = m.getPartitioningConf();
+		if(conf == null) {
+			throw new SqletException(ErrorType.configFailed, "PartitioningConf is not found in catalog: " + catalogName);
+		}
+		throw new SqletException(ErrorType.unsupported, "'load partitions from table' is not supported yet");
 	}
 }
 
@@ -185,35 +206,33 @@ void parseLoadReducersFromTable(SqletModule m) throws SqletException :
 	}
 }
 
-void parseMapDirective(SQLModule mod) throws SqletException :
-{
-	MapModule m = new MapModule();
-}
-{
-	parseMapCompile(m) | parseMapNoCompiple(m)
-  	< EndMapRbrace >
-  	{
-  	  	  	}}
-
-void parseMapCompile(MapModule m) throws SqletException :
+void parseMapDirective(SqletModule mod) throws SqletException :
 {}
 {
-  	currentToken = < BEGIN_MAP >
+	parseMapCompile(mod) | parseMapNoCompiple(mod)
+  	currentToken = < EndMapRbrace >}
+
+void parseMapShuffle(SqletModule mod) throws SqletException :
+{}
+{
+  	currentToken = < BEGIN_MAP_SHUFFLE >
     currentToken = < SelectQuery >
     {		String selectQuery = removeSemiColon(currentToken.image);
+		SqletCommand cmd = new SqletCommand(CommandType.MAP_SHUFFLE, selectQuery);
 		
     }
     currentToken = < EndMapRbrace >
 }
 
-void parseMapNoCompiple(MapModule m) throws SqletException :
+void parseMapNoCompiple(SqletModule mod) throws SqletException :
 {}
 {
-  	currentToken = < BEGIN_MAP_RAW >
+  	currentToken = < BEGIN_MAP_NOCOMPILE >
   	currentToken = < OtherThanRbrace >
   	{
   	  	String rawQuery = currentToken.image;
-  	  	m.addQuery(rawQuery);  	}
+  	  	SqletCommand cmd = new SqletCommand(CommandType.MAP_ONLY, rawQuery);		
+  	}
   	currentToken = < EndMapRbrace >
 }
 

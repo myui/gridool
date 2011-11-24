@@ -1,7 +1,8 @@
 package gridool.sqlet.env;
 
 import gridool.sqlet.SqletException;
-import gridool.sqlet.env.MapReduceConf.Reducer;
+import gridool.sqlet.catalog.MapReduceConf;
+import gridool.sqlet.catalog.MapReduceConf.Reducer;
 
 import java.util.List;
 

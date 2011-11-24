@@ -18,7 +18,7 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.sqlet.env;
+package gridool.sqlet.catalog;
 
 import gridool.GridNode;
 import gridool.sqlet.SqletException;
@@ -26,7 +26,6 @@ import gridool.sqlet.SqletException.ErrorType;
 import gridool.util.GridUtils;
 import gridool.util.csv.HeaderAwareCsvReader;
 import gridool.util.io.FastBufferedInputStream;
-import gridool.util.io.IOUtils;
 import gridool.util.lang.Preconditions;
 import gridool.util.primitive.Primitives;
 
@@ -43,6 +42,12 @@ import java.util.Map;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import org.apache.commons.vfs2.FileContent;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemManager;
+import org.apache.commons.vfs2.VFS;
 
 /**
  * @author Makoto YUI
@@ -72,12 +77,15 @@ public class MapReduceConf implements Serializable {
     }
 
     public void loadReducers(String uri) throws SqletException {
-        if(uri.endsWith(".csv")) {
+        if(uri.endsWith(".csv") || uri.endsWith(".CSV")) {
             final InputStream is;
             try {
-                is = IOUtils.openStream(uri);
-            } catch (IOException e) {
-                throw new SqletException(ErrorType.configFailed, "Illegal URI format: " + uri, e);
+                FileSystemManager fsManager = VFS.getManager();
+                FileObject fileObj = fsManager.resolveFile(uri);
+                FileContent fileContent = fileObj.getContent();
+                is = fileContent.getInputStream();
+            } catch (FileSystemException e) {
+                throw new SqletException(ErrorType.configFailed, "failed to load a file: " + uri, e);
             }
             InputStreamReader reader = new InputStreamReader(new FastBufferedInputStream(is));
             HeaderAwareCsvReader csvReader = new HeaderAwareCsvReader(reader, ',', '"');
