@@ -1,7 +1,7 @@
 package gridool.sqlet.env;
 
 import gridool.sqlet.SqletException;
-import gridool.sqlet.env.PartitioningConf;
+import gridool.sqlet.catalog.PartitioningConf;
 
 import org.junit.Test;
 

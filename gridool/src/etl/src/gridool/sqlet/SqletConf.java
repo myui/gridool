@@ -21,7 +21,7 @@
 package gridool.sqlet;
 
 import gridool.GridNode;
-import gridool.sqlet.env.PartitioningConf;
+import gridool.sqlet.catalog.PartitioningConf;
 import gridool.util.GridUtils;
 import gridool.util.jdbc.JDBCUtils;
 import gridool.util.jdbc.ResultSetHandler;
