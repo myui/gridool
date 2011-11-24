@@ -25,10 +25,12 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
 
   private static final org.apache.thrift.protocol.TField CMD_TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("cmdType", org.apache.thrift.protocol.TType.I32, (short)1);
   private static final org.apache.thrift.protocol.TField COMMAND_FIELD_DESC = new org.apache.thrift.protocol.TField("command", org.apache.thrift.protocol.TType.STRING, (short)2);
-  private static final org.apache.thrift.protocol.TField OPTION_FIELD_DESC = new org.apache.thrift.protocol.TField("option", org.apache.thrift.protocol.TType.STRUCT, (short)3);
+  private static final org.apache.thrift.protocol.TField CATALOG_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("catalogName", org.apache.thrift.protocol.TType.STRING, (short)3);
+  private static final org.apache.thrift.protocol.TField OPTION_FIELD_DESC = new org.apache.thrift.protocol.TField("option", org.apache.thrift.protocol.TType.STRUCT, (short)4);
 
   private CommandType cmdType; // required
   private String command; // required
+  private String catalogName; // required
   private CommandOption option; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -39,7 +41,8 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
      */
     CMD_TYPE((short)1, "cmdType"),
     COMMAND((short)2, "command"),
-    OPTION((short)3, "option");
+    CATALOG_NAME((short)3, "catalogName"),
+    OPTION((short)4, "option");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -58,7 +61,9 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
           return CMD_TYPE;
         case 2: // COMMAND
           return COMMAND;
-        case 3: // OPTION
+        case 3: // CATALOG_NAME
+          return CATALOG_NAME;
+        case 4: // OPTION
           return OPTION;
         default:
           return null;
@@ -108,6 +113,8 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
         new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, CommandType.class)));
     tmpMap.put(_Fields.COMMAND, new org.apache.thrift.meta_data.FieldMetaData("command", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.CATALOG_NAME, new org.apache.thrift.meta_data.FieldMetaData("catalogName", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.OPTION, new org.apache.thrift.meta_data.FieldMetaData("option", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CommandOption.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -115,6 +122,8 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
   }
 
   public SqletCommand() {
+    this.catalogName = "default";
+
   }
 
   public SqletCommand(
@@ -136,6 +145,9 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
     if (other.isSetCommand()) {
       this.command = other.command;
     }
+    if (other.isSetCatalogName()) {
+      this.catalogName = other.catalogName;
+    }
     if (other.isSetOption()) {
       this.option = new CommandOption(other.option);
     }
@@ -149,6 +161,8 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
   public void clear() {
     this.cmdType = null;
     this.command = null;
+    this.catalogName = "default";
+
     this.option = null;
   }
 
@@ -206,6 +220,29 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
     }
   }
 
+  public String getCatalogName() {
+    return this.catalogName;
+  }
+
+  public void setCatalogName(String catalogName) {
+    this.catalogName = catalogName;
+  }
+
+  public void unsetCatalogName() {
+    this.catalogName = null;
+  }
+
+  /** Returns true if field catalogName is set (has been assigned a value) and false otherwise */
+  public boolean isSetCatalogName() {
+    return this.catalogName != null;
+  }
+
+  public void setCatalogNameIsSet(boolean value) {
+    if (!value) {
+      this.catalogName = null;
+    }
+  }
+
   public CommandOption getOption() {
     return this.option;
   }
@@ -247,6 +284,14 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
       }
       break;
 
+    case CATALOG_NAME:
+      if (value == null) {
+        unsetCatalogName();
+      } else {
+        setCatalogName((String)value);
+      }
+      break;
+
     case OPTION:
       if (value == null) {
         unsetOption();
@@ -266,6 +311,9 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
     case COMMAND:
       return getCommand();
 
+    case CATALOG_NAME:
+      return getCatalogName();
+
     case OPTION:
       return getOption();
 
@@ -284,6 +332,8 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
       return isSetCmdType();
     case COMMAND:
       return isSetCommand();
+    case CATALOG_NAME:
+      return isSetCatalogName();
     case OPTION:
       return isSetOption();
     }
@@ -318,6 +368,15 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
       if (!(this_present_command && that_present_command))
         return false;
       if (!this.command.equals(that.command))
+        return false;
+    }
+
+    boolean this_present_catalogName = true && this.isSetCatalogName();
+    boolean that_present_catalogName = true && that.isSetCatalogName();
+    if (this_present_catalogName || that_present_catalogName) {
+      if (!(this_present_catalogName && that_present_catalogName))
+        return false;
+      if (!this.catalogName.equals(that.catalogName))
         return false;
     }
 
@@ -366,6 +425,16 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetCatalogName()).compareTo(typedOther.isSetCatalogName());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetCatalogName()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.catalogName, typedOther.catalogName);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     lastComparison = Boolean.valueOf(isSetOption()).compareTo(typedOther.isSetOption());
     if (lastComparison != 0) {
       return lastComparison;
@@ -407,7 +476,14 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
           }
           break;
-        case 3: // OPTION
+        case 3: // CATALOG_NAME
+          if (field.type == org.apache.thrift.protocol.TType.STRING) {
+            this.catalogName = iprot.readString();
+          } else { 
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 4: // OPTION
           if (field.type == org.apache.thrift.protocol.TType.STRUCT) {
             this.option = new CommandOption();
             this.option.read(iprot);
@@ -437,6 +513,13 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
       oprot.writeFieldBegin(COMMAND_FIELD_DESC);
       oprot.writeString(this.command);
       oprot.writeFieldEnd();
+    }
+    if (this.catalogName != null) {
+      if (isSetCatalogName()) {
+        oprot.writeFieldBegin(CATALOG_NAME_FIELD_DESC);
+        oprot.writeString(this.catalogName);
+        oprot.writeFieldEnd();
+      }
     }
     if (this.option != null) {
       if (isSetOption()) {
@@ -469,6 +552,16 @@ public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, Sqlet
       sb.append(this.command);
     }
     first = false;
+    if (isSetCatalogName()) {
+      if (!first) sb.append(", ");
+      sb.append("catalogName:");
+      if (this.catalogName == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.catalogName);
+      }
+      first = false;
+    }
     if (isSetOption()) {
       if (!first) sb.append(", ");
       sb.append("option:");

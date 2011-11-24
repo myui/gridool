@@ -16,18 +16,18 @@ except:
 
 class CommandType:
   MAP_SHUFFLE = 0
-  MAP_ONLY = 1
+  MAP_NO_COMPILE = 1
   REDUCE = 2
 
   _VALUES_TO_NAMES = {
     0: "MAP_SHUFFLE",
-    1: "MAP_ONLY",
+    1: "MAP_NO_COMPILE",
     2: "REDUCE",
   }
 
   _NAMES_TO_VALUES = {
     "MAP_SHUFFLE": 0,
-    "MAP_ONLY": 1,
+    "MAP_NO_COMPILE": 1,
     "REDUCE": 2,
   }
 
@@ -69,20 +69,17 @@ class InputOutputType:
 class CommandOption:
   """
   Attributes:
-   - catalogName
    - properties
    - comment
   """
 
   thrift_spec = (
     None, # 0
-    (1, TType.STRING, 'catalogName', None, "default", ), # 1
-    (2, TType.MAP, 'properties', (TType.STRING,None,TType.STRING,None), None, ), # 2
-    (3, TType.STRING, 'comment', None, None, ), # 3
+    (1, TType.MAP, 'properties', (TType.STRING,None,TType.STRING,None), None, ), # 1
+    (2, TType.STRING, 'comment', None, None, ), # 2
   )
 
-  def __init__(self, catalogName=thrift_spec[1][4], properties=None, comment=None,):
-    self.catalogName = catalogName
+  def __init__(self, properties=None, comment=None,):
     self.properties = properties
     self.comment = comment
 
@@ -96,11 +93,6 @@ class CommandOption:
       if ftype == TType.STOP:
         break
       if fid == 1:
-        if ftype == TType.STRING:
-          self.catalogName = iprot.readString();
-        else:
-          iprot.skip(ftype)
-      elif fid == 2:
         if ftype == TType.MAP:
           self.properties = {}
           (_ktype1, _vtype2, _size0 ) = iprot.readMapBegin() 
@@ -111,7 +103,7 @@ class CommandOption:
           iprot.readMapEnd()
         else:
           iprot.skip(ftype)
-      elif fid == 3:
+      elif fid == 2:
         if ftype == TType.STRING:
           self.comment = iprot.readString();
         else:
@@ -126,12 +118,8 @@ class CommandOption:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
     oprot.writeStructBegin('CommandOption')
-    if self.catalogName is not None:
-      oprot.writeFieldBegin('catalogName', TType.STRING, 1)
-      oprot.writeString(self.catalogName)
-      oprot.writeFieldEnd()
     if self.properties is not None:
-      oprot.writeFieldBegin('properties', TType.MAP, 2)
+      oprot.writeFieldBegin('properties', TType.MAP, 1)
       oprot.writeMapBegin(TType.STRING, TType.STRING, len(self.properties))
       for kiter7,viter8 in self.properties.items():
         oprot.writeString(kiter7)
@@ -139,7 +127,7 @@ class CommandOption:
       oprot.writeMapEnd()
       oprot.writeFieldEnd()
     if self.comment is not None:
-      oprot.writeFieldBegin('comment', TType.STRING, 3)
+      oprot.writeFieldBegin('comment', TType.STRING, 2)
       oprot.writeString(self.comment)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
@@ -165,6 +153,7 @@ class SqletCommand:
   Attributes:
    - cmdType
    - command
+   - catalogName
    - option
   """
 
@@ -172,12 +161,14 @@ class SqletCommand:
     None, # 0
     (1, TType.I32, 'cmdType', None, None, ), # 1
     (2, TType.STRING, 'command', None, None, ), # 2
-    (3, TType.STRUCT, 'option', (CommandOption, CommandOption.thrift_spec), None, ), # 3
+    (3, TType.STRING, 'catalogName', None, "default", ), # 3
+    (4, TType.STRUCT, 'option', (CommandOption, CommandOption.thrift_spec), None, ), # 4
   )
 
-  def __init__(self, cmdType=None, command=None, option=None,):
+  def __init__(self, cmdType=None, command=None, catalogName=thrift_spec[3][4], option=None,):
     self.cmdType = cmdType
     self.command = command
+    self.catalogName = catalogName
     self.option = option
 
   def read(self, iprot):
@@ -200,6 +191,11 @@ class SqletCommand:
         else:
           iprot.skip(ftype)
       elif fid == 3:
+        if ftype == TType.STRING:
+          self.catalogName = iprot.readString();
+        else:
+          iprot.skip(ftype)
+      elif fid == 4:
         if ftype == TType.STRUCT:
           self.option = CommandOption()
           self.option.read(iprot)
@@ -223,8 +219,12 @@ class SqletCommand:
       oprot.writeFieldBegin('command', TType.STRING, 2)
       oprot.writeString(self.command)
       oprot.writeFieldEnd()
+    if self.catalogName is not None:
+      oprot.writeFieldBegin('catalogName', TType.STRING, 3)
+      oprot.writeString(self.catalogName)
+      oprot.writeFieldEnd()
     if self.option is not None:
-      oprot.writeFieldBegin('option', TType.STRUCT, 3)
+      oprot.writeFieldBegin('option', TType.STRUCT, 4)
       self.option.write(oprot)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()

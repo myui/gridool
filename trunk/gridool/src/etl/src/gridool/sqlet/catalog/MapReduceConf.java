@@ -22,7 +22,7 @@ package gridool.sqlet.catalog;
 
 import gridool.GridNode;
 import gridool.sqlet.SqletException;
-import gridool.sqlet.SqletException.ErrorType;
+import gridool.sqlet.SqletException.SqletErrorType;
 import gridool.util.GridUtils;
 import gridool.util.csv.HeaderAwareCsvReader;
 import gridool.util.io.FastBufferedInputStream;
@@ -85,7 +85,7 @@ public class MapReduceConf implements Serializable {
                 FileContent fileContent = fileObj.getContent();
                 is = fileContent.getInputStream();
             } catch (FileSystemException e) {
-                throw new SqletException(ErrorType.configFailed, "failed to load a file: " + uri, e);
+                throw new SqletException(SqletErrorType.configFailed, "failed to load a file: " + uri, e);
             }
             InputStreamReader reader = new InputStreamReader(new FastBufferedInputStream(is));
             HeaderAwareCsvReader csvReader = new HeaderAwareCsvReader(reader, ',', '"');
@@ -94,7 +94,7 @@ public class MapReduceConf implements Serializable {
             try {
                 headerMap = csvReader.parseHeader();
             } catch (IOException e) {
-                throw new SqletException(ErrorType.configFailed, "failed to parse a header: " + uri, e);
+                throw new SqletException(SqletErrorType.configFailed, "failed to parse a header: " + uri, e);
             }
 
             final int[] fieldIndexes = toFieldIndexes(headerMap);

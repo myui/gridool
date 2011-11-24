@@ -20,11 +20,15 @@
  */
 package gridool.sqlet;
 
-import javax.annotation.Nonnull;
-
+import gridool.sqlet.api.SqletCommand;
 import gridool.sqlet.catalog.MapReduceConf;
 import gridool.sqlet.catalog.PartitioningConf;
 import gridool.sqlet.catalog.SystemCatalog;
+
+import java.util.LinkedList;
+import java.util.Queue;
+
+import javax.annotation.Nonnull;
 
 /**
  * @author Makoto YUI
@@ -32,9 +36,11 @@ import gridool.sqlet.catalog.SystemCatalog;
 public final class SqletModule {
 
     private final SystemCatalog catalog;
+    private final Queue<SqletCommand> cmdQueue;
 
     public SqletModule(SystemCatalog catalog) {
         this.catalog = catalog;
+        this.cmdQueue = new LinkedList<SqletCommand>();
     }
 
     public PartitioningConf getPartitioningConf(@Nonnull String catalogName) {
@@ -44,5 +50,8 @@ public final class SqletModule {
     public MapReduceConf getMapReduceConf(@Nonnull String catalogName) {
         return catalog.getMapReduceConf(catalogName);
     }
-
+    
+    public void offerCommand(SqletCommand cmd) {
+        cmdQueue.offer(cmd);
+    }
 }
