@@ -18,7 +18,7 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.sqlet.partitioning;
+package gridool.sqlet.env;
 
 import gridool.GridNode;
 import gridool.sqlet.SqletException;
@@ -26,6 +26,7 @@ import gridool.sqlet.SqletException.ErrorType;
 import gridool.util.GridUtils;
 import gridool.util.csv.HeaderAwareCsvReader;
 import gridool.util.io.FastBufferedInputStream;
+import gridool.util.io.IOUtils;
 import gridool.util.jdbc.JDBCUtils;
 import gridool.util.jdbc.ResultSetHandler;
 import gridool.util.lang.Preconditions;
@@ -48,11 +49,6 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs2.FileContent;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemManager;
-import org.apache.commons.vfs2.VFS;
 
 /**
  * 
@@ -80,12 +76,9 @@ public class PartitioningConf implements Serializable {
         if(uri.endsWith(".csv")) {
             final InputStream is;
             try {
-                FileSystemManager fsManager = VFS.getManager();
-                FileObject fileObj = fsManager.resolveFile(uri);
-                FileContent fileContent = fileObj.getContent();
-                is = fileContent.getInputStream();
-            } catch (FileSystemException e) {
-                throw new SqletException(ErrorType.configFailed, "failed to load a file: " + uri, e);
+                is = IOUtils.openStream(uri);
+            } catch (IOException e) {
+                throw new SqletException(ErrorType.configFailed, "Illegal URI format: " + uri, e);
             }
             InputStreamReader reader = new InputStreamReader(new FastBufferedInputStream(is));
             HeaderAwareCsvReader csvReader = new HeaderAwareCsvReader(reader, ',', '"');
@@ -97,8 +90,8 @@ public class PartitioningConf implements Serializable {
                 throw new SqletException(ErrorType.configFailed, "failed to parse a header: " + uri, e);
             }
 
-            final Map<String, Partition> masterSlave = new HashMap<String, Partition>(128);
             final int[] fieldIndexes = toFieldIndexes(headerMap);
+            final Map<String, Partition> masterSlave = new HashMap<String, Partition>(128);
             while(csvReader.next()) {
                 String tblName = csvReader.get(fieldIndexes[0]);
                 String srcTable = csvReader.get(fieldIndexes[1]);

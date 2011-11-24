@@ -38,6 +38,11 @@ package gridool.util.io;
 import gridool.util.lang.CancelAwareTimer;
 
 import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -425,6 +430,48 @@ public final class IOUtils {
             ch[i] = readChar(in);
         }
         return new String(ch);
+    }
+
+    public static InputStream openStream(final String uriStr) throws IOException {
+        final URI uri;
+        try {
+            uri = new URI(uriStr);
+        } catch (URISyntaxException e) {
+            throw new IOException("URI syntax error: " + uriStr, e);
+        }
+        if(!uri.isAbsolute()) {
+            String path = uri.getPath();
+            File file = new File(path);
+            if(!file.exists()) {
+                throw new IOException("file not found: " + path);
+            }
+            final FileInputStream fis;
+            try {
+                fis = new FileInputStream(file);
+            } catch (FileNotFoundException e) {
+                throw e;
+            }
+            return fis;
+        }
+        final URL url;
+        try {
+            url = uri.toURL();
+        } catch (MalformedURLException e) {
+            throw e;
+        }
+        URLConnection conn;
+        try {
+            conn = url.openConnection();
+        } catch (IOException e) {
+            throw e;
+        }
+        final InputStream is;
+        try {
+            is = conn.getInputStream();
+        } catch (IOException e) {
+            throw e;
+        }
+        return is;
     }
 
 }

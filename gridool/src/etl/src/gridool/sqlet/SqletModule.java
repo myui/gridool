@@ -20,7 +20,9 @@
  */
 package gridool.sqlet;
 
-import gridool.sqlet.partitioning.PartitioningConf;
+import gridool.sqlet.env.MapReduceConf;
+import gridool.sqlet.env.PartitioningConf;
+import gridool.sqlet.expr.SqletExpression;
 
 /**
  * @author Makoto YUI
@@ -28,13 +30,19 @@ import gridool.sqlet.partitioning.PartitioningConf;
 public final class SqletModule implements SqletExpression {
 
     private final PartitioningConf partitioningConf;
+    private final MapReduceConf mapredConf;
     
     public SqletModule() {
         this.partitioningConf = new PartitioningConf();
+        this.mapredConf = new MapReduceConf();
     }
 
     public PartitioningConf getPartitioningConf() {
         return partitioningConf;
+    }
+    
+    public MapReduceConf getMapReduceConf() {
+        return mapredConf;
     }
 
 }
