@@ -85,7 +85,8 @@ public class MapReduceConf implements Serializable {
                 FileContent fileContent = fileObj.getContent();
                 is = fileContent.getInputStream();
             } catch (FileSystemException e) {
-                throw new SqletException(SqletErrorType.configFailed, "failed to load a file: " + uri, e);
+                throw new SqletException(SqletErrorType.configFailed, "failed to load a file: "
+                        + uri, e);
             }
             InputStreamReader reader = new InputStreamReader(new FastBufferedInputStream(is));
             HeaderAwareCsvReader csvReader = new HeaderAwareCsvReader(reader, ',', '"');
@@ -94,7 +95,8 @@ public class MapReduceConf implements Serializable {
             try {
                 headerMap = csvReader.parseHeader();
             } catch (IOException e) {
-                throw new SqletException(SqletErrorType.configFailed, "failed to parse a header: " + uri, e);
+                throw new SqletException(SqletErrorType.configFailed, "failed to parse a header: "
+                        + uri, e);
             }
 
             final int[] fieldIndexes = toFieldIndexes(headerMap);
@@ -187,6 +189,11 @@ public class MapReduceConf implements Serializable {
             return (thisVal == anotherVal ? 0 : (thisVal < anotherVal ? -1 : 1));
         }
 
+    }
+
+    @Override
+    public String toString() {
+        return reducers.toString();
     }
 
 }

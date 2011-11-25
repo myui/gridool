@@ -62,4 +62,10 @@ public final class SystemCatalog {
         return pconf != null && mconf != null;
     }
 
+    @Override
+    public String toString() {
+        return "SystemCatalog [partitioningConfs=" + partitioningConfs + ", mapredConfs="
+                + mapredConfs + "]";
+    }
+
 }

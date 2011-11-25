@@ -54,4 +54,9 @@ public final class SqletModule {
     public void offerCommand(SqletCommand cmd) {
         cmdQueue.offer(cmd);
     }
+
+    @Override
+    public String toString() {
+        return "SqletModule [catalog=" + catalog + ", cmdQueue=" + cmdQueue + "]";
+    }
 }

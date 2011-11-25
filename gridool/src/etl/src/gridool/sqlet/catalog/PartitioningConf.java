@@ -248,4 +248,9 @@ public class PartitioningConf implements Serializable {
 
     }
 
+    @Override
+    public String toString() {
+        return list.toString();
+    }
+
 }
