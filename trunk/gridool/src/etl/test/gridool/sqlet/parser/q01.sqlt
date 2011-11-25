@@ -1,2 +1,24 @@
-LOAD PARTITIONS INTO CATALOG "default" FROM FILE "/home/myui/workspace/gridool/src/etl/test/gridool/sqlet/env/partitioning_test01.csv";
+LOAD PARTITIONS INTO CATALOG "test01" FROM FILE "/home/myui/workspace/gridool/src/etl/test/gridool/sqlet/env/partitioning_test01.csv";
 
+LOAD PARTITIONS	FROM FILE 
+"/home/myui/workspace/gridool/src/etl/test/gridool/sqlet/env/partitioning_test01.csv";
+
+LOAD REDUCERS INTO CATALOG "test01" FROM FILE "/home/myui/workspace/gridool/src/etl/test/gridool/sqlet/env/reducers01.csv";
+
+map-and-shuffle {
+	SELECT * from table;
+};
+
+ -- comment -- test
+ map-and-shuffle {
+	SELECT * from table 
+	where c1 = "test" and c2 = "test2"
+	order by c3;
+} using catalog "test01" ;
+
+-- this is a comment
+map#no_compile 
+{
+	alter table name set c1 = "test1";
+	select * from table;
+};

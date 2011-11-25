@@ -38,25 +38,44 @@ public final class SqletModule {
     private final SystemCatalog catalog;
     private final Queue<SqletCommand> cmdQueue;
 
-    public SqletModule(SystemCatalog catalog) {
+    public SqletModule(@Nonnull SystemCatalog catalog) {
         this.catalog = catalog;
         this.cmdQueue = new LinkedList<SqletCommand>();
     }
 
-    public PartitioningConf getPartitioningConf(@Nonnull String catalogName) {
-        return catalog.getPartitioningConf(catalogName);
+    @Nonnull
+    public PartitioningConf obtainPartitioningConf(@Nonnull String catalogName) {
+        PartitioningConf conf = catalog.getPartitioningConf(catalogName);
+        if(conf == null) {
+            conf = new PartitioningConf();
+            catalog.setPartitioningConf(catalogName, conf);
+        }
+        return conf;
     }
 
-    public MapReduceConf getMapReduceConf(@Nonnull String catalogName) {
-        return catalog.getMapReduceConf(catalogName);
+    @Nonnull
+    public MapReduceConf obtainMapReduceConf(@Nonnull String catalogName) {
+        MapReduceConf conf = catalog.getMapReduceConf(catalogName);
+        if(conf == null) {
+            conf = new MapReduceConf();
+            catalog.setMapReduceConf(catalogName, conf);
+        }
+        return conf;
     }
-    
-    public void offerCommand(SqletCommand cmd) {
+
+    public void offerCommand(@Nonnull SqletCommand cmd) {
         cmdQueue.offer(cmd);
     }
 
     @Override
     public String toString() {
-        return "SqletModule [catalog=" + catalog + ", cmdQueue=" + cmdQueue + "]";
+        StringBuilder builder = new StringBuilder();
+        builder.append("SqletModule [\n catalog=");
+        builder.append(catalog);
+        builder.append(",\n cmdQueue=");
+        builder.append(cmdQueue);
+        builder.append("\n]");
+        return builder.toString();
     }
+
 }
