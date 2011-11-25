@@ -32,6 +32,9 @@ import gridool.sqlet.catalog.SystemCatalog;
 
 public class SqletParser {
 
+    private static final String[] LEX_STATES = { "DEFAULT", "LOAD_STMT", "IN_MAP_DIRECTIVE",
+            "END_MAP_DIRECTIVE", "KEYWORD", "URI", "CONSUME_SEMICOLON" };
+
     /** parse state variables */
     private Token currentToken = null;
 
@@ -47,12 +50,49 @@ public class SqletParser {
         } catch (SqletException se) {
             throw se;
         } catch (ParseException pe) {
-            throw new SqletException(SqletErrorType.parseError, pe);
+            throw new SqletException(SqletErrorType.parseError, getErrorMessage(pe), pe);
         } catch (Throwable te) {
-            throw new SqletException(SqletErrorType.parseError, te);
+            throw new SqletException(SqletErrorType.parseError, getErrorMessage(te), te);
         }
         return module;
 	}
+
+	private String getErrorMessage(final Throwable e) {
+        final StringBuilder msg = new StringBuilder();
+        final String errmsg = e.getMessage();
+        if(errmsg != null) {
+            msg.append(errmsg);
+        }
+        if(currentToken == null) {
+            return msg.toString();
+        }
+        msg.append('\n');
+
+        msg.append("Parse failed before the line " + currentToken.beginLine + ", column "
+                + currentToken.beginColumn + ".\n");
+        msg.append("\n---- detail of the error condition ----");
+        msg.append("\n * curLexState: " + LEX_STATES[token_source.curLexState] + '('
+                + token_source.curLexState + ')');
+        msg.append("\n * currentToken: `" + currentToken.image + "` ["
+                + SqletParserConstants.tokenImage[currentToken.kind] + ']');
+        if(currentToken.next != null) {
+            msg.append("\n * nextToken: `" + currentToken.next.image + "` ["
+                    + SqletParserConstants.tokenImage[currentToken.next.kind] + ']');
+        }
+        if(currentToken.specialToken != null) {
+            msg.append("\n * specialToken: " + currentToken.specialToken);
+        }
+        msg.append("\n * stateStack: ");
+        for(int i = 0; i < token_source.stateStack.size(); i++) {
+            if(i != 0) {
+                msg.append(' ');
+            }
+            final int stateNum = token_source.stateStack.elementAt(i);
+            msg.append(LEX_STATES[stateNum] + '(' + stateNum + ')');
+        }
+        msg.append("\n--------------------------------------- \n");
+        return msg.toString();
+    }
 
 	private static String unquote(String s) {
         return s.substring(1, s.length() - 1);
@@ -71,7 +111,7 @@ TOKEN_MGR_DECLS :
 		stateStack.push(state);
 	}
 
-	private void pushState() {
+	public void pushState() {
 		pushState(curLexState);
 	}
 	
@@ -93,8 +133,8 @@ TOKEN :
 < LOAD_STMT >
 TOKEN :
 {  < LoadStmt_IntoCatalog : ("into" | "INTO") <Skip_> ("catalog" | "CATALOG") <Skip_> > { pushState(LOAD_STMT); } : KEYWORD
-| < LoadStmt_FromFile : ("from" | "FROM") <Skip_> ("file" | "FILE") <Skip_> > : KEYWORD
-| < LoadStmt_FromTable : ("from" | "FROM") <Skip_ > ("table" | "TABLE") <Skip_> > : KEYWORD
+| < LoadStmt_FromFile : ("from" | "FROM") <Skip_> ("file" | "FILE") <Skip_> > { pushState(CONSUME_SEMICOLON); } : URI
+| < LoadStmt_FromTable : ("from" | "FROM") <Skip_ > ("table" | "TABLE") <Skip_> > { pushState(CONSUME_SEMICOLON); } : KEYWORD
 }
 
 TOKEN:
@@ -112,17 +152,27 @@ TOKEN :
 < END_MAP_DIRECTIVE >
 TOKEN:
 {  
-  < EndMapRbrace : "}" (";")? >
-| < EndMapUsingCatalog : "}" <Skip_> ("using"|"USING") <Skip_> ("catalog"|"CATALOG") <Skip_> > { pushState(END_MAP_DIRECTIVE); } : KEYWORD
-| < EndMapSemiColon : ";" > 
+  < EndMapRbrace : "}" (<Skip_>)* (";")? >
+| < EndMapUsingCatalog : "}" <Skip_> ("using"|"USING") <Skip_> ("catalog"|"CATALOG") <Skip_> > { pushState(CONSUME_SEMICOLON); } : URI
 }
 
 < KEYWORD >
 TOKEN :
 {
   < QuotedIdentifier : "\"" < Identifier > "\"" > { popState(); }
-| < Identifier : ( < Letter > | "_") ( < Letter > | < Digit > | ["-","."] )* > { popState(); }
-| < URI : ("\"" < URILiteral > "\"") | ("'" < URILiteral > "'") > { popState(); }| < #URILiteral : ([ "0"-"9","a"-"z","A"-"Z","-", "_", ".", "#", ":", "/", "(", ")" ])+ >
+| < Identifier : ( < Letter > | "_") ( < Letter > | < Digit > | ["-",".","_"] )* > { popState(); }
+}
+
+< URI >
+TOKEN :
+{  < UriToken : ("\"" < URILiteral > "\"") | ("'" < URILiteral > "'") > { popState(); }
+| < #URILiteral : ([ "0"-"9","a"-"z","A"-"Z","-", "_", ".", "#", ":", "/", "(", ")" ])+ >
+}
+
+< CONSUME_SEMICOLON >
+TOKEN :
+{
+  < SemiColon : ";" > 
 }
 
 TOKEN :
@@ -139,6 +189,7 @@ SPECIAL_TOKEN :
 | < MULTI_LINE_COMMENT: "/*" (~["*"])* "*" ("*" | (~["*","/"] (~["*"])* "*"))* "/" >
 }
 
+< DEFAULT, LOAD_STMT, IN_MAP_DIRECTIVE, END_MAP_DIRECTIVE, KEYWORD, URI, CONSUME_SEMICOLON >
 SKIP :
 {
   < (<WhitespaceChar>)+ >
@@ -148,9 +199,12 @@ SqletModule parseCompilationUnit() throws SqletException:
 {
   	SqletModule m = new SqletModule(catalog);}
 {
- 	(LOOKAHEAD(2)		  parseLoadPartitions(m)
+ 	(
+ 	  (LOOKAHEAD(2) 	   		  parseLoadPartitions(m)
 		| parseLoadReducers(m)
 		| parseMapDirective(m)
+	  )
+	  currentToken = < SemiColon >
  	)+	<EOF>
 	{
 		return m;
@@ -167,7 +221,7 @@ void parseLoadPartitions(SqletModule m) throws SqletException :
 	[
 		currentToken = < LoadStmt_IntoCatalog >
 		catalogName = ObjectName()
-	]
+	]	
 	{		conf = m.getPartitioningConf(catalogName);
 		if(conf == null) {
 			throw new SqletException(SqletErrorType.configFailed, "PartitioningConf is not found in catalog: " + catalogName);
@@ -181,7 +235,7 @@ void parseLoadPartitionsFromFile(PartitioningConf conf) throws SqletException :
 {}
 {
   	currentToken = < LoadStmt_FromFile >
-	currentToken = < URI >
+	currentToken = < UriToken >
 	{		String filepath = unquote(currentToken.image);
 		conf.loadSettings(filepath);
 	}
@@ -226,7 +280,7 @@ void parseLoadReducersFromFile(MapReduceConf conf) throws SqletException :
 {}
 {
 	currentToken = < LoadStmt_FromFile >
-	currentToken = < URI >
+	currentToken = < UriToken >
 	{
 		String filepath = unquote(currentToken.image);
 		conf.loadReducers(filepath);
@@ -266,7 +320,6 @@ void parseMapShuffle(SqletModule m) throws SqletException :
   	(
   	  	(  	  	  		  	currentToken = < EndMapUsingCatalog >
 		  	catalogName = ObjectName()
-		  	currentToken = < EndMapSemiColon >
   	 	)
   	 |
   	 	currentToken = < EndMapRbrace >
@@ -293,7 +346,6 @@ void parseMapNoCompile(SqletModule m) throws SqletException :
   	  	(  	  	  
 		  	currentToken = < EndMapUsingCatalog >
 		  	catalogName = ObjectName()
-		  	currentToken = < EndMapSemiColon >
   	 	)
   	 |
   	 	currentToken = < EndMapRbrace >

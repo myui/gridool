@@ -1,0 +1,2 @@
+LOAD PARTITIONS INTO CATALOG "default" FROM FILE "/home/myui/workspace/gridool/src/etl/test/gridool/sqlet/env/partitioning_test01.csv";
+
