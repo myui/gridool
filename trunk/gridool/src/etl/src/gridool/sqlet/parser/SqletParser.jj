@@ -318,7 +318,7 @@ void parseMapShuffle(SqletModule m) throws SqletException :
     {		selectQuery = removeSemiColon(currentToken.image);
     }
   	(
-  	  	(  	  	  		  	currentToken = < EndMapUsingCatalog >
+  	  	(		  	currentToken = < EndMapUsingCatalog >
 		  	catalogName = ObjectName()
   	 	)
   	 |
