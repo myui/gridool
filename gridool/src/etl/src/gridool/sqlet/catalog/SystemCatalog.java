@@ -20,7 +20,6 @@
  */
 package gridool.sqlet.catalog;
 
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -64,8 +63,14 @@ public final class SystemCatalog {
 
     @Override
     public String toString() {
-        return "SystemCatalog [partitioningConfs=" + partitioningConfs + ", mapredConfs="
-                + mapredConfs + "]";
+        StringBuilder builder = new StringBuilder();
+        builder.append("SystemCatalog [\n  partitioningConfs=");
+        builder.append(partitioningConfs);
+        builder.append(",\n  mapredConfs=");
+        builder.append(mapredConfs);
+        builder.append("\n ]");
+        return builder.toString();
     }
+
 
 }

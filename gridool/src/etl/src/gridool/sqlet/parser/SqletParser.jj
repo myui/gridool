@@ -24,7 +24,6 @@ import gridool.sqlet.SqletException;
 import gridool.sqlet.SqletException.SqletErrorType;
 import gridool.sqlet.SqletModule;
 import gridool.sqlet.api.CommandType;
-import gridool.sqlet.api.ErrorType;
 import gridool.sqlet.api.SqletCommand;
 import gridool.sqlet.catalog.MapReduceConf;
 import gridool.sqlet.catalog.PartitioningConf;
@@ -32,8 +31,8 @@ import gridool.sqlet.catalog.SystemCatalog;
 
 public class SqletParser {
 
-    private static final String[] LEX_STATES = { "DEFAULT", "LOAD_STMT", "IN_MAP_DIRECTIVE",
-            "END_MAP_DIRECTIVE", "KEYWORD", "URI", "CONSUME_SEMICOLON" };
+    private static final String[] LEX_STATES = { "DEFAULT", "LOAD_STMT", "EXPECT_SELECT", "IN_MAP_NOCOMPILE",
+            "END_MAP_DIRECTIVE", "KEYWORD", "URI", "CONSUME_SEMICOLON", "IN_MULTI_LINE_COMMENT" };
 
     /** parse state variables */
     private Token currentToken = null;
@@ -98,8 +97,8 @@ public class SqletParser {
         return s.substring(1, s.length() - 1);
     }
 
-	private static String removeSemiColon(String s) {		int len = s.length();
-		return s.substring(len, len - 1).trim();
+	private static String removeLastSemiColon(String s) {
+		return s.substring(0, s.length() - 1).trim();
 	}
     
 }PARSER_END(SqletParser)
@@ -138,22 +137,26 @@ TOKEN :
 }
 
 TOKEN:
-{  < BeginMapShuffle : "map-and-shuffle" "{" <Skip_> > : IN_MAP_DIRECTIVE
-| < BeginMapNoCompile : "map#no_compile" "{" <Skip_> > : IN_MAP_DIRECTIVE
+{  < BeginMapShuffle : "map-and-shuffle" <Skip_> "{" (<Skip_>)* > : EXPECT_SELECT
+| < BeginMapNoCompile : "map#no_compile"  <Skip_> "{" (<Skip_>)* > : IN_MAP_NOCOMPILE
 }
 
-< IN_MAP_DIRECTIVE >
+< EXPECT_SELECT >
+TOKEN :
+{  < SelectQuery : ( "SELECT" | "select" ) <Skip_> (~[";"])+ ";" > : END_MAP_DIRECTIVE
+}
+
+< IN_MAP_NOCOMPILE >
 TOKEN :
 {
-  < SelectQuery : ( "SELECT" | "select" ) <Skip_> (~[";"])+ ";" > : END_MAP_DIRECTIVE
-| < OtherThanRbrace : ( ~["}"] | "\\}" )+ > : END_MAP_DIRECTIVE
+  < OtherThanRbrace : ( ~["}"] | "\\}" )+ > : END_MAP_DIRECTIVE
 }
 
 < END_MAP_DIRECTIVE >
 TOKEN:
 {  
-  < EndMapRbrace : "}" (<Skip_>)* (";")? >
-| < EndMapUsingCatalog : "}" <Skip_> ("using"|"USING") <Skip_> ("catalog"|"CATALOG") <Skip_> > { pushState(CONSUME_SEMICOLON); } : URI
+  < EndMapUsingCatalog : "}" <Skip_> ("using"|"USING") <Skip_> ("catalog"|"CATALOG") <Skip_> > { pushState(CONSUME_SEMICOLON); } : KEYWORD
+| < EndMapRbrace : "}" > : CONSUME_SEMICOLON
 }
 
 < KEYWORD >
@@ -172,7 +175,7 @@ TOKEN :
 < CONSUME_SEMICOLON >
 TOKEN :
 {
-  < SemiColon : ";" > 
+  < SemiColon : ";" > : DEFAULT
 }
 
 TOKEN :
@@ -183,13 +186,29 @@ TOKEN :
 | < #Digit : ["0"-"9"] >
 }
 
-SPECIAL_TOKEN :
+MORE :
 {
-  < LINE_COMMENT: "--"(~["\r","\n"])* >
-| < MULTI_LINE_COMMENT: "/*" (~["*"])* "*" ("*" | (~["*","/"] (~["*"])* "*"))* "/" >
+  "/*" : IN_MULTI_LINE_COMMENT
 }
 
-< DEFAULT, LOAD_STMT, IN_MAP_DIRECTIVE, END_MAP_DIRECTIVE, KEYWORD, URI, CONSUME_SEMICOLON >
+< IN_MULTI_LINE_COMMENT >
+MORE :
+{
+  < ~[] >
+}
+
+<IN_MULTI_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  <MULTI_LINE_COMMENT: "*/"> : DEFAULT
+}
+
+SPECIAL_TOKEN :
+{
+  < SINGLE_LINE_COMMENT: "--" (~["\r","\n"])* >
+}
+
+< DEFAULT, LOAD_STMT, EXPECT_SELECT, IN_MAP_NOCOMPILE, END_MAP_DIRECTIVE, KEYWORD, URI, CONSUME_SEMICOLON >
 SKIP :
 {
   < (<WhitespaceChar>)+ >
@@ -200,7 +219,7 @@ SqletModule parseCompilationUnit() throws SqletException:
   	SqletModule m = new SqletModule(catalog);}
 {
  	(
- 	  (LOOKAHEAD(2) 	   		  parseLoadPartitions(m)
+ 	  (LOOKAHEAD(2)		  parseLoadPartitions(m)
 		| parseLoadReducers(m)
 		| parseMapDirective(m)
 	  )
@@ -221,11 +240,8 @@ void parseLoadPartitions(SqletModule m) throws SqletException :
 	[
 		currentToken = < LoadStmt_IntoCatalog >
 		catalogName = ObjectName()
-	]	
-	{		conf = m.getPartitioningConf(catalogName);
-		if(conf == null) {
-			throw new SqletException(SqletErrorType.configFailed, "PartitioningConf is not found in catalog: " + catalogName);
-		}
+	]
+	{		conf = m.obtainPartitioningConf(catalogName);
 	}
 	(
 		parseLoadPartitionsFromFile(conf) | paserLoadPartitionsFromTable(conf)
@@ -260,16 +276,13 @@ void parseLoadReducers(SqletModule m) throws SqletException :
 	MapReduceConf conf = null;
 }
 {
-	currentToken = < StartLoadPartition >
+	currentToken = < StartLoadReducers >
 	[
 		currentToken = < LoadStmt_IntoCatalog >
 		catalogName = ObjectName()
 	]
 	{
-		conf = m.getMapReduceConf(catalogName);
-		if(conf == null) {
-			throw new SqletException(SqletErrorType.configFailed, "MapReduceConf is not found in catalog: " + catalogName);
-		}
+		conf = m.obtainMapReduceConf(catalogName);
 	}
 	(
 		parseLoadReducersFromFile(conf) | parseLoadReducersFromTable(conf)
@@ -303,9 +316,7 @@ void parseLoadReducersFromTable(MapReduceConf conf) throws SqletException :
 void parseMapDirective(SqletModule mod) throws SqletException :
 {}
 {
-	(	  parseMapShuffle(mod) | parseMapNoCompile(mod)
-	)
-  	currentToken = < EndMapRbrace >}
+	parseMapShuffle(mod) | parseMapNoCompile(mod)}
 
 void parseMapShuffle(SqletModule m) throws SqletException :
 {
@@ -315,7 +326,7 @@ void parseMapShuffle(SqletModule m) throws SqletException :
 {
   	currentToken = < BeginMapShuffle >
     currentToken = < SelectQuery >
-    {		selectQuery = removeSemiColon(currentToken.image);
+    {		selectQuery = removeLastSemiColon(currentToken.image);
     }
   	(
   	  	(		  	currentToken = < EndMapUsingCatalog >
@@ -340,7 +351,7 @@ void parseMapNoCompile(SqletModule m) throws SqletException :
   	currentToken = < BeginMapNoCompile >
   	currentToken = < OtherThanRbrace >
   	{
-  	  	rawQuery = currentToken.image;
+  	  	rawQuery = currentToken.image.trim();
   	}
   	(
   	  	(  	  	  
