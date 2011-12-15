@@ -23,7 +23,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/args4j-2.0.12.jar"/>
-	<classpathentry kind="lib" path="lib/optional/tokyocabinet-1.22.jar"/>
 	<classpathentry kind="lib" path="lib/optional/jdbc/monetdb-1.15-jdbc.jar"/>
 	<classpathentry kind="lib" path="lib/jgroups-2.6.15.GA.jar"/>
 	<classpathentry kind="lib" path="lib/optional/memcached/netty-3.2.4.Final.jar"/>
@@ -35,5 +34,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/optional/slf4j-api-1.6.4.jar"/>
+	<classpathentry kind="lib" path="lib/optional/tokyocabinet-1.22.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>
