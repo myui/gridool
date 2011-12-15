@@ -414,7 +414,6 @@ void parseDirectiveOption(SqletCommand cmd) throws SqletException :
 {
   	(  	  
   		parseCatalogNameOption(cmd)
-  	  | parseNumReducersOption(cmd)
  	) 
 }
 
@@ -426,15 +425,6 @@ void parseCatalogNameOption(SqletCommand cmd) throws SqletException :
   	catalogName = ObjectName()
   	{  	  	
   	  	cmd.setCatalogName(catalogName);  	}  	}
-
-void parseNumReducersOption(SqletCommand cmd) throws SqletException :
-{}
-{
-  	currentToken = < OPT_NUM_REDUCERS >
-  	currentToken = < PositiveNumber >
-  	{
-  	  	String nm = currentToken.image;		cmd.putToProperties(Constants.PROP_NUM_REDUCERS, nm);
-  	}}
 
 String ObjectName():
 {}

@@ -1,5 +1,5 @@
-node,master,dbUrl,mapOutput
-dc01.hpcc.jp:1999,,tpch100,/work/mapoutput
-dc02.hpcc.jp:1999,,tpch100
-dc02.hpcc.jp:1999,dc01.hpcc.jp:1999,tpch100,/work/mapoutput
-dc03.hpcc.jp:1999,dc02.hpcc.jp:1999,tpch100,/tmp/mapoutput
+node,master,dbUrl,user,password,mapOutput
+dc01.hpcc.jp:1999,,tpch100,tom,tom123,/work/mapoutput
+dc02.hpcc.jp:1999,,,,tpch100
+dc02.hpcc.jp:1999,dc01.hpcc.jp:1999,tpch100,,,/work/mapoutput
+dc03.hpcc.jp:1999,dc02.hpcc.jp:1999,tpch100,alice,alice00,/tmp/mapoutput
