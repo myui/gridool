@@ -1,0 +1,510 @@
+/*
+ * @(#)$Id$
+ * JavaCC template file created by SF JavaCC plugin 1.5.17+ wizard for JavaCC 1.5.0+
+ *
+ * Copyright 2009-2011 Makoto YUI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * Contributors:
+ *     Makoto YUI - initial implementation
+ */options{  JDK_VERSION = "1.5";  static = false;}PARSER_BEGIN(SqletParser)package gridool.sqlet.parser;
+
+import gridool.sqlet.SqletException;
+import gridool.sqlet.SqletException.SqletErrorType;
+import gridool.sqlet.SqletModule;
+import gridool.sqlet.api.*;
+import gridool.sqlet.catalog.MapReduceConf;
+import gridool.sqlet.catalog.PartitioningConf;
+import gridool.sqlet.catalog.SystemCatalog;
+
+public class SqletParser {
+
+    private static final String[] LEX_STATES = { "DEFAULT", "LOAD_STMT", "IN_MAP_NOCOMPILE",
+            "EXPECT_SELECT", "END_MR_DIRECTIVE", "DIRECTIVE_OPTION", "MAY_CONSUME_SEMICOLON",
+            "KEYWORD", "URI", "IN_MULTI_LINE_COMMENT" };
+
+    /** parse state variables */
+    private Token currentToken = null;
+
+    private SystemCatalog catalog;
+
+    public void setSystemCatalog(SystemCatalog catalog) {
+        this.catalog = catalog;
+    }
+
+	public SqletModule parse() throws SqletException {	  	assert catalog != null;		final SqletModule module;
+        try {
+            module = parseCompilationUnit();
+        } catch (SqletException se) {
+            throw se;
+        } catch (ParseException pe) {
+            throw new SqletException(SqletErrorType.parseError, getErrorMessage(pe), pe);
+        } catch (Throwable te) {
+            throw new SqletException(SqletErrorType.parseError, getErrorMessage(te), te);
+        }
+        return module;
+	}
+
+	private String getErrorMessage(final Throwable e) {
+        final StringBuilder msg = new StringBuilder();
+        final String errmsg = e.getMessage();
+        if(errmsg != null) {
+            msg.append(errmsg);
+        }
+        if(currentToken == null) {
+            return msg.toString();
+        }
+        msg.append('\n');
+
+        msg.append("Parse failed before the line " + currentToken.beginLine + ", column "
+                + currentToken.beginColumn + ".\n");
+        msg.append("\n---- detail of the error condition ----");
+        msg.append("\n * curLexState: " + LEX_STATES[token_source.curLexState] + '('
+                + token_source.curLexState + ')');
+        msg.append("\n * currentToken: `" + currentToken.image + "` ["
+                + SqletParserConstants.tokenImage[currentToken.kind] + ']');
+        if(currentToken.next != null) {
+            msg.append("\n * nextToken: `" + currentToken.next.image + "` ["
+                    + SqletParserConstants.tokenImage[currentToken.next.kind] + ']');
+        }
+        if(currentToken.specialToken != null) {
+            msg.append("\n * specialToken: " + currentToken.specialToken);
+        }
+        msg.append("\n * stateStack: ");
+        for(int i = 0; i < token_source.stateStack.size(); i++) {
+            if(i != 0) {
+                msg.append(' ');
+            }
+            final int stateNum = token_source.stateStack.elementAt(i);
+            msg.append(LEX_STATES[stateNum] + '(' + stateNum + ')');
+        }
+        msg.append("\n--------------------------------------- \n");
+        return msg.toString();
+    }
+
+	private static String unquote(String s) {
+        return s.substring(1, s.length() - 1);
+    }
+
+	private static String removeLastSemiColon(String s) {
+		return s.substring(0, s.length() - 1).trim();
+	}
+    
+}PARSER_END(SqletParser)
+TOKEN_MGR_DECLS :
+{
+	final IntStack stateStack = new IntStack();
+
+	public void pushState(int state) {
+		stateStack.push(state);
+	}
+
+	public void pushState() {
+		pushState(curLexState);
+	}
+	
+	public void popState() {
+		if(stateStack.isEmpty()) {
+			System.err.println("Line: " + input_stream.getEndLine());
+		} else {
+			final int state = stateStack.pop();
+			SwitchTo(state);
+		}
+	}
+}
+
+//------------------------------
+// Load statment
+
+< DEFAULT >
+TOKEN :
+{
+  < StartLoadPartition : ("load" | "LOAD") <Skip_> ("partitions" | "PARTITIONS") <Skip_> > : LOAD_STMT | < StartLoadReducers : ("load" | "LOAD") <Skip_> ("reducers" | "REDUCERS") <Skip_> > : LOAD_STMT 
+}
+
+< LOAD_STMT >
+TOKEN :
+{  < LoadStmt_IntoCatalog : ("into" | "INTO") <Skip_> ("catalog" | "CATALOG") <Skip_> > { pushState(LOAD_STMT); } : KEYWORD
+| < LoadStmt_FromFile : ("from" | "FROM") <Skip_> ("file" | "FILE") <Skip_> > { pushState(MAY_CONSUME_SEMICOLON); } : URI
+| < LoadStmt_FromTable : ("from" | "FROM") <Skip_ > ("table" | "TABLE") <Skip_> > { pushState(MAY_CONSUME_SEMICOLON); } : KEYWORD
+}
+
+//------------------------------
+// Map directive
+
+< DEFAULT >
+TOKEN:
+{  < BeginMapShuffle : "map-and-shuffle" <Skip_> "{" (<Skip_>)* > : EXPECT_SELECT
+| < BeginMapNoCompile : "map#no_compile"  <Skip_> "{" (<Skip_>)* > : IN_MAP_NOCOMPILE
+}
+
+< IN_MAP_NOCOMPILE >
+TOKEN :
+{
+  < MapRedOtherThanRbrace : ( ~["}"] | "\\}" )+ > : END_MR_DIRECTIVE
+}
+
+//------------------------------
+// Reduce directive
+
+< DEFAULT >
+TOKEN:
+{
+  < BeginReduce : ( "REDUCE" | "reduce" ) <Skip_> "{" (<Skip_>)* > : EXPECT_SELECT
+| < BeginGatherReduce : ( "REDUCE#gather" | "reduce#gather" ) <Skip_> "{" (<Skip_>)* > : EXPECT_SELECT
+}
+
+//------------------------------
+// directive common
+
+< EXPECT_SELECT >
+TOKEN :
+{
+  < SelectQuery : ( "SELECT" | "select" ) <Skip_> (~[";"])+ ";" > : END_MR_DIRECTIVE
+}
+
+< END_MR_DIRECTIVE >
+TOKEN :
+{  
+  < EndDirectiveRbrace : "}" > : MAY_CONSUME_SEMICOLON
+}
+
+< DIRECTIVE_OPTION, MAY_CONSUME_SEMICOLON >
+TOKEN :
+{  < OPT_CATALOG_NAME : ("catalog_name"|"CATALOG_NAME") (<Skip_>)* "=" (<Skip_>)* > { pushState(MAY_CONSUME_SEMICOLON); } : KEYWORD
+| < OPT_NUM_REDUCERS : ("num_reducers"|"NUM_REDUCERS") (<Skip_>)* "=" (<Skip_>)* > { pushState(MAY_CONSUME_SEMICOLON); } : KEYWORD
+}
+
+< MAY_CONSUME_SEMICOLON >
+TOKEN :
+{  < OPT_COMMA : "," > : DIRECTIVE_OPTION
+}
+
+//------------------------------
+// Lang
+
+< DEFAULT >
+TOKEN:
+{  < LANG_START : "lang:" > { pushState(START_LANG_EXPR); } : KEYWORD
+}
+
+< START_LANG_EXPR >
+TOKEN:
+{
+  < LangExprLPar : "(" > : CONSUME_PARAMS 
+| < START_LANG_LBRACE : "{" > : IN_LANG_EXPR
+}
+
+< IN_LANG_EXPR >
+TOKEN :
+{
+  < LangOtherThanRbrace : ( ~["}"] | "\\}" )+ > : END_LANG_EXPR
+}
+
+< END_LANG_EXPR >
+TOKEN :
+{  < EndLangRbrace : "}" > : CONSUME_SEMICOLON
+}
+
+//------------------------------
+// Params
+
+< CONSUME_PARAMS >
+TOKEN:
+{
+  < ParamVarIndicator : "$" > { pushState(MAY_END_PARAMS); } : KEYWORD
+}
+
+< MAY_END_PARAMS >
+TOKEN:
+{
+  < ParamsLPar : ")" > : START_LANG_EXPR
+| < ParamsComma : "," > : CONSUME_PARAMS
+}
+
+//------------------------------
+// general stuff
+
+< KEYWORD >
+TOKEN :
+{
+  < QuotedIdentifier : "\"" < Identifier > "\"" > { popState(); }
+| < Identifier : ( < Letter > | "_") ( < Letter > | < Digit > | ["-",".","_"] )* > { popState(); }
+| < PositiveNumber : ["1"-"9"] (["0"-"9"])* > { popState(); }
+}
+
+< URI >
+TOKEN :
+{  < UriToken : ("\"" < URILiteral > "\"") | ("'" < URILiteral > "'") > { popState(); }
+| < #URILiteral : ([ "0"-"9","a"-"z","A"-"Z","-", "_", ".", "#", ":", "/", "(", ")" ])+ >
+}
+
+< MAY_CONSUME_SEMICOLON, CONSUME_SEMICOLON >
+TOKEN :
+{
+  < SemiColon : ";" > : DEFAULT
+}
+
+TOKEN :
+{
+  < #Skip_ : (<WhitespaceChar>)+ >
+| < #WhitespaceChar : ["\t", "\r", "\n", " "] >
+| < #Letter: ["A"-"Z","a"-"z"]>
+| < #Digit : ["0"-"9"] >
+}
+
+//------------------------------
+// Comment
+
+MORE :
+{
+  "/*" : IN_MULTI_LINE_COMMENT
+}
+
+< IN_MULTI_LINE_COMMENT >
+MORE :
+{
+  < ~[] >
+}
+
+<IN_MULTI_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  <MULTI_LINE_COMMENT: "*/"> : DEFAULT
+}
+
+SPECIAL_TOKEN :
+{
+  < SINGLE_LINE_COMMENT: "--" (~["\r","\n"])* >
+}
+
+< DEFAULT,
+  LOAD_STMT, EXPECT_SELECT, IN_MAP_NOCOMPILE, END_MR_DIRECTIVE, MAY_CONSUME_SEMICOLON, DIRECTIVE_OPTION,
+  START_LANG_EXPR, IN_LANG_EXPR, END_LANG_EXPR >
+SKIP :
+{
+  < (<WhitespaceChar>)+ >
+}
+
+SqletModule parseCompilationUnit() throws SqletException:
+{
+  	SqletModule m = new SqletModule(catalog);}
+{
+ 	(
+ 	  (LOOKAHEAD(2)		  parseLoadPartitions(m)
+		| parseLoadReducers(m)
+		| parseMapDirective(m)
+		| parseStartLangExpr(m)
+	  )
+	  currentToken = < SemiColon >
+ 	)+	<EOF>
+	{
+		return m;
+	}
+}
+
+void parseLoadPartitions(SqletModule m) throws SqletException :
+{
+	String catalogName = SystemCatalog.DEFAULT_CATALOG_NAME;
+	PartitioningConf conf = null;
+}
+{
+	currentToken = < StartLoadPartition >
+	[
+		currentToken = < LoadStmt_IntoCatalog >
+		catalogName = ObjectName()
+	]
+	{		conf = m.obtainPartitioningConf(catalogName);
+	}
+	(
+		parseLoadPartitionsFromFile(conf) | paserLoadPartitionsFromTable(conf)
+	)}
+
+void parseLoadPartitionsFromFile(PartitioningConf conf) throws SqletException :
+{}
+{
+  	currentToken = < LoadStmt_FromFile >
+	currentToken = < UriToken >
+	{		String filepath = unquote(currentToken.image);
+		conf.loadSettings(filepath);
+	}
+}
+
+void paserLoadPartitionsFromTable(PartitioningConf conf) throws SqletException :
+{
+	String tblName = null;
+}
+{
+  	currentToken = < LoadStmt_FromTable >
+	tblName = ObjectName()
+	{
+	  	assert (tblName != null);
+		throw new SqletException(SqletErrorType.unsupported, "'load partitions from table' is not supported yet");
+	}
+}
+
+void parseLoadReducers(SqletModule m) throws SqletException :
+{
+	String catalogName = SystemCatalog.DEFAULT_CATALOG_NAME;
+	MapReduceConf conf = null;
+}
+{
+	currentToken = < StartLoadReducers >
+	[
+		currentToken = < LoadStmt_IntoCatalog >
+		catalogName = ObjectName()
+	]
+	{
+		conf = m.obtainMapReduceConf(catalogName);
+	}
+	(
+		parseLoadReducersFromFile(conf) | parseLoadReducersFromTable(conf)
+	)
+}
+
+void parseLoadReducersFromFile(MapReduceConf conf) throws SqletException :
+{}
+{
+	currentToken = < LoadStmt_FromFile >
+	currentToken = < UriToken >
+	{
+		String filepath = unquote(currentToken.image);
+		conf.loadReducers(filepath);
+	}	
+}
+
+void parseLoadReducersFromTable(MapReduceConf conf) throws SqletException :
+{
+	String tblName = null;
+}
+{
+  	currentToken = < LoadStmt_FromTable >
+	tblName = ObjectName()
+	{
+	  	assert tblName != null;
+		throw new SqletException(SqletErrorType.unsupported, "'load reducers from table' is not supported yet");
+	}
+}
+
+void parseMapDirective(SqletModule mod) throws SqletException :
+{}
+{
+	parseMapShuffle(mod) | parseMapNoCompile(mod)}
+
+void parseMapShuffle(SqletModule m) throws SqletException :
+{
+	String selectQuery = null;
+	SqletCommand cmd = null;
+}
+{
+  	currentToken = < BeginMapShuffle >
+    currentToken = < SelectQuery >
+    {		selectQuery = removeLastSemiColon(currentToken.image);
+    }
+	currentToken = < EndDirectiveRbrace >
+  	{
+  	  	assert selectQuery != null;		cmd = new SqletCommand(CommandType.MAP_SHUFFLE, selectQuery);
+		m.offerCommand(cmd);
+  	}
+  	[
+  		parseDirectiveOptions(cmd)
+  	]
+}
+
+void parseMapNoCompile(SqletModule m) throws SqletException :
+{
+	String rawQuery = null;
+	SqletCommand cmd = null;
+}
+{
+  	currentToken = < BeginMapNoCompile >
+  	currentToken = < MapRedOtherThanRbrace >
+  	{
+  	  	rawQuery = currentToken.image.trim();
+  	}
+  	currentToken = < EndDirectiveRbrace >
+  	{
+  	  	assert rawQuery != null;
+  	   	cmd = new SqletCommand(CommandType.MAP_NO_COMPILE, rawQuery);
+		m.offerCommand(cmd);  	}
+  	[
+  		parseDirectiveOptions(cmd)
+  	]
+}
+
+void parseDirectiveOptions(SqletCommand cmd) throws SqletException :
+{}
+{
+  	parseDirectiveOption(cmd)	(
+	  	currentToken = < OPT_COMMA >	  	
+	  	parseDirectiveOption(cmd)
+	)*
+}
+
+void parseDirectiveOption(SqletCommand cmd) throws SqletException :
+{}
+{
+  	(  	  
+  		parseCatalogNameOption(cmd)
+  	  | parseNumReducersOption(cmd)
+ 	) 
+}
+
+void parseCatalogNameOption(SqletCommand cmd) throws SqletException :
+{
+  	String catalogName = null;}
+{
+  	currentToken = < OPT_CATALOG_NAME >
+  	catalogName = ObjectName()
+  	{  	  	
+  	  	cmd.setCatalogName(catalogName);  	}  	}
+
+void parseNumReducersOption(SqletCommand cmd) throws SqletException :
+{}
+{
+  	currentToken = < OPT_NUM_REDUCERS >
+  	currentToken = < PositiveNumber >
+  	{
+  	  	String nm = currentToken.image;		cmd.putToProperties(Constants.PROP_NUM_REDUCERS, nm);
+  	}}
+
+void parseStartLangExpr(SqletModule m) throws SqletException :
+{
+	String langName = null;
+}
+{
+    currentToken = < LANG_START >
+    currentToken = < Identifier >
+ 	{
+ 	  	langName = currentToken.image; 	}
+ 	[
+ 		currentToken = < LangExprLPar >
+ 		parseParamList(m)
+ 		currentToken = < ParamsLPar >
+ 	]
+ 	currentToken = < START_LANG_LBRACE >
+ 	currentToken = < LangOtherThanRbrace >
+ 	{
+ 	  	String code = currentToken.image;
+		cmd = new SqletCommand(CommandType.SCRIPT, code);
+		m.offerCommand(cmd); 	}
+ 	currentToken = < EndLangRbrace >
+}
+
+String ObjectName():
+{}
+{
+    <Identifier>       { return token.image; }
+  | <QuotedIdentifier> { String s = token.image; return s.substring(1, s.length() - 1); }
+}
