@@ -34,22 +34,22 @@ import java.util.Set;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public class KeyValueList<K, V> implements Map<K, V>, Serializable {
+public class KeyValueMap<K, V> implements Map<K, V>, Serializable {
     private static final long serialVersionUID = -8572713274583101985L;
 
     protected final List<K> keys;
     protected final List<V> values;
 
-    public KeyValueList() {
+    public KeyValueMap() {
         this(32);
     }
 
-    public KeyValueList(int size) {
+    public KeyValueMap(int size) {
         this.keys = new ArrayList<K>(size);
         this.values = new ArrayList<V>(size);
     }
 
-    public KeyValueList(List<K> k, List<V> v) {
+    public KeyValueMap(List<K> k, List<V> v) {
         this.keys = k;
         this.values = v;
     }
