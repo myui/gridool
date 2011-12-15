@@ -89,7 +89,6 @@ public final class GridUtils {
         return nameAnn == null ? jobCls.getName() : nameAnn.value();
     }
 
-    @SuppressWarnings("unchecked")
     @Nonnull
     public static String generateJobId(@Nonnull String localNodeId, @Nonnull GridJob job) {
         final long time = System.nanoTime();
@@ -197,6 +196,14 @@ public final class GridUtils {
         return GridNodeInfo.fromBytes(payload);
     }
 
+    public static GridNode getNode(@Nonnull String hostPort) {
+        int pos = hostPort.indexOf(':');
+        String host = hostPort.substring(0, pos);
+        String portStr = hostPort.substring(pos + 1);
+        int port = Integer.parseInt(portStr);
+        return getNode(host, port);
+    }
+    
     public static GridNode getNode(String host, int port) {
         InetAddress addr = NetUtils.getInetAddress(host);
         return new GridNodeInfo(addr, port, false);
