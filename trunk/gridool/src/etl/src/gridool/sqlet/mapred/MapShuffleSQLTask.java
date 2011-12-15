@@ -66,7 +66,10 @@ public final class MapShuffleSQLTask extends GridTaskAdapter {
     }
 
     @Override
-    protected MapShuffleSQLTaskResult execute() throws GridException {
+    protected MapShuffleSQLTaskResult execute() throws GridException {        
+        String dburl = partition.getDbUrl();
+        
+        
         return null;
     }
 

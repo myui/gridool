@@ -100,12 +100,14 @@ public class PartitioningConf implements Serializable {
                 String nodeStr = csvReader.get(fieldIndexes[0]);
                 String masterStr = csvReader.get(fieldIndexes[1]);
                 String dbUrl = csvReader.get(fieldIndexes[2]);
-                String mapOutput = csvReader.get(fieldIndexes[3]);
+                String user = csvReader.get(fieldIndexes[3]);
+                String password = csvReader.get(fieldIndexes[4]);
+                String mapOutput = csvReader.get(fieldIndexes[5]);
 
                 Preconditions.checkNotNull(nodeStr, dbUrl);
 
                 GridNode node = GridUtils.getNode(nodeStr);
-                Partition p = new Partition(node, dbUrl, mapOutput);
+                Partition p = new Partition(node, dbUrl, user, password, mapOutput);
                 if(masterStr == null || masterStr.length() == 0) {
                     masterSlave.put(node, p);
                     list.add(p);
@@ -126,20 +128,24 @@ public class PartitioningConf implements Serializable {
 
     private static int[] toFieldIndexes(@Nullable Map<String, Integer> map) {
         if(map == null) {
-            return new int[] { 0, 1, 2, 3 };
+            return new int[] { 0, 1, 2, 3, 4, 5 };
         } else {
             Integer c0 = map.get("NODE");
             Integer c1 = map.get("MASTER");
             Integer c2 = map.get("DBURL");
-            Integer c3 = map.get("MAPOUTPUT");
+            Integer c3 = map.get("USER");
+            Integer c4 = map.get("PASSWORD");
+            Integer c5 = map.get("MAPOUTPUT");
 
-            Preconditions.checkNotNull(c0, c1, c2, c3);
+            Preconditions.checkNotNull(c0, c1, c2, c3, c4, c5);
 
-            final int[] indexes = new int[4];
+            final int[] indexes = new int[6];
             indexes[0] = c0.intValue();
             indexes[1] = c1.intValue();
             indexes[2] = c2.intValue();
             indexes[3] = c3.intValue();
+            indexes[4] = c4.intValue();
+            indexes[5] = c5.intValue();
             return indexes;
         }
     }
@@ -152,14 +158,20 @@ public class PartitioningConf implements Serializable {
         @Nonnull
         final String dbUrl;
         @Nullable
+        final String user;
+        @Nullable
+        final String password;
+        @Nullable
         final String mapOutput;
         @Nullable
         List<Partition> slaves;
 
-        Partition(@Nonnull GridNode node, @Nonnull String dbUrl, @Nullable String mapOutput) {
+        Partition(@Nonnull GridNode node, @Nonnull String dbUrl, @Nullable String user, @Nullable String password, @Nullable String mapOutput) {
             super();
             this.node = node;
             this.dbUrl = dbUrl;
+            this.user = user;
+            this.password = password;
             this.mapOutput = mapOutput;
         }
 
@@ -178,6 +190,14 @@ public class PartitioningConf implements Serializable {
             return dbUrl;
         }
 
+        public String getUser() {
+            return user;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
         public String getMapOutput() {
             return mapOutput;
         }
@@ -188,8 +208,9 @@ public class PartitioningConf implements Serializable {
 
         @Override
         public String toString() {
-            return "Partition [node=" + node + ", dbUrl=" + dbUrl + ", mapOutput=" + mapOutput
-                    + ", slaves=" + slaves + "]";
+            return "Partition [node=" + node + ", dbUrl=" + dbUrl + ", user=" + user
+                    + ", password=" + password + ", mapOutput=" + mapOutput + ", slaves=" + slaves
+                    + "]";
         }
 
     }

@@ -114,7 +114,6 @@ public final class MapShuffleSQLJob extends GridJobBase<MapShuffleSQLJob.JobConf
             String errmsg = "task '" + result.getTaskId() + "' failed on node '" + failedNode
                     + ":'\n" + PrintUtils.prettyPrintStackTrace(err);
             LOG.warn(errmsg);
-
         }
     }
 

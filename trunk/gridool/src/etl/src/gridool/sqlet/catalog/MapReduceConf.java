@@ -96,12 +96,14 @@ public class MapReduceConf implements Serializable {
                 String id = csvReader.get(fieldIndexes[0]);
                 String nodeStr = csvReader.get(fieldIndexes[1]);
                 String dbUrl = csvReader.get(fieldIndexes[2]);
-                String shuffleDataSink = csvReader.get(fieldIndexes[3]);
+                String user = csvReader.get(fieldIndexes[3]);
+                String password = csvReader.get(fieldIndexes[4]);
+                String shuffleDataSink = csvReader.get(fieldIndexes[5]);
 
                 Preconditions.checkNotNull(id, nodeStr);
 
                 GridNode hostNode = GridUtils.getNode(nodeStr);
-                Reducer r = new Reducer(id, hostNode, dbUrl, shuffleDataSink);
+                Reducer r = new Reducer(id, hostNode, dbUrl, user, password, shuffleDataSink);
                 reducers.add(r);
             }
         } else {
@@ -111,20 +113,24 @@ public class MapReduceConf implements Serializable {
 
     private static int[] toFieldIndexes(@Nullable Map<String, Integer> map) {
         if(map == null) {
-            return new int[] { 0, 1, 2, 3, };
+            return new int[] { 0, 1, 2, 3, 4, 5 };
         } else {
             Integer c0 = map.get("ID");
             Integer c1 = map.get("NODE");
             Integer c2 = map.get("DBURL");
-            Integer c3 = map.get("SHUFFLEDATASINK");
+            Integer c3 = map.get("USER");
+            Integer c4 = map.get("PASSWORD");
+            Integer c5 = map.get("SHUFFLEDATASINK");
 
-            Preconditions.checkNotNull(c0, c1, c2, c3);
+            Preconditions.checkNotNull(c0, c1, c2, c3, c4, c5);
 
-            final int[] indexes = new int[4];
+            final int[] indexes = new int[6];
             indexes[0] = c0.intValue();
             indexes[1] = c1.intValue();
             indexes[2] = c2.intValue();
             indexes[3] = c3.intValue();
+            indexes[4] = c4.intValue();
+            indexes[5] = c5.intValue();
             return indexes;
         }
     }
@@ -139,19 +145,49 @@ public class MapReduceConf implements Serializable {
         @Nullable
         final String dbUrl;
         @Nullable
+        final String user;
+        @Nullable
+        final String password;
+        @Nullable
         final String shuffleDataSink;
 
-        public Reducer(@Nonnull String id, @Nonnull GridNode host, @Nullable String dbUrl, @Nullable String shuffleDataSink) {
+        public Reducer(@Nonnull String id, @Nonnull GridNode host, @Nullable String dbUrl, @Nullable String user, @Nullable String password, @Nullable String shuffleDataSink) {
             this.id = id;
             this.host = host;
             this.dbUrl = dbUrl;
+            this.user = user;
+            this.password = password;
             this.shuffleDataSink = shuffleDataSink;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public GridNode getHost() {
+            return host;
+        }
+
+        public String getDbUrl() {
+            return dbUrl;
+        }
+
+        public String getUser() {
+            return user;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public String getShuffleDataSink() {
+            return shuffleDataSink;
         }
 
         @Override
         public String toString() {
-            return "Reducer [id=" + id + ", host=" + host + ", dbUrl=" + dbUrl
-                    + ", shuffleDataSink=" + shuffleDataSink + "]";
+            return "Reducer [id=" + id + ", host=" + host + ", dbUrl=" + dbUrl + ", user=" + user
+                    + ", password=" + password + ", shuffleDataSink=" + shuffleDataSink + "]";
         }
 
     }
