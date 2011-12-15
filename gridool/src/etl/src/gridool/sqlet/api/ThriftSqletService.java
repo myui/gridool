@@ -5,3078 +5,3043 @@
  */
 package gridool.sqlet.api;
 
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
-
+import java.util.HashMap;
+import java.util.EnumMap;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.EnumSet;
+import java.util.Collections;
+import java.util.BitSet;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ThriftSqletService {
 
-    public interface Iface {
+  public interface Iface {
 
-        public String getPartitions(String catalogName, InputOutputType outType)
-                throws SqletServiceException, org.apache.thrift.TException;
+    public String getPartitions(String catalogName, InputOutputType outType) throws SqletServiceException, org.apache.thrift.TException;
 
-        public boolean deleteCatalog(String catalogName) throws SqletServiceException,
-                org.apache.thrift.TException;
+    public boolean deleteCatalog(String catalogName) throws SqletServiceException, org.apache.thrift.TException;
 
-        public void executeQuery(String query) throws SqletServiceException,
-                org.apache.thrift.TException;
+    public void executeQuery(String query) throws SqletServiceException, org.apache.thrift.TException;
 
-        public void executeCommand(SqletCommand cmd) throws SqletServiceException,
-                org.apache.thrift.TException;
+    public void executeCommand(SqletCommand cmd) throws SqletServiceException, org.apache.thrift.TException;
 
+  }
+
+  public interface AsyncIface {
+
+    public void getPartitions(String catalogName, InputOutputType outType, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.getPartitions_call> resultHandler) throws org.apache.thrift.TException;
+
+    public void deleteCatalog(String catalogName, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.deleteCatalog_call> resultHandler) throws org.apache.thrift.TException;
+
+    public void executeQuery(String query, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.executeQuery_call> resultHandler) throws org.apache.thrift.TException;
+
+    public void executeCommand(SqletCommand cmd, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.executeCommand_call> resultHandler) throws org.apache.thrift.TException;
+
+  }
+
+  public static class Client extends org.apache.thrift.TServiceClient implements Iface {
+    public static class Factory implements org.apache.thrift.TServiceClientFactory<Client> {
+      public Factory() {}
+      public Client getClient(org.apache.thrift.protocol.TProtocol prot) {
+        return new Client(prot);
+      }
+      public Client getClient(org.apache.thrift.protocol.TProtocol iprot, org.apache.thrift.protocol.TProtocol oprot) {
+        return new Client(iprot, oprot);
+      }
     }
 
-    public interface AsyncIface {
-
-        public void getPartitions(String catalogName, InputOutputType outType, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.getPartitions_call> resultHandler)
-                throws org.apache.thrift.TException;
-
-        public void deleteCatalog(String catalogName, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.deleteCatalog_call> resultHandler)
-                throws org.apache.thrift.TException;
-
-        public void executeQuery(String query, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.executeQuery_call> resultHandler)
-                throws org.apache.thrift.TException;
-
-        public void executeCommand(SqletCommand cmd, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.executeCommand_call> resultHandler)
-                throws org.apache.thrift.TException;
-
+    public Client(org.apache.thrift.protocol.TProtocol prot)
+    {
+      super(prot, prot);
     }
 
-    public static class Client extends org.apache.thrift.TServiceClient implements Iface {
-        public static class Factory implements org.apache.thrift.TServiceClientFactory<Client> {
-            public Factory() {}
-
-            public Client getClient(org.apache.thrift.protocol.TProtocol prot) {
-                return new Client(prot);
-            }
-
-            public Client getClient(org.apache.thrift.protocol.TProtocol iprot, org.apache.thrift.protocol.TProtocol oprot) {
-                return new Client(iprot, oprot);
-            }
-        }
-
-        public Client(org.apache.thrift.protocol.TProtocol prot) {
-            super(prot, prot);
-        }
-
-        public Client(org.apache.thrift.protocol.TProtocol iprot, org.apache.thrift.protocol.TProtocol oprot) {
-            super(iprot, oprot);
-        }
-
-        public String getPartitions(String catalogName, InputOutputType outType)
-                throws SqletServiceException, org.apache.thrift.TException {
-            send_getPartitions(catalogName, outType);
-            return recv_getPartitions();
-        }
-
-        public void send_getPartitions(String catalogName, InputOutputType outType)
-                throws org.apache.thrift.TException {
-            getPartitions_args args = new getPartitions_args();
-            args.setCatalogName(catalogName);
-            args.setOutType(outType);
-            sendBase("getPartitions", args);
-        }
-
-        public String recv_getPartitions() throws SqletServiceException,
-                org.apache.thrift.TException {
-            getPartitions_result result = new getPartitions_result();
-            receiveBase(result, "getPartitions");
-            if(result.isSetSuccess()) {
-                return result.success;
-            }
-            if(result.ex != null) {
-                throw result.ex;
-            }
-            throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getPartitions failed: unknown result");
-        }
-
-        public boolean deleteCatalog(String catalogName) throws SqletServiceException,
-                org.apache.thrift.TException {
-            send_deleteCatalog(catalogName);
-            return recv_deleteCatalog();
-        }
-
-        public void send_deleteCatalog(String catalogName) throws org.apache.thrift.TException {
-            deleteCatalog_args args = new deleteCatalog_args();
-            args.setCatalogName(catalogName);
-            sendBase("deleteCatalog", args);
-        }
-
-        public boolean recv_deleteCatalog() throws SqletServiceException,
-                org.apache.thrift.TException {
-            deleteCatalog_result result = new deleteCatalog_result();
-            receiveBase(result, "deleteCatalog");
-            if(result.isSetSuccess()) {
-                return result.success;
-            }
-            if(result.ex != null) {
-                throw result.ex;
-            }
-            throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "deleteCatalog failed: unknown result");
-        }
-
-        public void executeQuery(String query) throws SqletServiceException,
-                org.apache.thrift.TException {
-            send_executeQuery(query);
-            recv_executeQuery();
-        }
-
-        public void send_executeQuery(String query) throws org.apache.thrift.TException {
-            executeQuery_args args = new executeQuery_args();
-            args.setQuery(query);
-            sendBase("executeQuery", args);
-        }
-
-        public void recv_executeQuery() throws SqletServiceException, org.apache.thrift.TException {
-            executeQuery_result result = new executeQuery_result();
-            receiveBase(result, "executeQuery");
-            if(result.ex != null) {
-                throw result.ex;
-            }
-            return;
-        }
-
-        public void executeCommand(SqletCommand cmd) throws SqletServiceException,
-                org.apache.thrift.TException {
-            send_executeCommand(cmd);
-            recv_executeCommand();
-        }
-
-        public void send_executeCommand(SqletCommand cmd) throws org.apache.thrift.TException {
-            executeCommand_args args = new executeCommand_args();
-            args.setCmd(cmd);
-            sendBase("executeCommand", args);
-        }
-
-        public void recv_executeCommand() throws SqletServiceException,
-                org.apache.thrift.TException {
-            executeCommand_result result = new executeCommand_result();
-            receiveBase(result, "executeCommand");
-            if(result.ex != null) {
-                throw result.ex;
-            }
-            return;
-        }
-
+    public Client(org.apache.thrift.protocol.TProtocol iprot, org.apache.thrift.protocol.TProtocol oprot) {
+      super(iprot, oprot);
     }
 
-    public static class AsyncClient extends org.apache.thrift.async.TAsyncClient
-            implements AsyncIface {
-        public static class Factory
-                implements org.apache.thrift.async.TAsyncClientFactory<AsyncClient> {
-            private org.apache.thrift.async.TAsyncClientManager clientManager;
-            private org.apache.thrift.protocol.TProtocolFactory protocolFactory;
-
-            public Factory(org.apache.thrift.async.TAsyncClientManager clientManager, org.apache.thrift.protocol.TProtocolFactory protocolFactory) {
-                this.clientManager = clientManager;
-                this.protocolFactory = protocolFactory;
-            }
-
-            public AsyncClient getAsyncClient(org.apache.thrift.transport.TNonblockingTransport transport) {
-                return new AsyncClient(protocolFactory, clientManager, transport);
-            }
-        }
-
-        public AsyncClient(org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.async.TAsyncClientManager clientManager, org.apache.thrift.transport.TNonblockingTransport transport) {
-            super(protocolFactory, clientManager, transport);
-        }
-
-        public void getPartitions(String catalogName, InputOutputType outType, org.apache.thrift.async.AsyncMethodCallback<getPartitions_call> resultHandler)
-                throws org.apache.thrift.TException {
-            checkReady();
-            getPartitions_call method_call = new getPartitions_call(catalogName, outType, resultHandler, this, ___protocolFactory, ___transport);
-            this.___currentMethod = method_call;
-            ___manager.call(method_call);
-        }
-
-        public static class getPartitions_call extends org.apache.thrift.async.TAsyncMethodCall {
-            private String catalogName;
-            private InputOutputType outType;
-
-            public getPartitions_call(String catalogName, InputOutputType outType, org.apache.thrift.async.AsyncMethodCallback<getPartitions_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport)
-                    throws org.apache.thrift.TException {
-                super(client, protocolFactory, transport, resultHandler, false);
-                this.catalogName = catalogName;
-                this.outType = outType;
-            }
-
-            public void write_args(org.apache.thrift.protocol.TProtocol prot)
-                    throws org.apache.thrift.TException {
-                prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("getPartitions", org.apache.thrift.protocol.TMessageType.CALL, 0));
-                getPartitions_args args = new getPartitions_args();
-                args.setCatalogName(catalogName);
-                args.setOutType(outType);
-                args.write(prot);
-                prot.writeMessageEnd();
-            }
-
-            public String getResult() throws SqletServiceException, org.apache.thrift.TException {
-                if(getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
-                    throw new IllegalStateException("Method call not finished!");
-                }
-                org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
-                org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
-                return (new Client(prot)).recv_getPartitions();
-            }
-        }
-
-        public void deleteCatalog(String catalogName, org.apache.thrift.async.AsyncMethodCallback<deleteCatalog_call> resultHandler)
-                throws org.apache.thrift.TException {
-            checkReady();
-            deleteCatalog_call method_call = new deleteCatalog_call(catalogName, resultHandler, this, ___protocolFactory, ___transport);
-            this.___currentMethod = method_call;
-            ___manager.call(method_call);
-        }
-
-        public static class deleteCatalog_call extends org.apache.thrift.async.TAsyncMethodCall {
-            private String catalogName;
-
-            public deleteCatalog_call(String catalogName, org.apache.thrift.async.AsyncMethodCallback<deleteCatalog_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport)
-                    throws org.apache.thrift.TException {
-                super(client, protocolFactory, transport, resultHandler, false);
-                this.catalogName = catalogName;
-            }
-
-            public void write_args(org.apache.thrift.protocol.TProtocol prot)
-                    throws org.apache.thrift.TException {
-                prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("deleteCatalog", org.apache.thrift.protocol.TMessageType.CALL, 0));
-                deleteCatalog_args args = new deleteCatalog_args();
-                args.setCatalogName(catalogName);
-                args.write(prot);
-                prot.writeMessageEnd();
-            }
-
-            public boolean getResult() throws SqletServiceException, org.apache.thrift.TException {
-                if(getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
-                    throw new IllegalStateException("Method call not finished!");
-                }
-                org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
-                org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
-                return (new Client(prot)).recv_deleteCatalog();
-            }
-        }
-
-        public void executeQuery(String query, org.apache.thrift.async.AsyncMethodCallback<executeQuery_call> resultHandler)
-                throws org.apache.thrift.TException {
-            checkReady();
-            executeQuery_call method_call = new executeQuery_call(query, resultHandler, this, ___protocolFactory, ___transport);
-            this.___currentMethod = method_call;
-            ___manager.call(method_call);
-        }
-
-        public static class executeQuery_call extends org.apache.thrift.async.TAsyncMethodCall {
-            private String query;
-
-            public executeQuery_call(String query, org.apache.thrift.async.AsyncMethodCallback<executeQuery_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport)
-                    throws org.apache.thrift.TException {
-                super(client, protocolFactory, transport, resultHandler, false);
-                this.query = query;
-            }
-
-            public void write_args(org.apache.thrift.protocol.TProtocol prot)
-                    throws org.apache.thrift.TException {
-                prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("executeQuery", org.apache.thrift.protocol.TMessageType.CALL, 0));
-                executeQuery_args args = new executeQuery_args();
-                args.setQuery(query);
-                args.write(prot);
-                prot.writeMessageEnd();
-            }
-
-            public void getResult() throws SqletServiceException, org.apache.thrift.TException {
-                if(getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
-                    throw new IllegalStateException("Method call not finished!");
-                }
-                org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
-                org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
-                (new Client(prot)).recv_executeQuery();
-            }
-        }
-
-        public void executeCommand(SqletCommand cmd, org.apache.thrift.async.AsyncMethodCallback<executeCommand_call> resultHandler)
-                throws org.apache.thrift.TException {
-            checkReady();
-            executeCommand_call method_call = new executeCommand_call(cmd, resultHandler, this, ___protocolFactory, ___transport);
-            this.___currentMethod = method_call;
-            ___manager.call(method_call);
-        }
-
-        public static class executeCommand_call extends org.apache.thrift.async.TAsyncMethodCall {
-            private SqletCommand cmd;
-
-            public executeCommand_call(SqletCommand cmd, org.apache.thrift.async.AsyncMethodCallback<executeCommand_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport)
-                    throws org.apache.thrift.TException {
-                super(client, protocolFactory, transport, resultHandler, false);
-                this.cmd = cmd;
-            }
-
-            public void write_args(org.apache.thrift.protocol.TProtocol prot)
-                    throws org.apache.thrift.TException {
-                prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("executeCommand", org.apache.thrift.protocol.TMessageType.CALL, 0));
-                executeCommand_args args = new executeCommand_args();
-                args.setCmd(cmd);
-                args.write(prot);
-                prot.writeMessageEnd();
-            }
-
-            public void getResult() throws SqletServiceException, org.apache.thrift.TException {
-                if(getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
-                    throw new IllegalStateException("Method call not finished!");
-                }
-                org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
-                org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
-                (new Client(prot)).recv_executeCommand();
-            }
-        }
-
+    public String getPartitions(String catalogName, InputOutputType outType) throws SqletServiceException, org.apache.thrift.TException
+    {
+      send_getPartitions(catalogName, outType);
+      return recv_getPartitions();
     }
 
-    public static class Processor<I extends Iface> extends org.apache.thrift.TBaseProcessor
-            implements org.apache.thrift.TProcessor {
-        private static final Logger LOGGER = LoggerFactory.getLogger(Processor.class.getName());
-
-        public Processor(I iface) {
-            super(iface, getProcessMap(new HashMap<String, org.apache.thrift.ProcessFunction<I, ? extends org.apache.thrift.TBase>>()));
-        }
-
-        protected Processor(I iface, Map<String, org.apache.thrift.ProcessFunction<I, ? extends org.apache.thrift.TBase>> processMap) {
-            super(iface, getProcessMap(processMap));
-        }
-
-        private static <I extends Iface> Map<String, org.apache.thrift.ProcessFunction<I, ? extends org.apache.thrift.TBase>> getProcessMap(Map<String, org.apache.thrift.ProcessFunction<I, ? extends org.apache.thrift.TBase>> processMap) {
-            processMap.put("getPartitions", new getPartitions());
-            processMap.put("deleteCatalog", new deleteCatalog());
-            processMap.put("executeQuery", new executeQuery());
-            processMap.put("executeCommand", new executeCommand());
-            return processMap;
-        }
-
-        private static class getPartitions<I extends Iface> extends
-                org.apache.thrift.ProcessFunction<I, getPartitions_args> {
-            public getPartitions() {
-                super("getPartitions");
-            }
-
-            protected getPartitions_args getEmptyArgsInstance() {
-                return new getPartitions_args();
-            }
-
-            protected getPartitions_result getResult(I iface, getPartitions_args args)
-                    throws org.apache.thrift.TException {
-                getPartitions_result result = new getPartitions_result();
-                try {
-                    result.success = iface.getPartitions(args.catalogName, args.outType);
-                } catch (SqletServiceException ex) {
-                    result.ex = ex;
-                }
-                return result;
-            }
-        }
-
-        private static class deleteCatalog<I extends Iface> extends
-                org.apache.thrift.ProcessFunction<I, deleteCatalog_args> {
-            public deleteCatalog() {
-                super("deleteCatalog");
-            }
-
-            protected deleteCatalog_args getEmptyArgsInstance() {
-                return new deleteCatalog_args();
-            }
-
-            protected deleteCatalog_result getResult(I iface, deleteCatalog_args args)
-                    throws org.apache.thrift.TException {
-                deleteCatalog_result result = new deleteCatalog_result();
-                try {
-                    result.success = iface.deleteCatalog(args.catalogName);
-                    result.setSuccessIsSet(true);
-                } catch (SqletServiceException ex) {
-                    result.ex = ex;
-                }
-                return result;
-            }
-        }
-
-        private static class executeQuery<I extends Iface> extends
-                org.apache.thrift.ProcessFunction<I, executeQuery_args> {
-            public executeQuery() {
-                super("executeQuery");
-            }
-
-            protected executeQuery_args getEmptyArgsInstance() {
-                return new executeQuery_args();
-            }
-
-            protected executeQuery_result getResult(I iface, executeQuery_args args)
-                    throws org.apache.thrift.TException {
-                executeQuery_result result = new executeQuery_result();
-                try {
-                    iface.executeQuery(args.query);
-                } catch (SqletServiceException ex) {
-                    result.ex = ex;
-                }
-                return result;
-            }
-        }
-
-        private static class executeCommand<I extends Iface> extends
-                org.apache.thrift.ProcessFunction<I, executeCommand_args> {
-            public executeCommand() {
-                super("executeCommand");
-            }
-
-            protected executeCommand_args getEmptyArgsInstance() {
-                return new executeCommand_args();
-            }
-
-            protected executeCommand_result getResult(I iface, executeCommand_args args)
-                    throws org.apache.thrift.TException {
-                executeCommand_result result = new executeCommand_result();
-                try {
-                    iface.executeCommand(args.cmd);
-                } catch (SqletServiceException ex) {
-                    result.ex = ex;
-                }
-                return result;
-            }
-        }
-
+    public void send_getPartitions(String catalogName, InputOutputType outType) throws org.apache.thrift.TException
+    {
+      getPartitions_args args = new getPartitions_args();
+      args.setCatalogName(catalogName);
+      args.setOutType(outType);
+      sendBase("getPartitions", args);
     }
 
-    public static class getPartitions_args
-            implements org.apache.thrift.TBase<getPartitions_args, getPartitions_args._Fields>,
-            java.io.Serializable, Cloneable {
-        private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getPartitions_args");
-
-        private static final org.apache.thrift.protocol.TField CATALOG_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("catalogName", org.apache.thrift.protocol.TType.STRING, (short) 1);
-        private static final org.apache.thrift.protocol.TField OUT_TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("outType", org.apache.thrift.protocol.TType.I32, (short) 2);
-
-        private String catalogName; // required
-        private InputOutputType outType; // required
-
-        /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-        public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-            CATALOG_NAME((short) 1, "catalogName"),
-            /**
-             * 
-             * @see InputOutputType
-             */
-            OUT_TYPE((short) 2, "outType");
-
-            private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
-
-            static {
-                for(_Fields field : EnumSet.allOf(_Fields.class)) {
-                    byName.put(field.getFieldName(), field);
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, or null if its not found.
-             */
-            public static _Fields findByThriftId(int fieldId) {
-                switch(fieldId) {
-                    case 1: // CATALOG_NAME
-                        return CATALOG_NAME;
-                    case 2: // OUT_TYPE
-                        return OUT_TYPE;
-                    default:
-                        return null;
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, throwing an exception
-             * if it is not found.
-             */
-            public static _Fields findByThriftIdOrThrow(int fieldId) {
-                _Fields fields = findByThriftId(fieldId);
-                if(fields == null)
-                    throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-                return fields;
-            }
-
-            /**
-             * Find the _Fields constant that matches name, or null if its not found.
-             */
-            public static _Fields findByName(String name) {
-                return byName.get(name);
-            }
-
-            private final short _thriftId;
-            private final String _fieldName;
-
-            _Fields(short thriftId, String fieldName) {
-                _thriftId = thriftId;
-                _fieldName = fieldName;
-            }
-
-            public short getThriftFieldId() {
-                return _thriftId;
-            }
-
-            public String getFieldName() {
-                return _fieldName;
-            }
-        }
-
-        // isset id assignments
-
-        public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
-        static {
-            Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-            tmpMap.put(_Fields.CATALOG_NAME, new org.apache.thrift.meta_data.FieldMetaData("catalogName", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-            tmpMap.put(_Fields.OUT_TYPE, new org.apache.thrift.meta_data.FieldMetaData("outType", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, InputOutputType.class)));
-            metaDataMap = Collections.unmodifiableMap(tmpMap);
-            org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getPartitions_args.class, metaDataMap);
-        }
-
-        public getPartitions_args() {}
-
-        public getPartitions_args(String catalogName, InputOutputType outType) {
-            this();
-            this.catalogName = catalogName;
-            this.outType = outType;
-        }
-
-        /**
-         * Performs a deep copy on <i>other</i>.
-         */
-        public getPartitions_args(getPartitions_args other) {
-            if(other.isSetCatalogName()) {
-                this.catalogName = other.catalogName;
-            }
-            if(other.isSetOutType()) {
-                this.outType = other.outType;
-            }
-        }
-
-        public getPartitions_args deepCopy() {
-            return new getPartitions_args(this);
-        }
-
-        @Override
-        public void clear() {
-            this.catalogName = null;
-            this.outType = null;
-        }
-
-        public String getCatalogName() {
-            return this.catalogName;
-        }
-
-        public void setCatalogName(String catalogName) {
-            this.catalogName = catalogName;
-        }
-
-        public void unsetCatalogName() {
-            this.catalogName = null;
-        }
-
-        /** Returns true if field catalogName is set (has been assigned a value) and false otherwise */
-        public boolean isSetCatalogName() {
-            return this.catalogName != null;
-        }
-
-        public void setCatalogNameIsSet(boolean value) {
-            if(!value) {
-                this.catalogName = null;
-            }
-        }
-
-        /**
-         * 
-         * @see InputOutputType
-         */
-        public InputOutputType getOutType() {
-            return this.outType;
-        }
-
-        /**
-         * 
-         * @see InputOutputType
-         */
-        public void setOutType(InputOutputType outType) {
-            this.outType = outType;
-        }
-
-        public void unsetOutType() {
-            this.outType = null;
-        }
-
-        /** Returns true if field outType is set (has been assigned a value) and false otherwise */
-        public boolean isSetOutType() {
-            return this.outType != null;
-        }
-
-        public void setOutTypeIsSet(boolean value) {
-            if(!value) {
-                this.outType = null;
-            }
-        }
-
-        public void setFieldValue(_Fields field, Object value) {
-            switch(field) {
-                case CATALOG_NAME:
-                    if(value == null) {
-                        unsetCatalogName();
-                    } else {
-                        setCatalogName((String) value);
-                    }
-                    break;
-
-                case OUT_TYPE:
-                    if(value == null) {
-                        unsetOutType();
-                    } else {
-                        setOutType((InputOutputType) value);
-                    }
-                    break;
-
-            }
-        }
-
-        public Object getFieldValue(_Fields field) {
-            switch(field) {
-                case CATALOG_NAME:
-                    return getCatalogName();
-
-                case OUT_TYPE:
-                    return getOutType();
-
-            }
-            throw new IllegalStateException();
-        }
-
-        /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-        public boolean isSet(_Fields field) {
-            if(field == null) {
-                throw new IllegalArgumentException();
-            }
-
-            switch(field) {
-                case CATALOG_NAME:
-                    return isSetCatalogName();
-                case OUT_TYPE:
-                    return isSetOutType();
-            }
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public boolean equals(Object that) {
-            if(that == null)
-                return false;
-            if(that instanceof getPartitions_args)
-                return this.equals((getPartitions_args) that);
-            return false;
-        }
-
-        public boolean equals(getPartitions_args that) {
-            if(that == null)
-                return false;
-
-            boolean this_present_catalogName = true && this.isSetCatalogName();
-            boolean that_present_catalogName = true && that.isSetCatalogName();
-            if(this_present_catalogName || that_present_catalogName) {
-                if(!(this_present_catalogName && that_present_catalogName))
-                    return false;
-                if(!this.catalogName.equals(that.catalogName))
-                    return false;
-            }
-
-            boolean this_present_outType = true && this.isSetOutType();
-            boolean that_present_outType = true && that.isSetOutType();
-            if(this_present_outType || that_present_outType) {
-                if(!(this_present_outType && that_present_outType))
-                    return false;
-                if(!this.outType.equals(that.outType))
-                    return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return 0;
-        }
-
-        public int compareTo(getPartitions_args other) {
-            if(!getClass().equals(other.getClass())) {
-                return getClass().getName().compareTo(other.getClass().getName());
-            }
-
-            int lastComparison = 0;
-            getPartitions_args typedOther = (getPartitions_args) other;
-
-            lastComparison = Boolean.valueOf(isSetCatalogName()).compareTo(typedOther.isSetCatalogName());
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-            if(isSetCatalogName()) {
-                lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.catalogName, typedOther.catalogName);
-                if(lastComparison != 0) {
-                    return lastComparison;
-                }
-            }
-            lastComparison = Boolean.valueOf(isSetOutType()).compareTo(typedOther.isSetOutType());
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-            if(isSetOutType()) {
-                lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.outType, typedOther.outType);
-                if(lastComparison != 0) {
-                    return lastComparison;
-                }
-            }
-            return 0;
-        }
-
-        public _Fields fieldForId(int fieldId) {
-            return _Fields.findByThriftId(fieldId);
-        }
-
-        public void read(org.apache.thrift.protocol.TProtocol iprot)
-                throws org.apache.thrift.TException {
-            org.apache.thrift.protocol.TField field;
-            iprot.readStructBegin();
-            while(true) {
-                field = iprot.readFieldBegin();
-                if(field.type == org.apache.thrift.protocol.TType.STOP) {
-                    break;
-                }
-                switch(field.id) {
-                    case 1: // CATALOG_NAME
-                        if(field.type == org.apache.thrift.protocol.TType.STRING) {
-                            this.catalogName = iprot.readString();
-                        } else {
-                            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                        }
-                        break;
-                    case 2: // OUT_TYPE
-                        if(field.type == org.apache.thrift.protocol.TType.I32) {
-                            this.outType = InputOutputType.findByValue(iprot.readI32());
-                        } else {
-                            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                        }
-                        break;
-                    default:
-                        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                }
-                iprot.readFieldEnd();
-            }
-            iprot.readStructEnd();
-            validate();
-        }
-
-        public void write(org.apache.thrift.protocol.TProtocol oprot)
-                throws org.apache.thrift.TException {
-            validate();
-
-            oprot.writeStructBegin(STRUCT_DESC);
-            if(this.catalogName != null) {
-                oprot.writeFieldBegin(CATALOG_NAME_FIELD_DESC);
-                oprot.writeString(this.catalogName);
-                oprot.writeFieldEnd();
-            }
-            if(this.outType != null) {
-                oprot.writeFieldBegin(OUT_TYPE_FIELD_DESC);
-                oprot.writeI32(this.outType.getValue());
-                oprot.writeFieldEnd();
-            }
-            oprot.writeFieldStop();
-            oprot.writeStructEnd();
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder("getPartitions_args(");
-            boolean first = true;
-
-            sb.append("catalogName:");
-            if(this.catalogName == null) {
-                sb.append("null");
-            } else {
-                sb.append(this.catalogName);
-            }
-            first = false;
-            if(!first)
-                sb.append(", ");
-            sb.append("outType:");
-            if(this.outType == null) {
-                sb.append("null");
-            } else {
-                sb.append(this.outType);
-            }
-            first = false;
-            sb.append(")");
-            return sb.toString();
-        }
-
-        public void validate() throws org.apache.thrift.TException {
-            // check for required fields
-        }
-
-        private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-            try {
-                write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
-        private void readObject(java.io.ObjectInputStream in) throws java.io.IOException,
-                ClassNotFoundException {
-            try {
-                read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
+    public String recv_getPartitions() throws SqletServiceException, org.apache.thrift.TException
+    {
+      getPartitions_result result = new getPartitions_result();
+      receiveBase(result, "getPartitions");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      if (result.ex != null) {
+        throw result.ex;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "getPartitions failed: unknown result");
     }
 
-    public static class getPartitions_result
-            implements org.apache.thrift.TBase<getPartitions_result, getPartitions_result._Fields>,
-            java.io.Serializable, Cloneable {
-        private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getPartitions_result");
-
-        private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRING, (short) 0);
-        private static final org.apache.thrift.protocol.TField EX_FIELD_DESC = new org.apache.thrift.protocol.TField("ex", org.apache.thrift.protocol.TType.STRUCT, (short) 1);
-
-        private String success; // required
-        private SqletServiceException ex; // required
-
-        /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-        public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-            SUCCESS((short) 0, "success"), EX((short) 1, "ex");
-
-            private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
-
-            static {
-                for(_Fields field : EnumSet.allOf(_Fields.class)) {
-                    byName.put(field.getFieldName(), field);
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, or null if its not found.
-             */
-            public static _Fields findByThriftId(int fieldId) {
-                switch(fieldId) {
-                    case 0: // SUCCESS
-                        return SUCCESS;
-                    case 1: // EX
-                        return EX;
-                    default:
-                        return null;
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, throwing an exception
-             * if it is not found.
-             */
-            public static _Fields findByThriftIdOrThrow(int fieldId) {
-                _Fields fields = findByThriftId(fieldId);
-                if(fields == null)
-                    throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-                return fields;
-            }
-
-            /**
-             * Find the _Fields constant that matches name, or null if its not found.
-             */
-            public static _Fields findByName(String name) {
-                return byName.get(name);
-            }
-
-            private final short _thriftId;
-            private final String _fieldName;
-
-            _Fields(short thriftId, String fieldName) {
-                _thriftId = thriftId;
-                _fieldName = fieldName;
-            }
-
-            public short getThriftFieldId() {
-                return _thriftId;
-            }
-
-            public String getFieldName() {
-                return _fieldName;
-            }
-        }
-
-        // isset id assignments
-
-        public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
-        static {
-            Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-            tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-            tmpMap.put(_Fields.EX, new org.apache.thrift.meta_data.FieldMetaData("ex", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
-            metaDataMap = Collections.unmodifiableMap(tmpMap);
-            org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getPartitions_result.class, metaDataMap);
-        }
-
-        public getPartitions_result() {}
-
-        public getPartitions_result(String success, SqletServiceException ex) {
-            this();
-            this.success = success;
-            this.ex = ex;
-        }
-
-        /**
-         * Performs a deep copy on <i>other</i>.
-         */
-        public getPartitions_result(getPartitions_result other) {
-            if(other.isSetSuccess()) {
-                this.success = other.success;
-            }
-            if(other.isSetEx()) {
-                this.ex = new SqletServiceException(other.ex);
-            }
-        }
-
-        public getPartitions_result deepCopy() {
-            return new getPartitions_result(this);
-        }
-
-        @Override
-        public void clear() {
-            this.success = null;
-            this.ex = null;
-        }
-
-        public String getSuccess() {
-            return this.success;
-        }
-
-        public void setSuccess(String success) {
-            this.success = success;
-        }
-
-        public void unsetSuccess() {
-            this.success = null;
-        }
-
-        /** Returns true if field success is set (has been assigned a value) and false otherwise */
-        public boolean isSetSuccess() {
-            return this.success != null;
-        }
-
-        public void setSuccessIsSet(boolean value) {
-            if(!value) {
-                this.success = null;
-            }
-        }
-
-        public SqletServiceException getEx() {
-            return this.ex;
-        }
-
-        public void setEx(SqletServiceException ex) {
-            this.ex = ex;
-        }
-
-        public void unsetEx() {
-            this.ex = null;
-        }
-
-        /** Returns true if field ex is set (has been assigned a value) and false otherwise */
-        public boolean isSetEx() {
-            return this.ex != null;
-        }
-
-        public void setExIsSet(boolean value) {
-            if(!value) {
-                this.ex = null;
-            }
-        }
-
-        public void setFieldValue(_Fields field, Object value) {
-            switch(field) {
-                case SUCCESS:
-                    if(value == null) {
-                        unsetSuccess();
-                    } else {
-                        setSuccess((String) value);
-                    }
-                    break;
-
-                case EX:
-                    if(value == null) {
-                        unsetEx();
-                    } else {
-                        setEx((SqletServiceException) value);
-                    }
-                    break;
-
-            }
-        }
-
-        public Object getFieldValue(_Fields field) {
-            switch(field) {
-                case SUCCESS:
-                    return getSuccess();
-
-                case EX:
-                    return getEx();
-
-            }
-            throw new IllegalStateException();
-        }
-
-        /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-        public boolean isSet(_Fields field) {
-            if(field == null) {
-                throw new IllegalArgumentException();
-            }
-
-            switch(field) {
-                case SUCCESS:
-                    return isSetSuccess();
-                case EX:
-                    return isSetEx();
-            }
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public boolean equals(Object that) {
-            if(that == null)
-                return false;
-            if(that instanceof getPartitions_result)
-                return this.equals((getPartitions_result) that);
-            return false;
-        }
-
-        public boolean equals(getPartitions_result that) {
-            if(that == null)
-                return false;
-
-            boolean this_present_success = true && this.isSetSuccess();
-            boolean that_present_success = true && that.isSetSuccess();
-            if(this_present_success || that_present_success) {
-                if(!(this_present_success && that_present_success))
-                    return false;
-                if(!this.success.equals(that.success))
-                    return false;
-            }
-
-            boolean this_present_ex = true && this.isSetEx();
-            boolean that_present_ex = true && that.isSetEx();
-            if(this_present_ex || that_present_ex) {
-                if(!(this_present_ex && that_present_ex))
-                    return false;
-                if(!this.ex.equals(that.ex))
-                    return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return 0;
-        }
-
-        public int compareTo(getPartitions_result other) {
-            if(!getClass().equals(other.getClass())) {
-                return getClass().getName().compareTo(other.getClass().getName());
-            }
-
-            int lastComparison = 0;
-            getPartitions_result typedOther = (getPartitions_result) other;
-
-            lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-            if(isSetSuccess()) {
-                lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
-                if(lastComparison != 0) {
-                    return lastComparison;
-                }
-            }
-            lastComparison = Boolean.valueOf(isSetEx()).compareTo(typedOther.isSetEx());
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-            if(isSetEx()) {
-                lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex, typedOther.ex);
-                if(lastComparison != 0) {
-                    return lastComparison;
-                }
-            }
-            return 0;
-        }
-
-        public _Fields fieldForId(int fieldId) {
-            return _Fields.findByThriftId(fieldId);
-        }
-
-        public void read(org.apache.thrift.protocol.TProtocol iprot)
-                throws org.apache.thrift.TException {
-            org.apache.thrift.protocol.TField field;
-            iprot.readStructBegin();
-            while(true) {
-                field = iprot.readFieldBegin();
-                if(field.type == org.apache.thrift.protocol.TType.STOP) {
-                    break;
-                }
-                switch(field.id) {
-                    case 0: // SUCCESS
-                        if(field.type == org.apache.thrift.protocol.TType.STRING) {
-                            this.success = iprot.readString();
-                        } else {
-                            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                        }
-                        break;
-                    case 1: // EX
-                        if(field.type == org.apache.thrift.protocol.TType.STRUCT) {
-                            this.ex = new SqletServiceException();
-                            this.ex.read(iprot);
-                        } else {
-                            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                        }
-                        break;
-                    default:
-                        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                }
-                iprot.readFieldEnd();
-            }
-            iprot.readStructEnd();
-            validate();
-        }
-
-        public void write(org.apache.thrift.protocol.TProtocol oprot)
-                throws org.apache.thrift.TException {
-            oprot.writeStructBegin(STRUCT_DESC);
-
-            if(this.isSetSuccess()) {
-                oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
-                oprot.writeString(this.success);
-                oprot.writeFieldEnd();
-            } else if(this.isSetEx()) {
-                oprot.writeFieldBegin(EX_FIELD_DESC);
-                this.ex.write(oprot);
-                oprot.writeFieldEnd();
-            }
-            oprot.writeFieldStop();
-            oprot.writeStructEnd();
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder("getPartitions_result(");
-            boolean first = true;
-
-            sb.append("success:");
-            if(this.success == null) {
-                sb.append("null");
-            } else {
-                sb.append(this.success);
-            }
-            first = false;
-            if(!first)
-                sb.append(", ");
-            sb.append("ex:");
-            if(this.ex == null) {
-                sb.append("null");
-            } else {
-                sb.append(this.ex);
-            }
-            first = false;
-            sb.append(")");
-            return sb.toString();
-        }
-
-        public void validate() throws org.apache.thrift.TException {
-            // check for required fields
-        }
-
-        private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-            try {
-                write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
-        private void readObject(java.io.ObjectInputStream in) throws java.io.IOException,
-                ClassNotFoundException {
-            try {
-                read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
+    public boolean deleteCatalog(String catalogName) throws SqletServiceException, org.apache.thrift.TException
+    {
+      send_deleteCatalog(catalogName);
+      return recv_deleteCatalog();
     }
 
-    public static class deleteCatalog_args
-            implements org.apache.thrift.TBase<deleteCatalog_args, deleteCatalog_args._Fields>,
-            java.io.Serializable, Cloneable {
-        private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("deleteCatalog_args");
-
-        private static final org.apache.thrift.protocol.TField CATALOG_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("catalogName", org.apache.thrift.protocol.TType.STRING, (short) 1);
-
-        private String catalogName; // required
-
-        /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-        public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-            CATALOG_NAME((short) 1, "catalogName");
-
-            private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
-
-            static {
-                for(_Fields field : EnumSet.allOf(_Fields.class)) {
-                    byName.put(field.getFieldName(), field);
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, or null if its not found.
-             */
-            public static _Fields findByThriftId(int fieldId) {
-                switch(fieldId) {
-                    case 1: // CATALOG_NAME
-                        return CATALOG_NAME;
-                    default:
-                        return null;
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, throwing an exception
-             * if it is not found.
-             */
-            public static _Fields findByThriftIdOrThrow(int fieldId) {
-                _Fields fields = findByThriftId(fieldId);
-                if(fields == null)
-                    throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-                return fields;
-            }
-
-            /**
-             * Find the _Fields constant that matches name, or null if its not found.
-             */
-            public static _Fields findByName(String name) {
-                return byName.get(name);
-            }
-
-            private final short _thriftId;
-            private final String _fieldName;
-
-            _Fields(short thriftId, String fieldName) {
-                _thriftId = thriftId;
-                _fieldName = fieldName;
-            }
-
-            public short getThriftFieldId() {
-                return _thriftId;
-            }
-
-            public String getFieldName() {
-                return _fieldName;
-            }
-        }
-
-        // isset id assignments
-
-        public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
-        static {
-            Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-            tmpMap.put(_Fields.CATALOG_NAME, new org.apache.thrift.meta_data.FieldMetaData("catalogName", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-            metaDataMap = Collections.unmodifiableMap(tmpMap);
-            org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(deleteCatalog_args.class, metaDataMap);
-        }
-
-        public deleteCatalog_args() {}
-
-        public deleteCatalog_args(String catalogName) {
-            this();
-            this.catalogName = catalogName;
-        }
-
-        /**
-         * Performs a deep copy on <i>other</i>.
-         */
-        public deleteCatalog_args(deleteCatalog_args other) {
-            if(other.isSetCatalogName()) {
-                this.catalogName = other.catalogName;
-            }
-        }
-
-        public deleteCatalog_args deepCopy() {
-            return new deleteCatalog_args(this);
-        }
-
-        @Override
-        public void clear() {
-            this.catalogName = null;
-        }
-
-        public String getCatalogName() {
-            return this.catalogName;
-        }
-
-        public void setCatalogName(String catalogName) {
-            this.catalogName = catalogName;
-        }
-
-        public void unsetCatalogName() {
-            this.catalogName = null;
-        }
-
-        /** Returns true if field catalogName is set (has been assigned a value) and false otherwise */
-        public boolean isSetCatalogName() {
-            return this.catalogName != null;
-        }
-
-        public void setCatalogNameIsSet(boolean value) {
-            if(!value) {
-                this.catalogName = null;
-            }
-        }
-
-        public void setFieldValue(_Fields field, Object value) {
-            switch(field) {
-                case CATALOG_NAME:
-                    if(value == null) {
-                        unsetCatalogName();
-                    } else {
-                        setCatalogName((String) value);
-                    }
-                    break;
-
-            }
-        }
-
-        public Object getFieldValue(_Fields field) {
-            switch(field) {
-                case CATALOG_NAME:
-                    return getCatalogName();
-
-            }
-            throw new IllegalStateException();
-        }
-
-        /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-        public boolean isSet(_Fields field) {
-            if(field == null) {
-                throw new IllegalArgumentException();
-            }
-
-            switch(field) {
-                case CATALOG_NAME:
-                    return isSetCatalogName();
-            }
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public boolean equals(Object that) {
-            if(that == null)
-                return false;
-            if(that instanceof deleteCatalog_args)
-                return this.equals((deleteCatalog_args) that);
-            return false;
-        }
-
-        public boolean equals(deleteCatalog_args that) {
-            if(that == null)
-                return false;
-
-            boolean this_present_catalogName = true && this.isSetCatalogName();
-            boolean that_present_catalogName = true && that.isSetCatalogName();
-            if(this_present_catalogName || that_present_catalogName) {
-                if(!(this_present_catalogName && that_present_catalogName))
-                    return false;
-                if(!this.catalogName.equals(that.catalogName))
-                    return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return 0;
-        }
-
-        public int compareTo(deleteCatalog_args other) {
-            if(!getClass().equals(other.getClass())) {
-                return getClass().getName().compareTo(other.getClass().getName());
-            }
-
-            int lastComparison = 0;
-            deleteCatalog_args typedOther = (deleteCatalog_args) other;
-
-            lastComparison = Boolean.valueOf(isSetCatalogName()).compareTo(typedOther.isSetCatalogName());
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-            if(isSetCatalogName()) {
-                lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.catalogName, typedOther.catalogName);
-                if(lastComparison != 0) {
-                    return lastComparison;
-                }
-            }
-            return 0;
-        }
-
-        public _Fields fieldForId(int fieldId) {
-            return _Fields.findByThriftId(fieldId);
-        }
-
-        public void read(org.apache.thrift.protocol.TProtocol iprot)
-                throws org.apache.thrift.TException {
-            org.apache.thrift.protocol.TField field;
-            iprot.readStructBegin();
-            while(true) {
-                field = iprot.readFieldBegin();
-                if(field.type == org.apache.thrift.protocol.TType.STOP) {
-                    break;
-                }
-                switch(field.id) {
-                    case 1: // CATALOG_NAME
-                        if(field.type == org.apache.thrift.protocol.TType.STRING) {
-                            this.catalogName = iprot.readString();
-                        } else {
-                            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                        }
-                        break;
-                    default:
-                        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                }
-                iprot.readFieldEnd();
-            }
-            iprot.readStructEnd();
-            validate();
-        }
-
-        public void write(org.apache.thrift.protocol.TProtocol oprot)
-                throws org.apache.thrift.TException {
-            validate();
-
-            oprot.writeStructBegin(STRUCT_DESC);
-            if(this.catalogName != null) {
-                oprot.writeFieldBegin(CATALOG_NAME_FIELD_DESC);
-                oprot.writeString(this.catalogName);
-                oprot.writeFieldEnd();
-            }
-            oprot.writeFieldStop();
-            oprot.writeStructEnd();
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder("deleteCatalog_args(");
-            boolean first = true;
-
-            sb.append("catalogName:");
-            if(this.catalogName == null) {
-                sb.append("null");
-            } else {
-                sb.append(this.catalogName);
-            }
-            first = false;
-            sb.append(")");
-            return sb.toString();
-        }
-
-        public void validate() throws org.apache.thrift.TException {
-            // check for required fields
-        }
-
-        private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-            try {
-                write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
-        private void readObject(java.io.ObjectInputStream in) throws java.io.IOException,
-                ClassNotFoundException {
-            try {
-                read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
+    public void send_deleteCatalog(String catalogName) throws org.apache.thrift.TException
+    {
+      deleteCatalog_args args = new deleteCatalog_args();
+      args.setCatalogName(catalogName);
+      sendBase("deleteCatalog", args);
     }
 
-    public static class deleteCatalog_result
-            implements org.apache.thrift.TBase<deleteCatalog_result, deleteCatalog_result._Fields>,
-            java.io.Serializable, Cloneable {
-        private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("deleteCatalog_result");
-
-        private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.BOOL, (short) 0);
-        private static final org.apache.thrift.protocol.TField EX_FIELD_DESC = new org.apache.thrift.protocol.TField("ex", org.apache.thrift.protocol.TType.STRUCT, (short) 1);
-
-        private boolean success; // required
-        private SqletServiceException ex; // required
-
-        /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-        public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-            SUCCESS((short) 0, "success"), EX((short) 1, "ex");
-
-            private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
-
-            static {
-                for(_Fields field : EnumSet.allOf(_Fields.class)) {
-                    byName.put(field.getFieldName(), field);
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, or null if its not found.
-             */
-            public static _Fields findByThriftId(int fieldId) {
-                switch(fieldId) {
-                    case 0: // SUCCESS
-                        return SUCCESS;
-                    case 1: // EX
-                        return EX;
-                    default:
-                        return null;
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, throwing an exception
-             * if it is not found.
-             */
-            public static _Fields findByThriftIdOrThrow(int fieldId) {
-                _Fields fields = findByThriftId(fieldId);
-                if(fields == null)
-                    throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-                return fields;
-            }
-
-            /**
-             * Find the _Fields constant that matches name, or null if its not found.
-             */
-            public static _Fields findByName(String name) {
-                return byName.get(name);
-            }
-
-            private final short _thriftId;
-            private final String _fieldName;
-
-            _Fields(short thriftId, String fieldName) {
-                _thriftId = thriftId;
-                _fieldName = fieldName;
-            }
-
-            public short getThriftFieldId() {
-                return _thriftId;
-            }
-
-            public String getFieldName() {
-                return _fieldName;
-            }
-        }
-
-        // isset id assignments
-        private static final int __SUCCESS_ISSET_ID = 0;
-        private BitSet __isset_bit_vector = new BitSet(1);
-
-        public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
-        static {
-            Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-            tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
-            tmpMap.put(_Fields.EX, new org.apache.thrift.meta_data.FieldMetaData("ex", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
-            metaDataMap = Collections.unmodifiableMap(tmpMap);
-            org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(deleteCatalog_result.class, metaDataMap);
-        }
-
-        public deleteCatalog_result() {}
-
-        public deleteCatalog_result(boolean success, SqletServiceException ex) {
-            this();
-            this.success = success;
-            setSuccessIsSet(true);
-            this.ex = ex;
-        }
-
-        /**
-         * Performs a deep copy on <i>other</i>.
-         */
-        public deleteCatalog_result(deleteCatalog_result other) {
-            __isset_bit_vector.clear();
-            __isset_bit_vector.or(other.__isset_bit_vector);
-            this.success = other.success;
-            if(other.isSetEx()) {
-                this.ex = new SqletServiceException(other.ex);
-            }
-        }
-
-        public deleteCatalog_result deepCopy() {
-            return new deleteCatalog_result(this);
-        }
-
-        @Override
-        public void clear() {
-            setSuccessIsSet(false);
-            this.success = false;
-            this.ex = null;
-        }
-
-        public boolean isSuccess() {
-            return this.success;
-        }
-
-        public void setSuccess(boolean success) {
-            this.success = success;
-            setSuccessIsSet(true);
-        }
-
-        public void unsetSuccess() {
-            __isset_bit_vector.clear(__SUCCESS_ISSET_ID);
-        }
-
-        /** Returns true if field success is set (has been assigned a value) and false otherwise */
-        public boolean isSetSuccess() {
-            return __isset_bit_vector.get(__SUCCESS_ISSET_ID);
-        }
-
-        public void setSuccessIsSet(boolean value) {
-            __isset_bit_vector.set(__SUCCESS_ISSET_ID, value);
-        }
-
-        public SqletServiceException getEx() {
-            return this.ex;
-        }
-
-        public void setEx(SqletServiceException ex) {
-            this.ex = ex;
-        }
-
-        public void unsetEx() {
-            this.ex = null;
-        }
-
-        /** Returns true if field ex is set (has been assigned a value) and false otherwise */
-        public boolean isSetEx() {
-            return this.ex != null;
-        }
-
-        public void setExIsSet(boolean value) {
-            if(!value) {
-                this.ex = null;
-            }
-        }
-
-        public void setFieldValue(_Fields field, Object value) {
-            switch(field) {
-                case SUCCESS:
-                    if(value == null) {
-                        unsetSuccess();
-                    } else {
-                        setSuccess((Boolean) value);
-                    }
-                    break;
-
-                case EX:
-                    if(value == null) {
-                        unsetEx();
-                    } else {
-                        setEx((SqletServiceException) value);
-                    }
-                    break;
-
-            }
-        }
-
-        public Object getFieldValue(_Fields field) {
-            switch(field) {
-                case SUCCESS:
-                    return Boolean.valueOf(isSuccess());
-
-                case EX:
-                    return getEx();
-
-            }
-            throw new IllegalStateException();
-        }
-
-        /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-        public boolean isSet(_Fields field) {
-            if(field == null) {
-                throw new IllegalArgumentException();
-            }
-
-            switch(field) {
-                case SUCCESS:
-                    return isSetSuccess();
-                case EX:
-                    return isSetEx();
-            }
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public boolean equals(Object that) {
-            if(that == null)
-                return false;
-            if(that instanceof deleteCatalog_result)
-                return this.equals((deleteCatalog_result) that);
-            return false;
-        }
-
-        public boolean equals(deleteCatalog_result that) {
-            if(that == null)
-                return false;
-
-            boolean this_present_success = true;
-            boolean that_present_success = true;
-            if(this_present_success || that_present_success) {
-                if(!(this_present_success && that_present_success))
-                    return false;
-                if(this.success != that.success)
-                    return false;
-            }
-
-            boolean this_present_ex = true && this.isSetEx();
-            boolean that_present_ex = true && that.isSetEx();
-            if(this_present_ex || that_present_ex) {
-                if(!(this_present_ex && that_present_ex))
-                    return false;
-                if(!this.ex.equals(that.ex))
-                    return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return 0;
-        }
-
-        public int compareTo(deleteCatalog_result other) {
-            if(!getClass().equals(other.getClass())) {
-                return getClass().getName().compareTo(other.getClass().getName());
-            }
-
-            int lastComparison = 0;
-            deleteCatalog_result typedOther = (deleteCatalog_result) other;
-
-            lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-            if(isSetSuccess()) {
-                lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
-                if(lastComparison != 0) {
-                    return lastComparison;
-                }
-            }
-            lastComparison = Boolean.valueOf(isSetEx()).compareTo(typedOther.isSetEx());
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-            if(isSetEx()) {
-                lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex, typedOther.ex);
-                if(lastComparison != 0) {
-                    return lastComparison;
-                }
-            }
-            return 0;
-        }
-
-        public _Fields fieldForId(int fieldId) {
-            return _Fields.findByThriftId(fieldId);
-        }
-
-        public void read(org.apache.thrift.protocol.TProtocol iprot)
-                throws org.apache.thrift.TException {
-            org.apache.thrift.protocol.TField field;
-            iprot.readStructBegin();
-            while(true) {
-                field = iprot.readFieldBegin();
-                if(field.type == org.apache.thrift.protocol.TType.STOP) {
-                    break;
-                }
-                switch(field.id) {
-                    case 0: // SUCCESS
-                        if(field.type == org.apache.thrift.protocol.TType.BOOL) {
-                            this.success = iprot.readBool();
-                            setSuccessIsSet(true);
-                        } else {
-                            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                        }
-                        break;
-                    case 1: // EX
-                        if(field.type == org.apache.thrift.protocol.TType.STRUCT) {
-                            this.ex = new SqletServiceException();
-                            this.ex.read(iprot);
-                        } else {
-                            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                        }
-                        break;
-                    default:
-                        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                }
-                iprot.readFieldEnd();
-            }
-            iprot.readStructEnd();
-            validate();
-        }
-
-        public void write(org.apache.thrift.protocol.TProtocol oprot)
-                throws org.apache.thrift.TException {
-            oprot.writeStructBegin(STRUCT_DESC);
-
-            if(this.isSetSuccess()) {
-                oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
-                oprot.writeBool(this.success);
-                oprot.writeFieldEnd();
-            } else if(this.isSetEx()) {
-                oprot.writeFieldBegin(EX_FIELD_DESC);
-                this.ex.write(oprot);
-                oprot.writeFieldEnd();
-            }
-            oprot.writeFieldStop();
-            oprot.writeStructEnd();
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder("deleteCatalog_result(");
-            boolean first = true;
-
-            sb.append("success:");
-            sb.append(this.success);
-            first = false;
-            if(!first)
-                sb.append(", ");
-            sb.append("ex:");
-            if(this.ex == null) {
-                sb.append("null");
-            } else {
-                sb.append(this.ex);
-            }
-            first = false;
-            sb.append(")");
-            return sb.toString();
-        }
-
-        public void validate() throws org.apache.thrift.TException {
-            // check for required fields
-        }
-
-        private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-            try {
-                write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
-        private void readObject(java.io.ObjectInputStream in) throws java.io.IOException,
-                ClassNotFoundException {
-            try {
-                read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
+    public boolean recv_deleteCatalog() throws SqletServiceException, org.apache.thrift.TException
+    {
+      deleteCatalog_result result = new deleteCatalog_result();
+      receiveBase(result, "deleteCatalog");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      if (result.ex != null) {
+        throw result.ex;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "deleteCatalog failed: unknown result");
     }
 
-    public static class executeQuery_args
-            implements org.apache.thrift.TBase<executeQuery_args, executeQuery_args._Fields>,
-            java.io.Serializable, Cloneable {
-        private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("executeQuery_args");
-
-        private static final org.apache.thrift.protocol.TField QUERY_FIELD_DESC = new org.apache.thrift.protocol.TField("query", org.apache.thrift.protocol.TType.STRING, (short) 1);
-
-        private String query; // required
-
-        /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-        public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-            QUERY((short) 1, "query");
-
-            private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
-
-            static {
-                for(_Fields field : EnumSet.allOf(_Fields.class)) {
-                    byName.put(field.getFieldName(), field);
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, or null if its not found.
-             */
-            public static _Fields findByThriftId(int fieldId) {
-                switch(fieldId) {
-                    case 1: // QUERY
-                        return QUERY;
-                    default:
-                        return null;
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, throwing an exception
-             * if it is not found.
-             */
-            public static _Fields findByThriftIdOrThrow(int fieldId) {
-                _Fields fields = findByThriftId(fieldId);
-                if(fields == null)
-                    throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-                return fields;
-            }
-
-            /**
-             * Find the _Fields constant that matches name, or null if its not found.
-             */
-            public static _Fields findByName(String name) {
-                return byName.get(name);
-            }
-
-            private final short _thriftId;
-            private final String _fieldName;
-
-            _Fields(short thriftId, String fieldName) {
-                _thriftId = thriftId;
-                _fieldName = fieldName;
-            }
-
-            public short getThriftFieldId() {
-                return _thriftId;
-            }
-
-            public String getFieldName() {
-                return _fieldName;
-            }
-        }
-
-        // isset id assignments
-
-        public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
-        static {
-            Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-            tmpMap.put(_Fields.QUERY, new org.apache.thrift.meta_data.FieldMetaData("query", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-            metaDataMap = Collections.unmodifiableMap(tmpMap);
-            org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(executeQuery_args.class, metaDataMap);
-        }
-
-        public executeQuery_args() {}
-
-        public executeQuery_args(String query) {
-            this();
-            this.query = query;
-        }
-
-        /**
-         * Performs a deep copy on <i>other</i>.
-         */
-        public executeQuery_args(executeQuery_args other) {
-            if(other.isSetQuery()) {
-                this.query = other.query;
-            }
-        }
-
-        public executeQuery_args deepCopy() {
-            return new executeQuery_args(this);
-        }
-
-        @Override
-        public void clear() {
-            this.query = null;
-        }
-
-        public String getQuery() {
-            return this.query;
-        }
-
-        public void setQuery(String query) {
-            this.query = query;
-        }
-
-        public void unsetQuery() {
-            this.query = null;
-        }
-
-        /** Returns true if field query is set (has been assigned a value) and false otherwise */
-        public boolean isSetQuery() {
-            return this.query != null;
-        }
-
-        public void setQueryIsSet(boolean value) {
-            if(!value) {
-                this.query = null;
-            }
-        }
-
-        public void setFieldValue(_Fields field, Object value) {
-            switch(field) {
-                case QUERY:
-                    if(value == null) {
-                        unsetQuery();
-                    } else {
-                        setQuery((String) value);
-                    }
-                    break;
-
-            }
-        }
-
-        public Object getFieldValue(_Fields field) {
-            switch(field) {
-                case QUERY:
-                    return getQuery();
-
-            }
-            throw new IllegalStateException();
-        }
-
-        /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-        public boolean isSet(_Fields field) {
-            if(field == null) {
-                throw new IllegalArgumentException();
-            }
-
-            switch(field) {
-                case QUERY:
-                    return isSetQuery();
-            }
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public boolean equals(Object that) {
-            if(that == null)
-                return false;
-            if(that instanceof executeQuery_args)
-                return this.equals((executeQuery_args) that);
-            return false;
-        }
-
-        public boolean equals(executeQuery_args that) {
-            if(that == null)
-                return false;
-
-            boolean this_present_query = true && this.isSetQuery();
-            boolean that_present_query = true && that.isSetQuery();
-            if(this_present_query || that_present_query) {
-                if(!(this_present_query && that_present_query))
-                    return false;
-                if(!this.query.equals(that.query))
-                    return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return 0;
-        }
-
-        public int compareTo(executeQuery_args other) {
-            if(!getClass().equals(other.getClass())) {
-                return getClass().getName().compareTo(other.getClass().getName());
-            }
-
-            int lastComparison = 0;
-            executeQuery_args typedOther = (executeQuery_args) other;
-
-            lastComparison = Boolean.valueOf(isSetQuery()).compareTo(typedOther.isSetQuery());
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-            if(isSetQuery()) {
-                lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.query, typedOther.query);
-                if(lastComparison != 0) {
-                    return lastComparison;
-                }
-            }
-            return 0;
-        }
-
-        public _Fields fieldForId(int fieldId) {
-            return _Fields.findByThriftId(fieldId);
-        }
-
-        public void read(org.apache.thrift.protocol.TProtocol iprot)
-                throws org.apache.thrift.TException {
-            org.apache.thrift.protocol.TField field;
-            iprot.readStructBegin();
-            while(true) {
-                field = iprot.readFieldBegin();
-                if(field.type == org.apache.thrift.protocol.TType.STOP) {
-                    break;
-                }
-                switch(field.id) {
-                    case 1: // QUERY
-                        if(field.type == org.apache.thrift.protocol.TType.STRING) {
-                            this.query = iprot.readString();
-                        } else {
-                            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                        }
-                        break;
-                    default:
-                        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                }
-                iprot.readFieldEnd();
-            }
-            iprot.readStructEnd();
-            validate();
-        }
-
-        public void write(org.apache.thrift.protocol.TProtocol oprot)
-                throws org.apache.thrift.TException {
-            validate();
-
-            oprot.writeStructBegin(STRUCT_DESC);
-            if(this.query != null) {
-                oprot.writeFieldBegin(QUERY_FIELD_DESC);
-                oprot.writeString(this.query);
-                oprot.writeFieldEnd();
-            }
-            oprot.writeFieldStop();
-            oprot.writeStructEnd();
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder("executeQuery_args(");
-            boolean first = true;
-
-            sb.append("query:");
-            if(this.query == null) {
-                sb.append("null");
-            } else {
-                sb.append(this.query);
-            }
-            first = false;
-            sb.append(")");
-            return sb.toString();
-        }
-
-        public void validate() throws org.apache.thrift.TException {
-            // check for required fields
-        }
-
-        private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-            try {
-                write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
-        private void readObject(java.io.ObjectInputStream in) throws java.io.IOException,
-                ClassNotFoundException {
-            try {
-                read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
+    public void executeQuery(String query) throws SqletServiceException, org.apache.thrift.TException
+    {
+      send_executeQuery(query);
+      recv_executeQuery();
     }
 
-    public static class executeQuery_result
-            implements org.apache.thrift.TBase<executeQuery_result, executeQuery_result._Fields>,
-            java.io.Serializable, Cloneable {
-        private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("executeQuery_result");
-
-        private static final org.apache.thrift.protocol.TField EX_FIELD_DESC = new org.apache.thrift.protocol.TField("ex", org.apache.thrift.protocol.TType.STRUCT, (short) 1);
-
-        private SqletServiceException ex; // required
-
-        /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-        public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-            EX((short) 1, "ex");
-
-            private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
-
-            static {
-                for(_Fields field : EnumSet.allOf(_Fields.class)) {
-                    byName.put(field.getFieldName(), field);
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, or null if its not found.
-             */
-            public static _Fields findByThriftId(int fieldId) {
-                switch(fieldId) {
-                    case 1: // EX
-                        return EX;
-                    default:
-                        return null;
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, throwing an exception
-             * if it is not found.
-             */
-            public static _Fields findByThriftIdOrThrow(int fieldId) {
-                _Fields fields = findByThriftId(fieldId);
-                if(fields == null)
-                    throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-                return fields;
-            }
-
-            /**
-             * Find the _Fields constant that matches name, or null if its not found.
-             */
-            public static _Fields findByName(String name) {
-                return byName.get(name);
-            }
-
-            private final short _thriftId;
-            private final String _fieldName;
-
-            _Fields(short thriftId, String fieldName) {
-                _thriftId = thriftId;
-                _fieldName = fieldName;
-            }
-
-            public short getThriftFieldId() {
-                return _thriftId;
-            }
-
-            public String getFieldName() {
-                return _fieldName;
-            }
-        }
-
-        // isset id assignments
-
-        public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
-        static {
-            Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-            tmpMap.put(_Fields.EX, new org.apache.thrift.meta_data.FieldMetaData("ex", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
-            metaDataMap = Collections.unmodifiableMap(tmpMap);
-            org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(executeQuery_result.class, metaDataMap);
-        }
-
-        public executeQuery_result() {}
-
-        public executeQuery_result(SqletServiceException ex) {
-            this();
-            this.ex = ex;
-        }
-
-        /**
-         * Performs a deep copy on <i>other</i>.
-         */
-        public executeQuery_result(executeQuery_result other) {
-            if(other.isSetEx()) {
-                this.ex = new SqletServiceException(other.ex);
-            }
-        }
-
-        public executeQuery_result deepCopy() {
-            return new executeQuery_result(this);
-        }
-
-        @Override
-        public void clear() {
-            this.ex = null;
-        }
-
-        public SqletServiceException getEx() {
-            return this.ex;
-        }
-
-        public void setEx(SqletServiceException ex) {
-            this.ex = ex;
-        }
-
-        public void unsetEx() {
-            this.ex = null;
-        }
-
-        /** Returns true if field ex is set (has been assigned a value) and false otherwise */
-        public boolean isSetEx() {
-            return this.ex != null;
-        }
-
-        public void setExIsSet(boolean value) {
-            if(!value) {
-                this.ex = null;
-            }
-        }
-
-        public void setFieldValue(_Fields field, Object value) {
-            switch(field) {
-                case EX:
-                    if(value == null) {
-                        unsetEx();
-                    } else {
-                        setEx((SqletServiceException) value);
-                    }
-                    break;
-
-            }
-        }
-
-        public Object getFieldValue(_Fields field) {
-            switch(field) {
-                case EX:
-                    return getEx();
-
-            }
-            throw new IllegalStateException();
-        }
-
-        /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-        public boolean isSet(_Fields field) {
-            if(field == null) {
-                throw new IllegalArgumentException();
-            }
-
-            switch(field) {
-                case EX:
-                    return isSetEx();
-            }
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public boolean equals(Object that) {
-            if(that == null)
-                return false;
-            if(that instanceof executeQuery_result)
-                return this.equals((executeQuery_result) that);
-            return false;
-        }
-
-        public boolean equals(executeQuery_result that) {
-            if(that == null)
-                return false;
-
-            boolean this_present_ex = true && this.isSetEx();
-            boolean that_present_ex = true && that.isSetEx();
-            if(this_present_ex || that_present_ex) {
-                if(!(this_present_ex && that_present_ex))
-                    return false;
-                if(!this.ex.equals(that.ex))
-                    return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return 0;
-        }
-
-        public int compareTo(executeQuery_result other) {
-            if(!getClass().equals(other.getClass())) {
-                return getClass().getName().compareTo(other.getClass().getName());
-            }
-
-            int lastComparison = 0;
-            executeQuery_result typedOther = (executeQuery_result) other;
-
-            lastComparison = Boolean.valueOf(isSetEx()).compareTo(typedOther.isSetEx());
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-            if(isSetEx()) {
-                lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex, typedOther.ex);
-                if(lastComparison != 0) {
-                    return lastComparison;
-                }
-            }
-            return 0;
-        }
-
-        public _Fields fieldForId(int fieldId) {
-            return _Fields.findByThriftId(fieldId);
-        }
-
-        public void read(org.apache.thrift.protocol.TProtocol iprot)
-                throws org.apache.thrift.TException {
-            org.apache.thrift.protocol.TField field;
-            iprot.readStructBegin();
-            while(true) {
-                field = iprot.readFieldBegin();
-                if(field.type == org.apache.thrift.protocol.TType.STOP) {
-                    break;
-                }
-                switch(field.id) {
-                    case 1: // EX
-                        if(field.type == org.apache.thrift.protocol.TType.STRUCT) {
-                            this.ex = new SqletServiceException();
-                            this.ex.read(iprot);
-                        } else {
-                            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                        }
-                        break;
-                    default:
-                        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                }
-                iprot.readFieldEnd();
-            }
-            iprot.readStructEnd();
-            validate();
-        }
-
-        public void write(org.apache.thrift.protocol.TProtocol oprot)
-                throws org.apache.thrift.TException {
-            oprot.writeStructBegin(STRUCT_DESC);
-
-            if(this.isSetEx()) {
-                oprot.writeFieldBegin(EX_FIELD_DESC);
-                this.ex.write(oprot);
-                oprot.writeFieldEnd();
-            }
-            oprot.writeFieldStop();
-            oprot.writeStructEnd();
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder("executeQuery_result(");
-            boolean first = true;
-
-            sb.append("ex:");
-            if(this.ex == null) {
-                sb.append("null");
-            } else {
-                sb.append(this.ex);
-            }
-            first = false;
-            sb.append(")");
-            return sb.toString();
-        }
-
-        public void validate() throws org.apache.thrift.TException {
-            // check for required fields
-        }
-
-        private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-            try {
-                write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
-        private void readObject(java.io.ObjectInputStream in) throws java.io.IOException,
-                ClassNotFoundException {
-            try {
-                read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
+    public void send_executeQuery(String query) throws org.apache.thrift.TException
+    {
+      executeQuery_args args = new executeQuery_args();
+      args.setQuery(query);
+      sendBase("executeQuery", args);
     }
 
-    public static class executeCommand_args
-            implements org.apache.thrift.TBase<executeCommand_args, executeCommand_args._Fields>,
-            java.io.Serializable, Cloneable {
-        private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("executeCommand_args");
-
-        private static final org.apache.thrift.protocol.TField CMD_FIELD_DESC = new org.apache.thrift.protocol.TField("cmd", org.apache.thrift.protocol.TType.STRUCT, (short) 1);
-
-        private SqletCommand cmd; // required
-
-        /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-        public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-            CMD((short) 1, "cmd");
-
-            private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
-
-            static {
-                for(_Fields field : EnumSet.allOf(_Fields.class)) {
-                    byName.put(field.getFieldName(), field);
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, or null if its not found.
-             */
-            public static _Fields findByThriftId(int fieldId) {
-                switch(fieldId) {
-                    case 1: // CMD
-                        return CMD;
-                    default:
-                        return null;
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, throwing an exception
-             * if it is not found.
-             */
-            public static _Fields findByThriftIdOrThrow(int fieldId) {
-                _Fields fields = findByThriftId(fieldId);
-                if(fields == null)
-                    throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-                return fields;
-            }
-
-            /**
-             * Find the _Fields constant that matches name, or null if its not found.
-             */
-            public static _Fields findByName(String name) {
-                return byName.get(name);
-            }
-
-            private final short _thriftId;
-            private final String _fieldName;
-
-            _Fields(short thriftId, String fieldName) {
-                _thriftId = thriftId;
-                _fieldName = fieldName;
-            }
-
-            public short getThriftFieldId() {
-                return _thriftId;
-            }
-
-            public String getFieldName() {
-                return _fieldName;
-            }
-        }
-
-        // isset id assignments
-
-        public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
-        static {
-            Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-            tmpMap.put(_Fields.CMD, new org.apache.thrift.meta_data.FieldMetaData("cmd", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, SqletCommand.class)));
-            metaDataMap = Collections.unmodifiableMap(tmpMap);
-            org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(executeCommand_args.class, metaDataMap);
-        }
-
-        public executeCommand_args() {}
-
-        public executeCommand_args(SqletCommand cmd) {
-            this();
-            this.cmd = cmd;
-        }
-
-        /**
-         * Performs a deep copy on <i>other</i>.
-         */
-        public executeCommand_args(executeCommand_args other) {
-            if(other.isSetCmd()) {
-                this.cmd = new SqletCommand(other.cmd);
-            }
-        }
-
-        public executeCommand_args deepCopy() {
-            return new executeCommand_args(this);
-        }
-
-        @Override
-        public void clear() {
-            this.cmd = null;
-        }
-
-        public SqletCommand getCmd() {
-            return this.cmd;
-        }
-
-        public void setCmd(SqletCommand cmd) {
-            this.cmd = cmd;
-        }
-
-        public void unsetCmd() {
-            this.cmd = null;
-        }
-
-        /** Returns true if field cmd is set (has been assigned a value) and false otherwise */
-        public boolean isSetCmd() {
-            return this.cmd != null;
-        }
-
-        public void setCmdIsSet(boolean value) {
-            if(!value) {
-                this.cmd = null;
-            }
-        }
-
-        public void setFieldValue(_Fields field, Object value) {
-            switch(field) {
-                case CMD:
-                    if(value == null) {
-                        unsetCmd();
-                    } else {
-                        setCmd((SqletCommand) value);
-                    }
-                    break;
-
-            }
-        }
-
-        public Object getFieldValue(_Fields field) {
-            switch(field) {
-                case CMD:
-                    return getCmd();
-
-            }
-            throw new IllegalStateException();
-        }
-
-        /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-        public boolean isSet(_Fields field) {
-            if(field == null) {
-                throw new IllegalArgumentException();
-            }
-
-            switch(field) {
-                case CMD:
-                    return isSetCmd();
-            }
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public boolean equals(Object that) {
-            if(that == null)
-                return false;
-            if(that instanceof executeCommand_args)
-                return this.equals((executeCommand_args) that);
-            return false;
-        }
-
-        public boolean equals(executeCommand_args that) {
-            if(that == null)
-                return false;
-
-            boolean this_present_cmd = true && this.isSetCmd();
-            boolean that_present_cmd = true && that.isSetCmd();
-            if(this_present_cmd || that_present_cmd) {
-                if(!(this_present_cmd && that_present_cmd))
-                    return false;
-                if(!this.cmd.equals(that.cmd))
-                    return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return 0;
-        }
-
-        public int compareTo(executeCommand_args other) {
-            if(!getClass().equals(other.getClass())) {
-                return getClass().getName().compareTo(other.getClass().getName());
-            }
-
-            int lastComparison = 0;
-            executeCommand_args typedOther = (executeCommand_args) other;
-
-            lastComparison = Boolean.valueOf(isSetCmd()).compareTo(typedOther.isSetCmd());
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-            if(isSetCmd()) {
-                lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.cmd, typedOther.cmd);
-                if(lastComparison != 0) {
-                    return lastComparison;
-                }
-            }
-            return 0;
-        }
-
-        public _Fields fieldForId(int fieldId) {
-            return _Fields.findByThriftId(fieldId);
-        }
-
-        public void read(org.apache.thrift.protocol.TProtocol iprot)
-                throws org.apache.thrift.TException {
-            org.apache.thrift.protocol.TField field;
-            iprot.readStructBegin();
-            while(true) {
-                field = iprot.readFieldBegin();
-                if(field.type == org.apache.thrift.protocol.TType.STOP) {
-                    break;
-                }
-                switch(field.id) {
-                    case 1: // CMD
-                        if(field.type == org.apache.thrift.protocol.TType.STRUCT) {
-                            this.cmd = new SqletCommand();
-                            this.cmd.read(iprot);
-                        } else {
-                            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                        }
-                        break;
-                    default:
-                        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                }
-                iprot.readFieldEnd();
-            }
-            iprot.readStructEnd();
-            validate();
-        }
-
-        public void write(org.apache.thrift.protocol.TProtocol oprot)
-                throws org.apache.thrift.TException {
-            validate();
-
-            oprot.writeStructBegin(STRUCT_DESC);
-            if(this.cmd != null) {
-                oprot.writeFieldBegin(CMD_FIELD_DESC);
-                this.cmd.write(oprot);
-                oprot.writeFieldEnd();
-            }
-            oprot.writeFieldStop();
-            oprot.writeStructEnd();
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder("executeCommand_args(");
-            boolean first = true;
-
-            sb.append("cmd:");
-            if(this.cmd == null) {
-                sb.append("null");
-            } else {
-                sb.append(this.cmd);
-            }
-            first = false;
-            sb.append(")");
-            return sb.toString();
-        }
-
-        public void validate() throws org.apache.thrift.TException {
-            // check for required fields
-        }
-
-        private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-            try {
-                write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
-        private void readObject(java.io.ObjectInputStream in) throws java.io.IOException,
-                ClassNotFoundException {
-            try {
-                read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
+    public void recv_executeQuery() throws SqletServiceException, org.apache.thrift.TException
+    {
+      executeQuery_result result = new executeQuery_result();
+      receiveBase(result, "executeQuery");
+      if (result.ex != null) {
+        throw result.ex;
+      }
+      return;
     }
 
-    public static class executeCommand_result
-            implements
-            org.apache.thrift.TBase<executeCommand_result, executeCommand_result._Fields>,
-            java.io.Serializable, Cloneable {
-        private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("executeCommand_result");
-
-        private static final org.apache.thrift.protocol.TField EX_FIELD_DESC = new org.apache.thrift.protocol.TField("ex", org.apache.thrift.protocol.TType.STRUCT, (short) 1);
-
-        private SqletServiceException ex; // required
-
-        /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-        public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-            EX((short) 1, "ex");
-
-            private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
-
-            static {
-                for(_Fields field : EnumSet.allOf(_Fields.class)) {
-                    byName.put(field.getFieldName(), field);
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, or null if its not found.
-             */
-            public static _Fields findByThriftId(int fieldId) {
-                switch(fieldId) {
-                    case 1: // EX
-                        return EX;
-                    default:
-                        return null;
-                }
-            }
-
-            /**
-             * Find the _Fields constant that matches fieldId, throwing an exception
-             * if it is not found.
-             */
-            public static _Fields findByThriftIdOrThrow(int fieldId) {
-                _Fields fields = findByThriftId(fieldId);
-                if(fields == null)
-                    throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-                return fields;
-            }
-
-            /**
-             * Find the _Fields constant that matches name, or null if its not found.
-             */
-            public static _Fields findByName(String name) {
-                return byName.get(name);
-            }
-
-            private final short _thriftId;
-            private final String _fieldName;
-
-            _Fields(short thriftId, String fieldName) {
-                _thriftId = thriftId;
-                _fieldName = fieldName;
-            }
-
-            public short getThriftFieldId() {
-                return _thriftId;
-            }
-
-            public String getFieldName() {
-                return _fieldName;
-            }
-        }
-
-        // isset id assignments
-
-        public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
-        static {
-            Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-            tmpMap.put(_Fields.EX, new org.apache.thrift.meta_data.FieldMetaData("ex", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
-            metaDataMap = Collections.unmodifiableMap(tmpMap);
-            org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(executeCommand_result.class, metaDataMap);
-        }
-
-        public executeCommand_result() {}
-
-        public executeCommand_result(SqletServiceException ex) {
-            this();
-            this.ex = ex;
-        }
-
-        /**
-         * Performs a deep copy on <i>other</i>.
-         */
-        public executeCommand_result(executeCommand_result other) {
-            if(other.isSetEx()) {
-                this.ex = new SqletServiceException(other.ex);
-            }
-        }
-
-        public executeCommand_result deepCopy() {
-            return new executeCommand_result(this);
-        }
-
-        @Override
-        public void clear() {
-            this.ex = null;
-        }
-
-        public SqletServiceException getEx() {
-            return this.ex;
-        }
-
-        public void setEx(SqletServiceException ex) {
-            this.ex = ex;
-        }
-
-        public void unsetEx() {
-            this.ex = null;
-        }
-
-        /** Returns true if field ex is set (has been assigned a value) and false otherwise */
-        public boolean isSetEx() {
-            return this.ex != null;
-        }
-
-        public void setExIsSet(boolean value) {
-            if(!value) {
-                this.ex = null;
-            }
-        }
-
-        public void setFieldValue(_Fields field, Object value) {
-            switch(field) {
-                case EX:
-                    if(value == null) {
-                        unsetEx();
-                    } else {
-                        setEx((SqletServiceException) value);
-                    }
-                    break;
-
-            }
-        }
-
-        public Object getFieldValue(_Fields field) {
-            switch(field) {
-                case EX:
-                    return getEx();
-
-            }
-            throw new IllegalStateException();
-        }
-
-        /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-        public boolean isSet(_Fields field) {
-            if(field == null) {
-                throw new IllegalArgumentException();
-            }
-
-            switch(field) {
-                case EX:
-                    return isSetEx();
-            }
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public boolean equals(Object that) {
-            if(that == null)
-                return false;
-            if(that instanceof executeCommand_result)
-                return this.equals((executeCommand_result) that);
-            return false;
-        }
-
-        public boolean equals(executeCommand_result that) {
-            if(that == null)
-                return false;
-
-            boolean this_present_ex = true && this.isSetEx();
-            boolean that_present_ex = true && that.isSetEx();
-            if(this_present_ex || that_present_ex) {
-                if(!(this_present_ex && that_present_ex))
-                    return false;
-                if(!this.ex.equals(that.ex))
-                    return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return 0;
-        }
-
-        public int compareTo(executeCommand_result other) {
-            if(!getClass().equals(other.getClass())) {
-                return getClass().getName().compareTo(other.getClass().getName());
-            }
-
-            int lastComparison = 0;
-            executeCommand_result typedOther = (executeCommand_result) other;
-
-            lastComparison = Boolean.valueOf(isSetEx()).compareTo(typedOther.isSetEx());
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-            if(isSetEx()) {
-                lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex, typedOther.ex);
-                if(lastComparison != 0) {
-                    return lastComparison;
-                }
-            }
-            return 0;
-        }
-
-        public _Fields fieldForId(int fieldId) {
-            return _Fields.findByThriftId(fieldId);
-        }
-
-        public void read(org.apache.thrift.protocol.TProtocol iprot)
-                throws org.apache.thrift.TException {
-            org.apache.thrift.protocol.TField field;
-            iprot.readStructBegin();
-            while(true) {
-                field = iprot.readFieldBegin();
-                if(field.type == org.apache.thrift.protocol.TType.STOP) {
-                    break;
-                }
-                switch(field.id) {
-                    case 1: // EX
-                        if(field.type == org.apache.thrift.protocol.TType.STRUCT) {
-                            this.ex = new SqletServiceException();
-                            this.ex.read(iprot);
-                        } else {
-                            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                        }
-                        break;
-                    default:
-                        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                }
-                iprot.readFieldEnd();
-            }
-            iprot.readStructEnd();
-            validate();
-        }
-
-        public void write(org.apache.thrift.protocol.TProtocol oprot)
-                throws org.apache.thrift.TException {
-            oprot.writeStructBegin(STRUCT_DESC);
-
-            if(this.isSetEx()) {
-                oprot.writeFieldBegin(EX_FIELD_DESC);
-                this.ex.write(oprot);
-                oprot.writeFieldEnd();
-            }
-            oprot.writeFieldStop();
-            oprot.writeStructEnd();
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder("executeCommand_result(");
-            boolean first = true;
-
-            sb.append("ex:");
-            if(this.ex == null) {
-                sb.append("null");
-            } else {
-                sb.append(this.ex);
-            }
-            first = false;
-            sb.append(")");
-            return sb.toString();
-        }
-
-        public void validate() throws org.apache.thrift.TException {
-            // check for required fields
-        }
-
-        private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-            try {
-                write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
-        private void readObject(java.io.ObjectInputStream in) throws java.io.IOException,
-                ClassNotFoundException {
-            try {
-                read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-            } catch (org.apache.thrift.TException te) {
-                throw new java.io.IOException(te);
-            }
-        }
-
+    public void executeCommand(SqletCommand cmd) throws SqletServiceException, org.apache.thrift.TException
+    {
+      send_executeCommand(cmd);
+      recv_executeCommand();
     }
+
+    public void send_executeCommand(SqletCommand cmd) throws org.apache.thrift.TException
+    {
+      executeCommand_args args = new executeCommand_args();
+      args.setCmd(cmd);
+      sendBase("executeCommand", args);
+    }
+
+    public void recv_executeCommand() throws SqletServiceException, org.apache.thrift.TException
+    {
+      executeCommand_result result = new executeCommand_result();
+      receiveBase(result, "executeCommand");
+      if (result.ex != null) {
+        throw result.ex;
+      }
+      return;
+    }
+
+  }
+  public static class AsyncClient extends org.apache.thrift.async.TAsyncClient implements AsyncIface {
+    public static class Factory implements org.apache.thrift.async.TAsyncClientFactory<AsyncClient> {
+      private org.apache.thrift.async.TAsyncClientManager clientManager;
+      private org.apache.thrift.protocol.TProtocolFactory protocolFactory;
+      public Factory(org.apache.thrift.async.TAsyncClientManager clientManager, org.apache.thrift.protocol.TProtocolFactory protocolFactory) {
+        this.clientManager = clientManager;
+        this.protocolFactory = protocolFactory;
+      }
+      public AsyncClient getAsyncClient(org.apache.thrift.transport.TNonblockingTransport transport) {
+        return new AsyncClient(protocolFactory, clientManager, transport);
+      }
+    }
+
+    public AsyncClient(org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.async.TAsyncClientManager clientManager, org.apache.thrift.transport.TNonblockingTransport transport) {
+      super(protocolFactory, clientManager, transport);
+    }
+
+    public void getPartitions(String catalogName, InputOutputType outType, org.apache.thrift.async.AsyncMethodCallback<getPartitions_call> resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      getPartitions_call method_call = new getPartitions_call(catalogName, outType, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class getPartitions_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private String catalogName;
+      private InputOutputType outType;
+      public getPartitions_call(String catalogName, InputOutputType outType, org.apache.thrift.async.AsyncMethodCallback<getPartitions_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.catalogName = catalogName;
+        this.outType = outType;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("getPartitions", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        getPartitions_args args = new getPartitions_args();
+        args.setCatalogName(catalogName);
+        args.setOutType(outType);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public String getResult() throws SqletServiceException, org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_getPartitions();
+      }
+    }
+
+    public void deleteCatalog(String catalogName, org.apache.thrift.async.AsyncMethodCallback<deleteCatalog_call> resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      deleteCatalog_call method_call = new deleteCatalog_call(catalogName, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class deleteCatalog_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private String catalogName;
+      public deleteCatalog_call(String catalogName, org.apache.thrift.async.AsyncMethodCallback<deleteCatalog_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.catalogName = catalogName;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("deleteCatalog", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        deleteCatalog_args args = new deleteCatalog_args();
+        args.setCatalogName(catalogName);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public boolean getResult() throws SqletServiceException, org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_deleteCatalog();
+      }
+    }
+
+    public void executeQuery(String query, org.apache.thrift.async.AsyncMethodCallback<executeQuery_call> resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      executeQuery_call method_call = new executeQuery_call(query, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class executeQuery_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private String query;
+      public executeQuery_call(String query, org.apache.thrift.async.AsyncMethodCallback<executeQuery_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.query = query;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("executeQuery", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        executeQuery_args args = new executeQuery_args();
+        args.setQuery(query);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public void getResult() throws SqletServiceException, org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        (new Client(prot)).recv_executeQuery();
+      }
+    }
+
+    public void executeCommand(SqletCommand cmd, org.apache.thrift.async.AsyncMethodCallback<executeCommand_call> resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      executeCommand_call method_call = new executeCommand_call(cmd, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class executeCommand_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private SqletCommand cmd;
+      public executeCommand_call(SqletCommand cmd, org.apache.thrift.async.AsyncMethodCallback<executeCommand_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.cmd = cmd;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("executeCommand", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        executeCommand_args args = new executeCommand_args();
+        args.setCmd(cmd);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public void getResult() throws SqletServiceException, org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        (new Client(prot)).recv_executeCommand();
+      }
+    }
+
+  }
+
+  public static class Processor<I extends Iface> extends org.apache.thrift.TBaseProcessor implements org.apache.thrift.TProcessor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Processor.class.getName());
+    public Processor(I iface) {
+      super(iface, getProcessMap(new HashMap<String, org.apache.thrift.ProcessFunction<I, ? extends org.apache.thrift.TBase>>()));
+    }
+
+    protected Processor(I iface, Map<String,  org.apache.thrift.ProcessFunction<I, ? extends  org.apache.thrift.TBase>> processMap) {
+      super(iface, getProcessMap(processMap));
+    }
+
+    private static <I extends Iface> Map<String,  org.apache.thrift.ProcessFunction<I, ? extends  org.apache.thrift.TBase>> getProcessMap(Map<String,  org.apache.thrift.ProcessFunction<I, ? extends  org.apache.thrift.TBase>> processMap) {
+      processMap.put("getPartitions", new getPartitions());
+      processMap.put("deleteCatalog", new deleteCatalog());
+      processMap.put("executeQuery", new executeQuery());
+      processMap.put("executeCommand", new executeCommand());
+      return processMap;
+    }
+
+    private static class getPartitions<I extends Iface> extends org.apache.thrift.ProcessFunction<I, getPartitions_args> {
+      public getPartitions() {
+        super("getPartitions");
+      }
+
+      protected getPartitions_args getEmptyArgsInstance() {
+        return new getPartitions_args();
+      }
+
+      protected getPartitions_result getResult(I iface, getPartitions_args args) throws org.apache.thrift.TException {
+        getPartitions_result result = new getPartitions_result();
+        try {
+          result.success = iface.getPartitions(args.catalogName, args.outType);
+        } catch (SqletServiceException ex) {
+          result.ex = ex;
+        }
+        return result;
+      }
+    }
+
+    private static class deleteCatalog<I extends Iface> extends org.apache.thrift.ProcessFunction<I, deleteCatalog_args> {
+      public deleteCatalog() {
+        super("deleteCatalog");
+      }
+
+      protected deleteCatalog_args getEmptyArgsInstance() {
+        return new deleteCatalog_args();
+      }
+
+      protected deleteCatalog_result getResult(I iface, deleteCatalog_args args) throws org.apache.thrift.TException {
+        deleteCatalog_result result = new deleteCatalog_result();
+        try {
+          result.success = iface.deleteCatalog(args.catalogName);
+          result.setSuccessIsSet(true);
+        } catch (SqletServiceException ex) {
+          result.ex = ex;
+        }
+        return result;
+      }
+    }
+
+    private static class executeQuery<I extends Iface> extends org.apache.thrift.ProcessFunction<I, executeQuery_args> {
+      public executeQuery() {
+        super("executeQuery");
+      }
+
+      protected executeQuery_args getEmptyArgsInstance() {
+        return new executeQuery_args();
+      }
+
+      protected executeQuery_result getResult(I iface, executeQuery_args args) throws org.apache.thrift.TException {
+        executeQuery_result result = new executeQuery_result();
+        try {
+          iface.executeQuery(args.query);
+        } catch (SqletServiceException ex) {
+          result.ex = ex;
+        }
+        return result;
+      }
+    }
+
+    private static class executeCommand<I extends Iface> extends org.apache.thrift.ProcessFunction<I, executeCommand_args> {
+      public executeCommand() {
+        super("executeCommand");
+      }
+
+      protected executeCommand_args getEmptyArgsInstance() {
+        return new executeCommand_args();
+      }
+
+      protected executeCommand_result getResult(I iface, executeCommand_args args) throws org.apache.thrift.TException {
+        executeCommand_result result = new executeCommand_result();
+        try {
+          iface.executeCommand(args.cmd);
+        } catch (SqletServiceException ex) {
+          result.ex = ex;
+        }
+        return result;
+      }
+    }
+
+  }
+
+  public static class getPartitions_args implements org.apache.thrift.TBase<getPartitions_args, getPartitions_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getPartitions_args");
+
+    private static final org.apache.thrift.protocol.TField CATALOG_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("catalogName", org.apache.thrift.protocol.TType.STRING, (short)1);
+    private static final org.apache.thrift.protocol.TField OUT_TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("outType", org.apache.thrift.protocol.TType.I32, (short)2);
+
+    private String catalogName; // required
+    private InputOutputType outType; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      CATALOG_NAME((short)1, "catalogName"),
+      /**
+       * 
+       * @see InputOutputType
+       */
+      OUT_TYPE((short)2, "outType");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // CATALOG_NAME
+            return CATALOG_NAME;
+          case 2: // OUT_TYPE
+            return OUT_TYPE;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.CATALOG_NAME, new org.apache.thrift.meta_data.FieldMetaData("catalogName", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+      tmpMap.put(_Fields.OUT_TYPE, new org.apache.thrift.meta_data.FieldMetaData("outType", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, InputOutputType.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getPartitions_args.class, metaDataMap);
+    }
+
+    public getPartitions_args() {
+    }
+
+    public getPartitions_args(
+      String catalogName,
+      InputOutputType outType)
+    {
+      this();
+      this.catalogName = catalogName;
+      this.outType = outType;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public getPartitions_args(getPartitions_args other) {
+      if (other.isSetCatalogName()) {
+        this.catalogName = other.catalogName;
+      }
+      if (other.isSetOutType()) {
+        this.outType = other.outType;
+      }
+    }
+
+    public getPartitions_args deepCopy() {
+      return new getPartitions_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.catalogName = null;
+      this.outType = null;
+    }
+
+    public String getCatalogName() {
+      return this.catalogName;
+    }
+
+    public void setCatalogName(String catalogName) {
+      this.catalogName = catalogName;
+    }
+
+    public void unsetCatalogName() {
+      this.catalogName = null;
+    }
+
+    /** Returns true if field catalogName is set (has been assigned a value) and false otherwise */
+    public boolean isSetCatalogName() {
+      return this.catalogName != null;
+    }
+
+    public void setCatalogNameIsSet(boolean value) {
+      if (!value) {
+        this.catalogName = null;
+      }
+    }
+
+    /**
+     * 
+     * @see InputOutputType
+     */
+    public InputOutputType getOutType() {
+      return this.outType;
+    }
+
+    /**
+     * 
+     * @see InputOutputType
+     */
+    public void setOutType(InputOutputType outType) {
+      this.outType = outType;
+    }
+
+    public void unsetOutType() {
+      this.outType = null;
+    }
+
+    /** Returns true if field outType is set (has been assigned a value) and false otherwise */
+    public boolean isSetOutType() {
+      return this.outType != null;
+    }
+
+    public void setOutTypeIsSet(boolean value) {
+      if (!value) {
+        this.outType = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case CATALOG_NAME:
+        if (value == null) {
+          unsetCatalogName();
+        } else {
+          setCatalogName((String)value);
+        }
+        break;
+
+      case OUT_TYPE:
+        if (value == null) {
+          unsetOutType();
+        } else {
+          setOutType((InputOutputType)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case CATALOG_NAME:
+        return getCatalogName();
+
+      case OUT_TYPE:
+        return getOutType();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case CATALOG_NAME:
+        return isSetCatalogName();
+      case OUT_TYPE:
+        return isSetOutType();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof getPartitions_args)
+        return this.equals((getPartitions_args)that);
+      return false;
+    }
+
+    public boolean equals(getPartitions_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_catalogName = true && this.isSetCatalogName();
+      boolean that_present_catalogName = true && that.isSetCatalogName();
+      if (this_present_catalogName || that_present_catalogName) {
+        if (!(this_present_catalogName && that_present_catalogName))
+          return false;
+        if (!this.catalogName.equals(that.catalogName))
+          return false;
+      }
+
+      boolean this_present_outType = true && this.isSetOutType();
+      boolean that_present_outType = true && that.isSetOutType();
+      if (this_present_outType || that_present_outType) {
+        if (!(this_present_outType && that_present_outType))
+          return false;
+        if (!this.outType.equals(that.outType))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    public int compareTo(getPartitions_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      getPartitions_args typedOther = (getPartitions_args)other;
+
+      lastComparison = Boolean.valueOf(isSetCatalogName()).compareTo(typedOther.isSetCatalogName());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetCatalogName()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.catalogName, typedOther.catalogName);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetOutType()).compareTo(typedOther.isSetOutType());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetOutType()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.outType, typedOther.outType);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      org.apache.thrift.protocol.TField field;
+      iprot.readStructBegin();
+      while (true)
+      {
+        field = iprot.readFieldBegin();
+        if (field.type == org.apache.thrift.protocol.TType.STOP) { 
+          break;
+        }
+        switch (field.id) {
+          case 1: // CATALOG_NAME
+            if (field.type == org.apache.thrift.protocol.TType.STRING) {
+              this.catalogName = iprot.readString();
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          case 2: // OUT_TYPE
+            if (field.type == org.apache.thrift.protocol.TType.I32) {
+              this.outType = InputOutputType.findByValue(iprot.readI32());
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          default:
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
+      validate();
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      validate();
+
+      oprot.writeStructBegin(STRUCT_DESC);
+      if (this.catalogName != null) {
+        oprot.writeFieldBegin(CATALOG_NAME_FIELD_DESC);
+        oprot.writeString(this.catalogName);
+        oprot.writeFieldEnd();
+      }
+      if (this.outType != null) {
+        oprot.writeFieldBegin(OUT_TYPE_FIELD_DESC);
+        oprot.writeI32(this.outType.getValue());
+        oprot.writeFieldEnd();
+      }
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("getPartitions_args(");
+      boolean first = true;
+
+      sb.append("catalogName:");
+      if (this.catalogName == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.catalogName);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("outType:");
+      if (this.outType == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.outType);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+  }
+
+  public static class getPartitions_result implements org.apache.thrift.TBase<getPartitions_result, getPartitions_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getPartitions_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRING, (short)0);
+    private static final org.apache.thrift.protocol.TField EX_FIELD_DESC = new org.apache.thrift.protocol.TField("ex", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private String success; // required
+    private SqletServiceException ex; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success"),
+      EX((short)1, "ex");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          case 1: // EX
+            return EX;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+      tmpMap.put(_Fields.EX, new org.apache.thrift.meta_data.FieldMetaData("ex", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(getPartitions_result.class, metaDataMap);
+    }
+
+    public getPartitions_result() {
+    }
+
+    public getPartitions_result(
+      String success,
+      SqletServiceException ex)
+    {
+      this();
+      this.success = success;
+      this.ex = ex;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public getPartitions_result(getPartitions_result other) {
+      if (other.isSetSuccess()) {
+        this.success = other.success;
+      }
+      if (other.isSetEx()) {
+        this.ex = new SqletServiceException(other.ex);
+      }
+    }
+
+    public getPartitions_result deepCopy() {
+      return new getPartitions_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+      this.ex = null;
+    }
+
+    public String getSuccess() {
+      return this.success;
+    }
+
+    public void setSuccess(String success) {
+      this.success = success;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public SqletServiceException getEx() {
+      return this.ex;
+    }
+
+    public void setEx(SqletServiceException ex) {
+      this.ex = ex;
+    }
+
+    public void unsetEx() {
+      this.ex = null;
+    }
+
+    /** Returns true if field ex is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx() {
+      return this.ex != null;
+    }
+
+    public void setExIsSet(boolean value) {
+      if (!value) {
+        this.ex = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((String)value);
+        }
+        break;
+
+      case EX:
+        if (value == null) {
+          unsetEx();
+        } else {
+          setEx((SqletServiceException)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      case EX:
+        return getEx();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      case EX:
+        return isSetEx();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof getPartitions_result)
+        return this.equals((getPartitions_result)that);
+      return false;
+    }
+
+    public boolean equals(getPartitions_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_ex = true && this.isSetEx();
+      boolean that_present_ex = true && that.isSetEx();
+      if (this_present_ex || that_present_ex) {
+        if (!(this_present_ex && that_present_ex))
+          return false;
+        if (!this.ex.equals(that.ex))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    public int compareTo(getPartitions_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      getPartitions_result typedOther = (getPartitions_result)other;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetEx()).compareTo(typedOther.isSetEx());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex, typedOther.ex);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      org.apache.thrift.protocol.TField field;
+      iprot.readStructBegin();
+      while (true)
+      {
+        field = iprot.readFieldBegin();
+        if (field.type == org.apache.thrift.protocol.TType.STOP) { 
+          break;
+        }
+        switch (field.id) {
+          case 0: // SUCCESS
+            if (field.type == org.apache.thrift.protocol.TType.STRING) {
+              this.success = iprot.readString();
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          case 1: // EX
+            if (field.type == org.apache.thrift.protocol.TType.STRUCT) {
+              this.ex = new SqletServiceException();
+              this.ex.read(iprot);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          default:
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
+      validate();
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      oprot.writeStructBegin(STRUCT_DESC);
+
+      if (this.isSetSuccess()) {
+        oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+        oprot.writeString(this.success);
+        oprot.writeFieldEnd();
+      } else if (this.isSetEx()) {
+        oprot.writeFieldBegin(EX_FIELD_DESC);
+        this.ex.write(oprot);
+        oprot.writeFieldEnd();
+      }
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("getPartitions_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex:");
+      if (this.ex == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+  }
+
+  public static class deleteCatalog_args implements org.apache.thrift.TBase<deleteCatalog_args, deleteCatalog_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("deleteCatalog_args");
+
+    private static final org.apache.thrift.protocol.TField CATALOG_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("catalogName", org.apache.thrift.protocol.TType.STRING, (short)1);
+
+    private String catalogName; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      CATALOG_NAME((short)1, "catalogName");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // CATALOG_NAME
+            return CATALOG_NAME;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.CATALOG_NAME, new org.apache.thrift.meta_data.FieldMetaData("catalogName", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(deleteCatalog_args.class, metaDataMap);
+    }
+
+    public deleteCatalog_args() {
+    }
+
+    public deleteCatalog_args(
+      String catalogName)
+    {
+      this();
+      this.catalogName = catalogName;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public deleteCatalog_args(deleteCatalog_args other) {
+      if (other.isSetCatalogName()) {
+        this.catalogName = other.catalogName;
+      }
+    }
+
+    public deleteCatalog_args deepCopy() {
+      return new deleteCatalog_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.catalogName = null;
+    }
+
+    public String getCatalogName() {
+      return this.catalogName;
+    }
+
+    public void setCatalogName(String catalogName) {
+      this.catalogName = catalogName;
+    }
+
+    public void unsetCatalogName() {
+      this.catalogName = null;
+    }
+
+    /** Returns true if field catalogName is set (has been assigned a value) and false otherwise */
+    public boolean isSetCatalogName() {
+      return this.catalogName != null;
+    }
+
+    public void setCatalogNameIsSet(boolean value) {
+      if (!value) {
+        this.catalogName = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case CATALOG_NAME:
+        if (value == null) {
+          unsetCatalogName();
+        } else {
+          setCatalogName((String)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case CATALOG_NAME:
+        return getCatalogName();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case CATALOG_NAME:
+        return isSetCatalogName();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof deleteCatalog_args)
+        return this.equals((deleteCatalog_args)that);
+      return false;
+    }
+
+    public boolean equals(deleteCatalog_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_catalogName = true && this.isSetCatalogName();
+      boolean that_present_catalogName = true && that.isSetCatalogName();
+      if (this_present_catalogName || that_present_catalogName) {
+        if (!(this_present_catalogName && that_present_catalogName))
+          return false;
+        if (!this.catalogName.equals(that.catalogName))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    public int compareTo(deleteCatalog_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      deleteCatalog_args typedOther = (deleteCatalog_args)other;
+
+      lastComparison = Boolean.valueOf(isSetCatalogName()).compareTo(typedOther.isSetCatalogName());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetCatalogName()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.catalogName, typedOther.catalogName);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      org.apache.thrift.protocol.TField field;
+      iprot.readStructBegin();
+      while (true)
+      {
+        field = iprot.readFieldBegin();
+        if (field.type == org.apache.thrift.protocol.TType.STOP) { 
+          break;
+        }
+        switch (field.id) {
+          case 1: // CATALOG_NAME
+            if (field.type == org.apache.thrift.protocol.TType.STRING) {
+              this.catalogName = iprot.readString();
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          default:
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
+      validate();
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      validate();
+
+      oprot.writeStructBegin(STRUCT_DESC);
+      if (this.catalogName != null) {
+        oprot.writeFieldBegin(CATALOG_NAME_FIELD_DESC);
+        oprot.writeString(this.catalogName);
+        oprot.writeFieldEnd();
+      }
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("deleteCatalog_args(");
+      boolean first = true;
+
+      sb.append("catalogName:");
+      if (this.catalogName == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.catalogName);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+  }
+
+  public static class deleteCatalog_result implements org.apache.thrift.TBase<deleteCatalog_result, deleteCatalog_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("deleteCatalog_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.BOOL, (short)0);
+    private static final org.apache.thrift.protocol.TField EX_FIELD_DESC = new org.apache.thrift.protocol.TField("ex", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private boolean success; // required
+    private SqletServiceException ex; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success"),
+      EX((short)1, "ex");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          case 1: // EX
+            return EX;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    private static final int __SUCCESS_ISSET_ID = 0;
+    private BitSet __isset_bit_vector = new BitSet(1);
+
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
+      tmpMap.put(_Fields.EX, new org.apache.thrift.meta_data.FieldMetaData("ex", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(deleteCatalog_result.class, metaDataMap);
+    }
+
+    public deleteCatalog_result() {
+    }
+
+    public deleteCatalog_result(
+      boolean success,
+      SqletServiceException ex)
+    {
+      this();
+      this.success = success;
+      setSuccessIsSet(true);
+      this.ex = ex;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public deleteCatalog_result(deleteCatalog_result other) {
+      __isset_bit_vector.clear();
+      __isset_bit_vector.or(other.__isset_bit_vector);
+      this.success = other.success;
+      if (other.isSetEx()) {
+        this.ex = new SqletServiceException(other.ex);
+      }
+    }
+
+    public deleteCatalog_result deepCopy() {
+      return new deleteCatalog_result(this);
+    }
+
+    @Override
+    public void clear() {
+      setSuccessIsSet(false);
+      this.success = false;
+      this.ex = null;
+    }
+
+    public boolean isSuccess() {
+      return this.success;
+    }
+
+    public void setSuccess(boolean success) {
+      this.success = success;
+      setSuccessIsSet(true);
+    }
+
+    public void unsetSuccess() {
+      __isset_bit_vector.clear(__SUCCESS_ISSET_ID);
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return __isset_bit_vector.get(__SUCCESS_ISSET_ID);
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      __isset_bit_vector.set(__SUCCESS_ISSET_ID, value);
+    }
+
+    public SqletServiceException getEx() {
+      return this.ex;
+    }
+
+    public void setEx(SqletServiceException ex) {
+      this.ex = ex;
+    }
+
+    public void unsetEx() {
+      this.ex = null;
+    }
+
+    /** Returns true if field ex is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx() {
+      return this.ex != null;
+    }
+
+    public void setExIsSet(boolean value) {
+      if (!value) {
+        this.ex = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((Boolean)value);
+        }
+        break;
+
+      case EX:
+        if (value == null) {
+          unsetEx();
+        } else {
+          setEx((SqletServiceException)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return Boolean.valueOf(isSuccess());
+
+      case EX:
+        return getEx();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      case EX:
+        return isSetEx();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof deleteCatalog_result)
+        return this.equals((deleteCatalog_result)that);
+      return false;
+    }
+
+    public boolean equals(deleteCatalog_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true;
+      boolean that_present_success = true;
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (this.success != that.success)
+          return false;
+      }
+
+      boolean this_present_ex = true && this.isSetEx();
+      boolean that_present_ex = true && that.isSetEx();
+      if (this_present_ex || that_present_ex) {
+        if (!(this_present_ex && that_present_ex))
+          return false;
+        if (!this.ex.equals(that.ex))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    public int compareTo(deleteCatalog_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      deleteCatalog_result typedOther = (deleteCatalog_result)other;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetEx()).compareTo(typedOther.isSetEx());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex, typedOther.ex);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      org.apache.thrift.protocol.TField field;
+      iprot.readStructBegin();
+      while (true)
+      {
+        field = iprot.readFieldBegin();
+        if (field.type == org.apache.thrift.protocol.TType.STOP) { 
+          break;
+        }
+        switch (field.id) {
+          case 0: // SUCCESS
+            if (field.type == org.apache.thrift.protocol.TType.BOOL) {
+              this.success = iprot.readBool();
+              setSuccessIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          case 1: // EX
+            if (field.type == org.apache.thrift.protocol.TType.STRUCT) {
+              this.ex = new SqletServiceException();
+              this.ex.read(iprot);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          default:
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
+      validate();
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      oprot.writeStructBegin(STRUCT_DESC);
+
+      if (this.isSetSuccess()) {
+        oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+        oprot.writeBool(this.success);
+        oprot.writeFieldEnd();
+      } else if (this.isSetEx()) {
+        oprot.writeFieldBegin(EX_FIELD_DESC);
+        this.ex.write(oprot);
+        oprot.writeFieldEnd();
+      }
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("deleteCatalog_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      sb.append(this.success);
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("ex:");
+      if (this.ex == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+  }
+
+  public static class executeQuery_args implements org.apache.thrift.TBase<executeQuery_args, executeQuery_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("executeQuery_args");
+
+    private static final org.apache.thrift.protocol.TField QUERY_FIELD_DESC = new org.apache.thrift.protocol.TField("query", org.apache.thrift.protocol.TType.STRING, (short)1);
+
+    private String query; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      QUERY((short)1, "query");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // QUERY
+            return QUERY;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.QUERY, new org.apache.thrift.meta_data.FieldMetaData("query", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(executeQuery_args.class, metaDataMap);
+    }
+
+    public executeQuery_args() {
+    }
+
+    public executeQuery_args(
+      String query)
+    {
+      this();
+      this.query = query;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public executeQuery_args(executeQuery_args other) {
+      if (other.isSetQuery()) {
+        this.query = other.query;
+      }
+    }
+
+    public executeQuery_args deepCopy() {
+      return new executeQuery_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.query = null;
+    }
+
+    public String getQuery() {
+      return this.query;
+    }
+
+    public void setQuery(String query) {
+      this.query = query;
+    }
+
+    public void unsetQuery() {
+      this.query = null;
+    }
+
+    /** Returns true if field query is set (has been assigned a value) and false otherwise */
+    public boolean isSetQuery() {
+      return this.query != null;
+    }
+
+    public void setQueryIsSet(boolean value) {
+      if (!value) {
+        this.query = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case QUERY:
+        if (value == null) {
+          unsetQuery();
+        } else {
+          setQuery((String)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case QUERY:
+        return getQuery();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case QUERY:
+        return isSetQuery();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof executeQuery_args)
+        return this.equals((executeQuery_args)that);
+      return false;
+    }
+
+    public boolean equals(executeQuery_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_query = true && this.isSetQuery();
+      boolean that_present_query = true && that.isSetQuery();
+      if (this_present_query || that_present_query) {
+        if (!(this_present_query && that_present_query))
+          return false;
+        if (!this.query.equals(that.query))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    public int compareTo(executeQuery_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      executeQuery_args typedOther = (executeQuery_args)other;
+
+      lastComparison = Boolean.valueOf(isSetQuery()).compareTo(typedOther.isSetQuery());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetQuery()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.query, typedOther.query);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      org.apache.thrift.protocol.TField field;
+      iprot.readStructBegin();
+      while (true)
+      {
+        field = iprot.readFieldBegin();
+        if (field.type == org.apache.thrift.protocol.TType.STOP) { 
+          break;
+        }
+        switch (field.id) {
+          case 1: // QUERY
+            if (field.type == org.apache.thrift.protocol.TType.STRING) {
+              this.query = iprot.readString();
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          default:
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
+      validate();
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      validate();
+
+      oprot.writeStructBegin(STRUCT_DESC);
+      if (this.query != null) {
+        oprot.writeFieldBegin(QUERY_FIELD_DESC);
+        oprot.writeString(this.query);
+        oprot.writeFieldEnd();
+      }
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("executeQuery_args(");
+      boolean first = true;
+
+      sb.append("query:");
+      if (this.query == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.query);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+  }
+
+  public static class executeQuery_result implements org.apache.thrift.TBase<executeQuery_result, executeQuery_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("executeQuery_result");
+
+    private static final org.apache.thrift.protocol.TField EX_FIELD_DESC = new org.apache.thrift.protocol.TField("ex", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private SqletServiceException ex; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      EX((short)1, "ex");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // EX
+            return EX;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.EX, new org.apache.thrift.meta_data.FieldMetaData("ex", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(executeQuery_result.class, metaDataMap);
+    }
+
+    public executeQuery_result() {
+    }
+
+    public executeQuery_result(
+      SqletServiceException ex)
+    {
+      this();
+      this.ex = ex;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public executeQuery_result(executeQuery_result other) {
+      if (other.isSetEx()) {
+        this.ex = new SqletServiceException(other.ex);
+      }
+    }
+
+    public executeQuery_result deepCopy() {
+      return new executeQuery_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.ex = null;
+    }
+
+    public SqletServiceException getEx() {
+      return this.ex;
+    }
+
+    public void setEx(SqletServiceException ex) {
+      this.ex = ex;
+    }
+
+    public void unsetEx() {
+      this.ex = null;
+    }
+
+    /** Returns true if field ex is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx() {
+      return this.ex != null;
+    }
+
+    public void setExIsSet(boolean value) {
+      if (!value) {
+        this.ex = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case EX:
+        if (value == null) {
+          unsetEx();
+        } else {
+          setEx((SqletServiceException)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case EX:
+        return getEx();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case EX:
+        return isSetEx();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof executeQuery_result)
+        return this.equals((executeQuery_result)that);
+      return false;
+    }
+
+    public boolean equals(executeQuery_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_ex = true && this.isSetEx();
+      boolean that_present_ex = true && that.isSetEx();
+      if (this_present_ex || that_present_ex) {
+        if (!(this_present_ex && that_present_ex))
+          return false;
+        if (!this.ex.equals(that.ex))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    public int compareTo(executeQuery_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      executeQuery_result typedOther = (executeQuery_result)other;
+
+      lastComparison = Boolean.valueOf(isSetEx()).compareTo(typedOther.isSetEx());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex, typedOther.ex);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      org.apache.thrift.protocol.TField field;
+      iprot.readStructBegin();
+      while (true)
+      {
+        field = iprot.readFieldBegin();
+        if (field.type == org.apache.thrift.protocol.TType.STOP) { 
+          break;
+        }
+        switch (field.id) {
+          case 1: // EX
+            if (field.type == org.apache.thrift.protocol.TType.STRUCT) {
+              this.ex = new SqletServiceException();
+              this.ex.read(iprot);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          default:
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
+      validate();
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      oprot.writeStructBegin(STRUCT_DESC);
+
+      if (this.isSetEx()) {
+        oprot.writeFieldBegin(EX_FIELD_DESC);
+        this.ex.write(oprot);
+        oprot.writeFieldEnd();
+      }
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("executeQuery_result(");
+      boolean first = true;
+
+      sb.append("ex:");
+      if (this.ex == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+  }
+
+  public static class executeCommand_args implements org.apache.thrift.TBase<executeCommand_args, executeCommand_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("executeCommand_args");
+
+    private static final org.apache.thrift.protocol.TField CMD_FIELD_DESC = new org.apache.thrift.protocol.TField("cmd", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private SqletCommand cmd; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      CMD((short)1, "cmd");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // CMD
+            return CMD;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.CMD, new org.apache.thrift.meta_data.FieldMetaData("cmd", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, SqletCommand.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(executeCommand_args.class, metaDataMap);
+    }
+
+    public executeCommand_args() {
+    }
+
+    public executeCommand_args(
+      SqletCommand cmd)
+    {
+      this();
+      this.cmd = cmd;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public executeCommand_args(executeCommand_args other) {
+      if (other.isSetCmd()) {
+        this.cmd = new SqletCommand(other.cmd);
+      }
+    }
+
+    public executeCommand_args deepCopy() {
+      return new executeCommand_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.cmd = null;
+    }
+
+    public SqletCommand getCmd() {
+      return this.cmd;
+    }
+
+    public void setCmd(SqletCommand cmd) {
+      this.cmd = cmd;
+    }
+
+    public void unsetCmd() {
+      this.cmd = null;
+    }
+
+    /** Returns true if field cmd is set (has been assigned a value) and false otherwise */
+    public boolean isSetCmd() {
+      return this.cmd != null;
+    }
+
+    public void setCmdIsSet(boolean value) {
+      if (!value) {
+        this.cmd = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case CMD:
+        if (value == null) {
+          unsetCmd();
+        } else {
+          setCmd((SqletCommand)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case CMD:
+        return getCmd();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case CMD:
+        return isSetCmd();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof executeCommand_args)
+        return this.equals((executeCommand_args)that);
+      return false;
+    }
+
+    public boolean equals(executeCommand_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_cmd = true && this.isSetCmd();
+      boolean that_present_cmd = true && that.isSetCmd();
+      if (this_present_cmd || that_present_cmd) {
+        if (!(this_present_cmd && that_present_cmd))
+          return false;
+        if (!this.cmd.equals(that.cmd))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    public int compareTo(executeCommand_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      executeCommand_args typedOther = (executeCommand_args)other;
+
+      lastComparison = Boolean.valueOf(isSetCmd()).compareTo(typedOther.isSetCmd());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetCmd()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.cmd, typedOther.cmd);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      org.apache.thrift.protocol.TField field;
+      iprot.readStructBegin();
+      while (true)
+      {
+        field = iprot.readFieldBegin();
+        if (field.type == org.apache.thrift.protocol.TType.STOP) { 
+          break;
+        }
+        switch (field.id) {
+          case 1: // CMD
+            if (field.type == org.apache.thrift.protocol.TType.STRUCT) {
+              this.cmd = new SqletCommand();
+              this.cmd.read(iprot);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          default:
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
+      validate();
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      validate();
+
+      oprot.writeStructBegin(STRUCT_DESC);
+      if (this.cmd != null) {
+        oprot.writeFieldBegin(CMD_FIELD_DESC);
+        this.cmd.write(oprot);
+        oprot.writeFieldEnd();
+      }
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("executeCommand_args(");
+      boolean first = true;
+
+      sb.append("cmd:");
+      if (this.cmd == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.cmd);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+  }
+
+  public static class executeCommand_result implements org.apache.thrift.TBase<executeCommand_result, executeCommand_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("executeCommand_result");
+
+    private static final org.apache.thrift.protocol.TField EX_FIELD_DESC = new org.apache.thrift.protocol.TField("ex", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private SqletServiceException ex; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      EX((short)1, "ex");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // EX
+            return EX;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.EX, new org.apache.thrift.meta_data.FieldMetaData("ex", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(executeCommand_result.class, metaDataMap);
+    }
+
+    public executeCommand_result() {
+    }
+
+    public executeCommand_result(
+      SqletServiceException ex)
+    {
+      this();
+      this.ex = ex;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public executeCommand_result(executeCommand_result other) {
+      if (other.isSetEx()) {
+        this.ex = new SqletServiceException(other.ex);
+      }
+    }
+
+    public executeCommand_result deepCopy() {
+      return new executeCommand_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.ex = null;
+    }
+
+    public SqletServiceException getEx() {
+      return this.ex;
+    }
+
+    public void setEx(SqletServiceException ex) {
+      this.ex = ex;
+    }
+
+    public void unsetEx() {
+      this.ex = null;
+    }
+
+    /** Returns true if field ex is set (has been assigned a value) and false otherwise */
+    public boolean isSetEx() {
+      return this.ex != null;
+    }
+
+    public void setExIsSet(boolean value) {
+      if (!value) {
+        this.ex = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case EX:
+        if (value == null) {
+          unsetEx();
+        } else {
+          setEx((SqletServiceException)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case EX:
+        return getEx();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case EX:
+        return isSetEx();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof executeCommand_result)
+        return this.equals((executeCommand_result)that);
+      return false;
+    }
+
+    public boolean equals(executeCommand_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_ex = true && this.isSetEx();
+      boolean that_present_ex = true && that.isSetEx();
+      if (this_present_ex || that_present_ex) {
+        if (!(this_present_ex && that_present_ex))
+          return false;
+        if (!this.ex.equals(that.ex))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    public int compareTo(executeCommand_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      executeCommand_result typedOther = (executeCommand_result)other;
+
+      lastComparison = Boolean.valueOf(isSetEx()).compareTo(typedOther.isSetEx());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEx()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.ex, typedOther.ex);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      org.apache.thrift.protocol.TField field;
+      iprot.readStructBegin();
+      while (true)
+      {
+        field = iprot.readFieldBegin();
+        if (field.type == org.apache.thrift.protocol.TType.STOP) { 
+          break;
+        }
+        switch (field.id) {
+          case 1: // EX
+            if (field.type == org.apache.thrift.protocol.TType.STRUCT) {
+              this.ex = new SqletServiceException();
+              this.ex.read(iprot);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            }
+            break;
+          default:
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
+      validate();
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      oprot.writeStructBegin(STRUCT_DESC);
+
+      if (this.isSetEx()) {
+        oprot.writeFieldBegin(EX_FIELD_DESC);
+        this.ex.write(oprot);
+        oprot.writeFieldEnd();
+      }
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("executeCommand_result(");
+      boolean first = true;
+
+      sb.append("ex:");
+      if (this.ex == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.ex);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+  }
 
 }

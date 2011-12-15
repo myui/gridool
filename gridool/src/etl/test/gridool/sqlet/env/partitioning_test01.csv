@@ -1,5 +1,5 @@
-tblName,srcTable,master,host,port,dbUrl,mapOutput
-part01,part,TRUE,dc01.hpcc.jp,1999,tpch100,/work/mapoutput
-part02,part,TRUE,dc02.hpcc.jp,1999,tpch100
-part02,part,false,dc02.hpcc.jp,1999,tpch100,/work/mapoutput
-lineitem01,lineitem,TRUE,dc02.hpcc.jp,1999,tpch100,/tmp/mapoutput
+node,master,dbUrl,mapOutput
+dc01.hpcc.jp:1999,,tpch100,/work/mapoutput
+dc02.hpcc.jp:1999,,tpch100
+dc02.hpcc.jp:1999,dc01.hpcc.jp:1999,tpch100,/work/mapoutput
+dc03.hpcc.jp:1999,dc02.hpcc.jp:1999,tpch100,/tmp/mapoutput

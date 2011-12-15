@@ -27,7 +27,6 @@ import gridool.util.GridUtils;
 import gridool.util.csv.HeaderAwareCsvReader;
 import gridool.util.io.FastBufferedInputStream;
 import gridool.util.lang.Preconditions;
-import gridool.util.primitive.Primitives;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +38,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -56,19 +54,13 @@ public class MapReduceConf implements Serializable {
     private static final long serialVersionUID = -951607371007537258L;
 
     private final List<Reducer> reducers;
-    private final Comparator<Reducer> comparator;
 
     public MapReduceConf() {
         this.reducers = new ArrayList<MapReduceConf.Reducer>();
-        this.comparator = new DefaultComparator();
     }
 
-    public List<Reducer> getReducers(boolean sortByPriority) {
-        if(sortByPriority) {
-            return getReducers(comparator);
-        } else {
-            return reducers;
-        }
+    public List<Reducer> getReducers() {
+        return reducers;
     }
 
     public List<Reducer> getReducers(Comparator<Reducer> comparator) {
@@ -101,19 +93,15 @@ public class MapReduceConf implements Serializable {
 
             final int[] fieldIndexes = toFieldIndexes(headerMap);
             while(csvReader.next()) {
-                String host = csvReader.get(fieldIndexes[0]);
-                String portStr = csvReader.get(fieldIndexes[1]);
+                String id = csvReader.get(fieldIndexes[0]);
+                String nodeStr = csvReader.get(fieldIndexes[1]);
                 String dbUrl = csvReader.get(fieldIndexes[2]);
                 String shuffleDataSink = csvReader.get(fieldIndexes[3]);
-                String priorityStr = csvReader.get(fieldIndexes[4]);
 
-                Preconditions.checkNotNull(host, portStr);
+                Preconditions.checkNotNull(id, nodeStr);
 
-                int port = Integer.parseInt(portStr);
-                GridNode hostNode = GridUtils.getNode(host, port);
-                int priority = Primitives.parseInt(priorityStr, -1);
-                Reducer r = new Reducer(hostNode, dbUrl, shuffleDataSink);
-                r.setPriority(priority);
+                GridNode hostNode = GridUtils.getNode(nodeStr);
+                Reducer r = new Reducer(id, hostNode, dbUrl, shuffleDataSink);
                 reducers.add(r);
             }
         } else {
@@ -123,22 +111,20 @@ public class MapReduceConf implements Serializable {
 
     private static int[] toFieldIndexes(@Nullable Map<String, Integer> map) {
         if(map == null) {
-            return new int[] { 0, 1, 2, 3, 4 };
+            return new int[] { 0, 1, 2, 3, };
         } else {
-            Integer c0 = map.get("HOST");
-            Integer c1 = map.get("PORT");
+            Integer c0 = map.get("ID");
+            Integer c1 = map.get("NODE");
             Integer c2 = map.get("DBURL");
             Integer c3 = map.get("SHUFFLEDATASINK");
-            Integer c4 = map.get("PRIORITY");
 
-            Preconditions.checkNotNull(c0, c1, c2, c3, c4);
+            Preconditions.checkNotNull(c0, c1, c2, c3);
 
-            final int[] indexes = new int[5];
+            final int[] indexes = new int[4];
             indexes[0] = c0.intValue();
             indexes[1] = c1.intValue();
             indexes[2] = c2.intValue();
             indexes[3] = c3.intValue();
-            indexes[4] = c4.intValue();
             return indexes;
         }
     }
@@ -147,46 +133,25 @@ public class MapReduceConf implements Serializable {
         private static final long serialVersionUID = 7657523061627358443L;
 
         @Nonnull
+        final String id;
+        @Nonnull
         final GridNode host;
         @Nullable
         final String dbUrl;
         @Nullable
         final String shuffleDataSink;
 
-        @Nonnegative
-        int priority = Integer.MAX_VALUE; // smaller is bigger (always priority > 0)
-
-        public Reducer(@Nonnull GridNode host, @Nullable String dbUrl, @Nullable String shuffleDataSink) {
+        public Reducer(@Nonnull String id, @Nonnull GridNode host, @Nullable String dbUrl, @Nullable String shuffleDataSink) {
+            this.id = id;
             this.host = host;
             this.dbUrl = dbUrl;
             this.shuffleDataSink = shuffleDataSink;
         }
 
-        public void setPriority(@Nonnegative int priority) {
-            if(priority <= 0) {
-                this.priority = Integer.MAX_VALUE;
-            } else {
-                this.priority = priority;
-            }
-        }
-
         @Override
         public String toString() {
-            return "Reducer [host=" + host + ", dbUrl=" + dbUrl + ", shuffleDataSink="
-                    + shuffleDataSink + ", priority=" + priority + "]";
-        }
-
-    }
-
-    public static final class DefaultComparator implements Comparator<Reducer> {
-
-        public DefaultComparator() {}
-
-        @Override
-        public int compare(final Reducer lhs, final Reducer rhs) {
-            int thisVal = lhs.priority;
-            int anotherVal = rhs.priority;
-            return (thisVal == anotherVal ? 0 : (thisVal < anotherVal ? -1 : 1));
+            return "Reducer [id=" + id + ", host=" + host + ", dbUrl=" + dbUrl
+                    + ", shuffleDataSink=" + shuffleDataSink + "]";
         }
 
     }

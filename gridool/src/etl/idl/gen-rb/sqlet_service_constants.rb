@@ -6,3 +6,7 @@
 
 require 'sqlet_service_types'
 
+PROP_OUTPUT_TYPE = %q"output_type"
+
+PROP_OUTPUT_TBLNAME = %q"output_tblname"
+

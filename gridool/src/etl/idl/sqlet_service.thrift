@@ -1,24 +1,23 @@
 namespace java gridool.sqlet.api
 
-enum CommandType { MAP_SHUFFLE, MAP_NO_COMPILE, REDUCE }
-
-struct CommandOption {
-  1: map<string, string> properties;
-  2: optional string comment,
-}
+enum CommandType { MAP_SHUFFLE, MAP_NO_COMPILE, REDUCE, EXT_SCRIPT }
 
 struct SqletCommand {
   1: CommandType cmdType,
   2: string command,
   3: optional string catalogName = "default",
-  4: optional CommandOption option,
+  4: optional map<string, string> properties,
+  5: optional string comment
 }
+
+const string PROP_OUTPUT_TYPE = "output_type";
+const string PROP_OUTPUT_TBLNAME = "output_tblname";
 
 enum ErrorType { PARSE, EXECUTION, UNSUPPORTED }
 
 exception SqletServiceException {
   1: ErrorType type,
-  2: string message,
+  2: string message
 }
 
 enum InputOutputType { CSV, JSON, XML }

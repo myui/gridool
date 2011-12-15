@@ -5,36 +5,46 @@
  */
 package gridool.sqlet.api;
 
+
+import java.util.Map;
+import java.util.HashMap;
+import org.apache.thrift.TEnum;
+
 public enum CommandType implements org.apache.thrift.TEnum {
-    MAP_SHUFFLE(0), MAP_NO_COMPILE(1), REDUCE(2);
+  MAP_SHUFFLE(0),
+  MAP_NO_COMPILE(1),
+  REDUCE(2),
+  EXT_SCRIPT(3);
 
-    private final int value;
+  private final int value;
 
-    private CommandType(int value) {
-        this.value = value;
+  private CommandType(int value) {
+    this.value = value;
+  }
+
+  /**
+   * Get the integer value of this enum value, as defined in the Thrift IDL.
+   */
+  public int getValue() {
+    return value;
+  }
+
+  /**
+   * Find a the enum type by its integer value, as defined in the Thrift IDL.
+   * @return null if the value is not found.
+   */
+  public static CommandType findByValue(int value) { 
+    switch (value) {
+      case 0:
+        return MAP_SHUFFLE;
+      case 1:
+        return MAP_NO_COMPILE;
+      case 2:
+        return REDUCE;
+      case 3:
+        return EXT_SCRIPT;
+      default:
+        return null;
     }
-
-    /**
-     * Get the integer value of this enum value, as defined in the Thrift IDL.
-     */
-    public int getValue() {
-        return value;
-    }
-
-    /**
-     * Find a the enum type by its integer value, as defined in the Thrift IDL.
-     * @return null if the value is not found.
-     */
-    public static CommandType findByValue(int value) {
-        switch(value) {
-            case 0:
-                return MAP_SHUFFLE;
-            case 1:
-                return MAP_NO_COMPILE;
-            case 2:
-                return REDUCE;
-            default:
-                return null;
-        }
-    }
+  }
 }

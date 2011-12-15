@@ -14,7 +14,7 @@ map-and-shuffle {
 	SELECT * from table 
 	where c1 = "test" and c2 = "test2"
 	order by c3;
-} using catalog "test01" ;
+} catalog_name = "test01", num_reducers=3 ;
 
 -- this is a comment
 map#no_compile 
