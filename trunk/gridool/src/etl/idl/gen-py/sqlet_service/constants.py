@@ -7,3 +7,5 @@
 from thrift.Thrift import *
 from ttypes import *
 
+PROP_OUTPUT_TYPE = "output_type"
+PROP_OUTPUT_TBLNAME = "output_tblname"

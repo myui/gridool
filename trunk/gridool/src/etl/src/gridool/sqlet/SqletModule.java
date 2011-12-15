@@ -29,6 +29,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * @author Makoto YUI
@@ -41,6 +42,14 @@ public final class SqletModule {
     public SqletModule(@Nonnull SystemCatalog catalog) {
         this.catalog = catalog;
         this.cmdQueue = new LinkedList<SqletCommand>();
+    }
+
+    public PartitioningConf getPartitioningConf(@Nonnull String catalogName) {
+        return catalog.getPartitioningConf(catalogName);
+    }
+
+    public MapReduceConf getMapReduceConf(@Nonnull String catalogName) {
+        return catalog.getMapReduceConf(catalogName);
     }
 
     @Nonnull
@@ -65,6 +74,11 @@ public final class SqletModule {
 
     public void offerCommand(@Nonnull SqletCommand cmd) {
         cmdQueue.offer(cmd);
+    }
+
+    @Nullable
+    public SqletCommand pollCommand() {
+        return cmdQueue.poll();
     }
 
     @Override

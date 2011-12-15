@@ -9,8 +9,9 @@ module CommandType
   MAP_SHUFFLE = 0
   MAP_NO_COMPILE = 1
   REDUCE = 2
-  VALUE_MAP = {0 => "MAP_SHUFFLE", 1 => "MAP_NO_COMPILE", 2 => "REDUCE"}
-  VALID_VALUES = Set.new([MAP_SHUFFLE, MAP_NO_COMPILE, REDUCE]).freeze
+  EXT_SCRIPT = 3
+  VALUE_MAP = {0 => "MAP_SHUFFLE", 1 => "MAP_NO_COMPILE", 2 => "REDUCE", 3 => "EXT_SCRIPT"}
+  VALID_VALUES = Set.new([MAP_SHUFFLE, MAP_NO_COMPILE, REDUCE, EXT_SCRIPT]).freeze
 end
 
 module ErrorType
@@ -29,36 +30,20 @@ module InputOutputType
   VALID_VALUES = Set.new([CSV, JSON, XML]).freeze
 end
 
-class CommandOption
-  include ::Thrift::Struct, ::Thrift::Struct_Union
-  PROPERTIES = 1
-  COMMENT = 2
-
-  FIELDS = {
-    PROPERTIES => {:type => ::Thrift::Types::MAP, :name => 'properties', :key => {:type => ::Thrift::Types::STRING}, :value => {:type => ::Thrift::Types::STRING}},
-    COMMENT => {:type => ::Thrift::Types::STRING, :name => 'comment', :optional => true}
-  }
-
-  def struct_fields; FIELDS; end
-
-  def validate
-  end
-
-  ::Thrift::Struct.generate_accessors self
-end
-
 class SqletCommand
   include ::Thrift::Struct, ::Thrift::Struct_Union
   CMDTYPE = 1
   COMMAND = 2
   CATALOGNAME = 3
-  OPTION = 4
+  PROPERTIES = 4
+  COMMENT = 5
 
   FIELDS = {
     CMDTYPE => {:type => ::Thrift::Types::I32, :name => 'cmdType', :enum_class => CommandType},
     COMMAND => {:type => ::Thrift::Types::STRING, :name => 'command'},
     CATALOGNAME => {:type => ::Thrift::Types::STRING, :name => 'catalogName', :default => %q"default", :optional => true},
-    OPTION => {:type => ::Thrift::Types::STRUCT, :name => 'option', :class => CommandOption, :optional => true}
+    PROPERTIES => {:type => ::Thrift::Types::MAP, :name => 'properties', :key => {:type => ::Thrift::Types::STRING}, :value => {:type => ::Thrift::Types::STRING}, :optional => true},
+    COMMENT => {:type => ::Thrift::Types::STRING, :name => 'comment', :optional => true}
   }
 
   def struct_fields; FIELDS; end

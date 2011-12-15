@@ -26,17 +26,12 @@ import gridool.sqlet.SqletException.SqletErrorType;
 import gridool.util.GridUtils;
 import gridool.util.csv.HeaderAwareCsvReader;
 import gridool.util.io.FastBufferedInputStream;
-import gridool.util.jdbc.JDBCUtils;
-import gridool.util.jdbc.ResultSetHandler;
 import gridool.util.lang.Preconditions;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Serializable;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -85,7 +80,8 @@ public class PartitioningConf implements Serializable {
                 FileContent fileContent = fileObj.getContent();
                 is = fileContent.getInputStream();
             } catch (FileSystemException e) {
-                throw new SqletException(SqletErrorType.configFailed, "failed to load a file: " + uri, e);
+                throw new SqletException(SqletErrorType.configFailed, "failed to load a file: "
+                        + uri, e);
             }
             InputStreamReader reader = new InputStreamReader(new FastBufferedInputStream(is));
             HeaderAwareCsvReader csvReader = new HeaderAwareCsvReader(reader, ',', '"');
@@ -94,31 +90,28 @@ public class PartitioningConf implements Serializable {
             try {
                 headerMap = csvReader.parseHeader();
             } catch (IOException e) {
-                throw new SqletException(SqletErrorType.configFailed, "failed to parse a header: " + uri, e);
+                throw new SqletException(SqletErrorType.configFailed, "failed to parse a header: "
+                        + uri, e);
             }
 
             final int[] fieldIndexes = toFieldIndexes(headerMap);
-            final Map<String, Partition> masterSlave = new HashMap<String, Partition>(128);
+            final Map<GridNode, Partition> masterSlave = new HashMap<GridNode, Partition>(128);
             while(csvReader.next()) {
-                String tblName = csvReader.get(fieldIndexes[0]);
-                String srcTable = csvReader.get(fieldIndexes[1]);
-                String masterStr = csvReader.get(fieldIndexes[2]);
-                String host = csvReader.get(fieldIndexes[3]);
-                String portStr = csvReader.get(fieldIndexes[4]);
-                String dbUrl = csvReader.get(fieldIndexes[5]);
-                String mapOutput = csvReader.get(fieldIndexes[6]);
+                String nodeStr = csvReader.get(fieldIndexes[0]);
+                String masterStr = csvReader.get(fieldIndexes[1]);
+                String dbUrl = csvReader.get(fieldIndexes[2]);
+                String mapOutput = csvReader.get(fieldIndexes[3]);
 
-                Preconditions.checkNotNull(tblName, srcTable, masterStr, host, portStr, dbUrl);
+                Preconditions.checkNotNull(nodeStr, dbUrl);
 
-                int port = Integer.parseInt(portStr);
-                GridNode hostNode = GridUtils.getNode(host, port);
-                final boolean master = Boolean.parseBoolean(masterStr);
-                final Partition p = new Partition(tblName, master, hostNode, dbUrl, mapOutput);
-                if(master) {
-                    masterSlave.put(tblName, p);
+                GridNode node = GridUtils.getNode(nodeStr);
+                Partition p = new Partition(node, dbUrl, mapOutput);
+                if(masterStr == null || masterStr.length() == 0) {
+                    masterSlave.put(node, p);
                     list.add(p);
                 } else {
-                    Partition masterPartition = masterSlave.get(tblName);
+                    GridNode master =  GridUtils.getNode(masterStr);
+                    Partition masterPartition = masterSlave.get(master);
                     if(masterPartition == null) {
                         LOG.error("Master partition is not found for slave: " + p);
                     } else {
@@ -133,117 +126,70 @@ public class PartitioningConf implements Serializable {
 
     private static int[] toFieldIndexes(@Nullable Map<String, Integer> map) {
         if(map == null) {
-            return new int[] { 0, 1, 2, 3, 4, 5, 6 };
+            return new int[] { 0, 1, 2, 3 };
         } else {
-            Integer c0 = map.get("TBLNAME");
-            Integer c1 = map.get("SRCTABLE");
-            Integer c2 = map.get("MASTER");
-            Integer c3 = map.get("HOST");
-            Integer c4 = map.get("PORT");
-            Integer c5 = map.get("DBURL");
-            Integer c6 = map.get("MAPOUTPUT");
+            Integer c0 = map.get("NODE");
+            Integer c1 = map.get("MASTER");
+            Integer c2 = map.get("DBURL");
+            Integer c3 = map.get("MAPOUTPUT");
 
-            Preconditions.checkNotNull(c0, c1, c2, c3, c4, c5, c6);
+            Preconditions.checkNotNull(c0, c1, c2, c3);
 
-            final int[] indexes = new int[7];
+            final int[] indexes = new int[4];
             indexes[0] = c0.intValue();
             indexes[1] = c1.intValue();
             indexes[2] = c2.intValue();
             indexes[3] = c3.intValue();
-            indexes[4] = c4.intValue();
-            indexes[5] = c5.intValue();
-            indexes[6] = c6.intValue();
             return indexes;
         }
-    }
-
-    @Deprecated
-    public void loadSettings(Connection conn, String defTable, String srcTable) throws SQLException {
-        String sql1 = "SELECT tblName, host, port, dburl, mapOutput FROM " + defTable
-                + " WHERE srcTable = " + srcTable + " and master IS TRUE";
-        final Map<String, Partition> map = new HashMap<String, Partition>(128);
-        ResultSetHandler rsh1 = new ResultSetHandler() {
-            public Object handle(ResultSet rs) throws SQLException {
-                while(rs.next()) {
-                    String tblName = rs.getString(1);
-                    String host = rs.getString(2);
-                    int port = rs.getInt(3);
-                    GridNode hostNode = GridUtils.getNode(host, port);
-                    String dbUrl = rs.getString(4);
-                    String mapOutput = rs.getString(5);
-                    Partition p = new Partition(tblName, true, hostNode, dbUrl, mapOutput);
-                    list.add(p);
-                    map.put(tblName, p);
-                }
-                return null;
-            }
-        };
-        JDBCUtils.query(conn, sql1, rsh1);
-        String sql2 = "SELECT tblName, host, port, dburl, mapOutput FROM " + defTable
-                + " WHERE srcTable = " + srcTable + " and master IS FALSE";
-        ResultSetHandler rsh2 = new ResultSetHandler() {
-            public Object handle(ResultSet rs) throws SQLException {
-                while(rs.next()) {
-                    String tblName = rs.getString(1);
-                    String host = rs.getString(2);
-                    int port = rs.getInt(3);
-                    GridNode hostNode = GridUtils.getNode(host, port);
-                    String dbUrl = rs.getString(4);
-                    String mapOutput = rs.getString(5);
-                    Partition slave = new Partition(tblName, false, hostNode, dbUrl, mapOutput);
-                    Partition master = map.get(tblName);
-                    if(master == null) {
-                        LOG.error("Master partition is not found for slave: " + slave);
-                    } else {
-                        master.addSlave(slave);
-                    }
-                }
-                return null;
-            }
-        };
-        JDBCUtils.query(conn, sql2, rsh2);
     }
 
     public static final class Partition implements Serializable {
         private static final long serialVersionUID = -8774183764667248705L;
 
         @Nonnull
-        final String tblName;
-        final boolean master;
-        @Nonnull
-        final GridNode host;
+        final GridNode node;
         @Nonnull
         final String dbUrl;
         @Nullable
         final String mapOutput;
-
         @Nullable
-        final List<Partition> slaves;
+        List<Partition> slaves;
 
-        Partition(@Nonnull String tblName, boolean master, @Nonnull GridNode host, @Nonnull String dbUrl, @Nullable String mapOutput) {
+        Partition(@Nonnull GridNode node, @Nonnull String dbUrl, @Nullable String mapOutput) {
             super();
-            this.tblName = tblName;
-            this.master = master;
-            this.host = host;
+            this.node = node;
             this.dbUrl = dbUrl;
             this.mapOutput = mapOutput;
-            this.slaves = master ? new LinkedList<Partition>() : null;
         }
 
         public void addSlave(Partition slave) {
-            if(slave.master) {
-                throw new IllegalArgumentException("Illegal as slave: " + slave);
-            }
-            if(!slave.tblName.equals(tblName)) {
-                throw new IllegalArgumentException("Partitioned table name differs");
+            if(slaves == null) {
+                this.slaves = new LinkedList<Partition>();
             }
             slaves.add(slave);
         }
 
+        public GridNode getNode() {
+            return node;
+        }
+
+        public String getDbUrl() {
+            return dbUrl;
+        }
+
+        public String getMapOutput() {
+            return mapOutput;
+        }
+
+        public List<Partition> getSlaves() {
+            return slaves;
+        }
+
         @Override
         public String toString() {
-            return "Partition [tblName=" + tblName + ", master=" + master + ", host=" + host
-                    + ", dbUrl=" + dbUrl + ", mapOutput=" + mapOutput + ", slaves=" + slaves + "]";
+            return "Partition [node=" + node + ", dbUrl=" + dbUrl + ", mapOutput=" + mapOutput
+                    + ", slaves=" + slaves + "]";
         }
 
     }

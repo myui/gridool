@@ -5,585 +5,730 @@
  */
 package gridool.sqlet.api;
 
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.EnumMap;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.EnumSet;
+import java.util.Collections;
+import java.util.BitSet;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class SqletCommand
-        implements org.apache.thrift.TBase<SqletCommand, SqletCommand._Fields>,
-        java.io.Serializable, Cloneable {
-    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("SqletCommand");
+public class SqletCommand implements org.apache.thrift.TBase<SqletCommand, SqletCommand._Fields>, java.io.Serializable, Cloneable {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("SqletCommand");
 
-    private static final org.apache.thrift.protocol.TField CMD_TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("cmdType", org.apache.thrift.protocol.TType.I32, (short) 1);
-    private static final org.apache.thrift.protocol.TField COMMAND_FIELD_DESC = new org.apache.thrift.protocol.TField("command", org.apache.thrift.protocol.TType.STRING, (short) 2);
-    private static final org.apache.thrift.protocol.TField CATALOG_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("catalogName", org.apache.thrift.protocol.TType.STRING, (short) 3);
-    private static final org.apache.thrift.protocol.TField OPTION_FIELD_DESC = new org.apache.thrift.protocol.TField("option", org.apache.thrift.protocol.TType.STRUCT, (short) 4);
+  private static final org.apache.thrift.protocol.TField CMD_TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("cmdType", org.apache.thrift.protocol.TType.I32, (short)1);
+  private static final org.apache.thrift.protocol.TField COMMAND_FIELD_DESC = new org.apache.thrift.protocol.TField("command", org.apache.thrift.protocol.TType.STRING, (short)2);
+  private static final org.apache.thrift.protocol.TField CATALOG_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("catalogName", org.apache.thrift.protocol.TType.STRING, (short)3);
+  private static final org.apache.thrift.protocol.TField PROPERTIES_FIELD_DESC = new org.apache.thrift.protocol.TField("properties", org.apache.thrift.protocol.TType.MAP, (short)4);
+  private static final org.apache.thrift.protocol.TField COMMENT_FIELD_DESC = new org.apache.thrift.protocol.TField("comment", org.apache.thrift.protocol.TType.STRING, (short)5);
 
-    private CommandType cmdType; // required
-    private String command; // required
-    private String catalogName; // required
-    private CommandOption option; // required
+  private CommandType cmdType; // required
+  private String command; // required
+  private String catalogName; // required
+  private Map<String,String> properties; // required
+  private String comment; // required
 
-    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-        /**
-         * 
-         * @see CommandType
-         */
-        CMD_TYPE((short) 1, "cmdType"), COMMAND((short) 2, "command"), CATALOG_NAME((short) 3,
-                "catalogName"), OPTION((short) 4, "option");
+  /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+  public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+    /**
+     * 
+     * @see CommandType
+     */
+    CMD_TYPE((short)1, "cmdType"),
+    COMMAND((short)2, "command"),
+    CATALOG_NAME((short)3, "catalogName"),
+    PROPERTIES((short)4, "properties"),
+    COMMENT((short)5, "comment");
 
-        private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+    private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
-        static {
-            for(_Fields field : EnumSet.allOf(_Fields.class)) {
-                byName.put(field.getFieldName(), field);
-            }
-        }
-
-        /**
-         * Find the _Fields constant that matches fieldId, or null if its not found.
-         */
-        public static _Fields findByThriftId(int fieldId) {
-            switch(fieldId) {
-                case 1: // CMD_TYPE
-                    return CMD_TYPE;
-                case 2: // COMMAND
-                    return COMMAND;
-                case 3: // CATALOG_NAME
-                    return CATALOG_NAME;
-                case 4: // OPTION
-                    return OPTION;
-                default:
-                    return null;
-            }
-        }
-
-        /**
-         * Find the _Fields constant that matches fieldId, throwing an exception
-         * if it is not found.
-         */
-        public static _Fields findByThriftIdOrThrow(int fieldId) {
-            _Fields fields = findByThriftId(fieldId);
-            if(fields == null)
-                throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-            return fields;
-        }
-
-        /**
-         * Find the _Fields constant that matches name, or null if its not found.
-         */
-        public static _Fields findByName(String name) {
-            return byName.get(name);
-        }
-
-        private final short _thriftId;
-        private final String _fieldName;
-
-        _Fields(short thriftId, String fieldName) {
-            _thriftId = thriftId;
-            _fieldName = fieldName;
-        }
-
-        public short getThriftFieldId() {
-            return _thriftId;
-        }
-
-        public String getFieldName() {
-            return _fieldName;
-        }
-    }
-
-    // isset id assignments
-
-    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
-        Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-        tmpMap.put(_Fields.CMD_TYPE, new org.apache.thrift.meta_data.FieldMetaData("cmdType", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, CommandType.class)));
-        tmpMap.put(_Fields.COMMAND, new org.apache.thrift.meta_data.FieldMetaData("command", org.apache.thrift.TFieldRequirementType.DEFAULT, new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-        tmpMap.put(_Fields.CATALOG_NAME, new org.apache.thrift.meta_data.FieldMetaData("catalogName", org.apache.thrift.TFieldRequirementType.OPTIONAL, new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-        tmpMap.put(_Fields.OPTION, new org.apache.thrift.meta_data.FieldMetaData("option", org.apache.thrift.TFieldRequirementType.OPTIONAL, new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CommandOption.class)));
-        metaDataMap = Collections.unmodifiableMap(tmpMap);
-        org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(SqletCommand.class, metaDataMap);
-    }
-
-    public SqletCommand() {
-        this.catalogName = "default";
-
-    }
-
-    public SqletCommand(CommandType cmdType, String command) {
-        this();
-        this.cmdType = cmdType;
-        this.command = command;
+      for (_Fields field : EnumSet.allOf(_Fields.class)) {
+        byName.put(field.getFieldName(), field);
+      }
     }
 
     /**
-     * Performs a deep copy on <i>other</i>.
+     * Find the _Fields constant that matches fieldId, or null if its not found.
      */
-    public SqletCommand(SqletCommand other) {
-        if(other.isSetCmdType()) {
-            this.cmdType = other.cmdType;
-        }
-        if(other.isSetCommand()) {
-            this.command = other.command;
-        }
-        if(other.isSetCatalogName()) {
-            this.catalogName = other.catalogName;
-        }
-        if(other.isSetOption()) {
-            this.option = new CommandOption(other.option);
-        }
-    }
-
-    public SqletCommand deepCopy() {
-        return new SqletCommand(this);
-    }
-
-    @Override
-    public void clear() {
-        this.cmdType = null;
-        this.command = null;
-        this.catalogName = "default";
-
-        this.option = null;
+    public static _Fields findByThriftId(int fieldId) {
+      switch(fieldId) {
+        case 1: // CMD_TYPE
+          return CMD_TYPE;
+        case 2: // COMMAND
+          return COMMAND;
+        case 3: // CATALOG_NAME
+          return CATALOG_NAME;
+        case 4: // PROPERTIES
+          return PROPERTIES;
+        case 5: // COMMENT
+          return COMMENT;
+        default:
+          return null;
+      }
     }
 
     /**
-     * 
-     * @see CommandType
+     * Find the _Fields constant that matches fieldId, throwing an exception
+     * if it is not found.
      */
-    public CommandType getCmdType() {
-        return this.cmdType;
+    public static _Fields findByThriftIdOrThrow(int fieldId) {
+      _Fields fields = findByThriftId(fieldId);
+      if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+      return fields;
     }
 
     /**
-     * 
-     * @see CommandType
+     * Find the _Fields constant that matches name, or null if its not found.
      */
-    public void setCmdType(CommandType cmdType) {
-        this.cmdType = cmdType;
+    public static _Fields findByName(String name) {
+      return byName.get(name);
     }
 
-    public void unsetCmdType() {
-        this.cmdType = null;
+    private final short _thriftId;
+    private final String _fieldName;
+
+    _Fields(short thriftId, String fieldName) {
+      _thriftId = thriftId;
+      _fieldName = fieldName;
     }
 
-    /** Returns true if field cmdType is set (has been assigned a value) and false otherwise */
-    public boolean isSetCmdType() {
-        return this.cmdType != null;
+    public short getThriftFieldId() {
+      return _thriftId;
     }
 
-    public void setCmdTypeIsSet(boolean value) {
-        if(!value) {
-            this.cmdType = null;
-        }
+    public String getFieldName() {
+      return _fieldName;
+    }
+  }
+
+  // isset id assignments
+
+  public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+  static {
+    Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+    tmpMap.put(_Fields.CMD_TYPE, new org.apache.thrift.meta_data.FieldMetaData("cmdType", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, CommandType.class)));
+    tmpMap.put(_Fields.COMMAND, new org.apache.thrift.meta_data.FieldMetaData("command", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.CATALOG_NAME, new org.apache.thrift.meta_data.FieldMetaData("catalogName", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.PROPERTIES, new org.apache.thrift.meta_data.FieldMetaData("properties", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.MapMetaData(org.apache.thrift.protocol.TType.MAP, 
+            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING), 
+            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING))));
+    tmpMap.put(_Fields.COMMENT, new org.apache.thrift.meta_data.FieldMetaData("comment", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    metaDataMap = Collections.unmodifiableMap(tmpMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(SqletCommand.class, metaDataMap);
+  }
+
+  public SqletCommand() {
+    this.catalogName = "default";
+
+  }
+
+  public SqletCommand(
+    CommandType cmdType,
+    String command)
+  {
+    this();
+    this.cmdType = cmdType;
+    this.command = command;
+  }
+
+  /**
+   * Performs a deep copy on <i>other</i>.
+   */
+  public SqletCommand(SqletCommand other) {
+    if (other.isSetCmdType()) {
+      this.cmdType = other.cmdType;
+    }
+    if (other.isSetCommand()) {
+      this.command = other.command;
+    }
+    if (other.isSetCatalogName()) {
+      this.catalogName = other.catalogName;
+    }
+    if (other.isSetProperties()) {
+      Map<String,String> __this__properties = new HashMap<String,String>();
+      for (Map.Entry<String, String> other_element : other.properties.entrySet()) {
+
+        String other_element_key = other_element.getKey();
+        String other_element_value = other_element.getValue();
+
+        String __this__properties_copy_key = other_element_key;
+
+        String __this__properties_copy_value = other_element_value;
+
+        __this__properties.put(__this__properties_copy_key, __this__properties_copy_value);
+      }
+      this.properties = __this__properties;
+    }
+    if (other.isSetComment()) {
+      this.comment = other.comment;
+    }
+  }
+
+  public SqletCommand deepCopy() {
+    return new SqletCommand(this);
+  }
+
+  @Override
+  public void clear() {
+    this.cmdType = null;
+    this.command = null;
+    this.catalogName = "default";
+
+    this.properties = null;
+    this.comment = null;
+  }
+
+  /**
+   * 
+   * @see CommandType
+   */
+  public CommandType getCmdType() {
+    return this.cmdType;
+  }
+
+  /**
+   * 
+   * @see CommandType
+   */
+  public void setCmdType(CommandType cmdType) {
+    this.cmdType = cmdType;
+  }
+
+  public void unsetCmdType() {
+    this.cmdType = null;
+  }
+
+  /** Returns true if field cmdType is set (has been assigned a value) and false otherwise */
+  public boolean isSetCmdType() {
+    return this.cmdType != null;
+  }
+
+  public void setCmdTypeIsSet(boolean value) {
+    if (!value) {
+      this.cmdType = null;
+    }
+  }
+
+  public String getCommand() {
+    return this.command;
+  }
+
+  public void setCommand(String command) {
+    this.command = command;
+  }
+
+  public void unsetCommand() {
+    this.command = null;
+  }
+
+  /** Returns true if field command is set (has been assigned a value) and false otherwise */
+  public boolean isSetCommand() {
+    return this.command != null;
+  }
+
+  public void setCommandIsSet(boolean value) {
+    if (!value) {
+      this.command = null;
+    }
+  }
+
+  public String getCatalogName() {
+    return this.catalogName;
+  }
+
+  public void setCatalogName(String catalogName) {
+    this.catalogName = catalogName;
+  }
+
+  public void unsetCatalogName() {
+    this.catalogName = null;
+  }
+
+  /** Returns true if field catalogName is set (has been assigned a value) and false otherwise */
+  public boolean isSetCatalogName() {
+    return this.catalogName != null;
+  }
+
+  public void setCatalogNameIsSet(boolean value) {
+    if (!value) {
+      this.catalogName = null;
+    }
+  }
+
+  public int getPropertiesSize() {
+    return (this.properties == null) ? 0 : this.properties.size();
+  }
+
+  public void putToProperties(String key, String val) {
+    if (this.properties == null) {
+      this.properties = new HashMap<String,String>();
+    }
+    this.properties.put(key, val);
+  }
+
+  public Map<String,String> getProperties() {
+    return this.properties;
+  }
+
+  public void setProperties(Map<String,String> properties) {
+    this.properties = properties;
+  }
+
+  public void unsetProperties() {
+    this.properties = null;
+  }
+
+  /** Returns true if field properties is set (has been assigned a value) and false otherwise */
+  public boolean isSetProperties() {
+    return this.properties != null;
+  }
+
+  public void setPropertiesIsSet(boolean value) {
+    if (!value) {
+      this.properties = null;
+    }
+  }
+
+  public String getComment() {
+    return this.comment;
+  }
+
+  public void setComment(String comment) {
+    this.comment = comment;
+  }
+
+  public void unsetComment() {
+    this.comment = null;
+  }
+
+  /** Returns true if field comment is set (has been assigned a value) and false otherwise */
+  public boolean isSetComment() {
+    return this.comment != null;
+  }
+
+  public void setCommentIsSet(boolean value) {
+    if (!value) {
+      this.comment = null;
+    }
+  }
+
+  public void setFieldValue(_Fields field, Object value) {
+    switch (field) {
+    case CMD_TYPE:
+      if (value == null) {
+        unsetCmdType();
+      } else {
+        setCmdType((CommandType)value);
+      }
+      break;
+
+    case COMMAND:
+      if (value == null) {
+        unsetCommand();
+      } else {
+        setCommand((String)value);
+      }
+      break;
+
+    case CATALOG_NAME:
+      if (value == null) {
+        unsetCatalogName();
+      } else {
+        setCatalogName((String)value);
+      }
+      break;
+
+    case PROPERTIES:
+      if (value == null) {
+        unsetProperties();
+      } else {
+        setProperties((Map<String,String>)value);
+      }
+      break;
+
+    case COMMENT:
+      if (value == null) {
+        unsetComment();
+      } else {
+        setComment((String)value);
+      }
+      break;
+
+    }
+  }
+
+  public Object getFieldValue(_Fields field) {
+    switch (field) {
+    case CMD_TYPE:
+      return getCmdType();
+
+    case COMMAND:
+      return getCommand();
+
+    case CATALOG_NAME:
+      return getCatalogName();
+
+    case PROPERTIES:
+      return getProperties();
+
+    case COMMENT:
+      return getComment();
+
+    }
+    throw new IllegalStateException();
+  }
+
+  /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+  public boolean isSet(_Fields field) {
+    if (field == null) {
+      throw new IllegalArgumentException();
     }
 
-    public String getCommand() {
-        return this.command;
+    switch (field) {
+    case CMD_TYPE:
+      return isSetCmdType();
+    case COMMAND:
+      return isSetCommand();
+    case CATALOG_NAME:
+      return isSetCatalogName();
+    case PROPERTIES:
+      return isSetProperties();
+    case COMMENT:
+      return isSetComment();
     }
+    throw new IllegalStateException();
+  }
 
-    public void setCommand(String command) {
-        this.command = command;
-    }
+  @Override
+  public boolean equals(Object that) {
+    if (that == null)
+      return false;
+    if (that instanceof SqletCommand)
+      return this.equals((SqletCommand)that);
+    return false;
+  }
 
-    public void unsetCommand() {
-        this.command = null;
-    }
+  public boolean equals(SqletCommand that) {
+    if (that == null)
+      return false;
 
-    /** Returns true if field command is set (has been assigned a value) and false otherwise */
-    public boolean isSetCommand() {
-        return this.command != null;
-    }
-
-    public void setCommandIsSet(boolean value) {
-        if(!value) {
-            this.command = null;
-        }
-    }
-
-    public String getCatalogName() {
-        return this.catalogName;
-    }
-
-    public void setCatalogName(String catalogName) {
-        this.catalogName = catalogName;
-    }
-
-    public void unsetCatalogName() {
-        this.catalogName = null;
-    }
-
-    /** Returns true if field catalogName is set (has been assigned a value) and false otherwise */
-    public boolean isSetCatalogName() {
-        return this.catalogName != null;
-    }
-
-    public void setCatalogNameIsSet(boolean value) {
-        if(!value) {
-            this.catalogName = null;
-        }
-    }
-
-    public CommandOption getOption() {
-        return this.option;
-    }
-
-    public void setOption(CommandOption option) {
-        this.option = option;
-    }
-
-    public void unsetOption() {
-        this.option = null;
-    }
-
-    /** Returns true if field option is set (has been assigned a value) and false otherwise */
-    public boolean isSetOption() {
-        return this.option != null;
-    }
-
-    public void setOptionIsSet(boolean value) {
-        if(!value) {
-            this.option = null;
-        }
-    }
-
-    public void setFieldValue(_Fields field, Object value) {
-        switch(field) {
-            case CMD_TYPE:
-                if(value == null) {
-                    unsetCmdType();
-                } else {
-                    setCmdType((CommandType) value);
-                }
-                break;
-
-            case COMMAND:
-                if(value == null) {
-                    unsetCommand();
-                } else {
-                    setCommand((String) value);
-                }
-                break;
-
-            case CATALOG_NAME:
-                if(value == null) {
-                    unsetCatalogName();
-                } else {
-                    setCatalogName((String) value);
-                }
-                break;
-
-            case OPTION:
-                if(value == null) {
-                    unsetOption();
-                } else {
-                    setOption((CommandOption) value);
-                }
-                break;
-
-        }
-    }
-
-    public Object getFieldValue(_Fields field) {
-        switch(field) {
-            case CMD_TYPE:
-                return getCmdType();
-
-            case COMMAND:
-                return getCommand();
-
-            case CATALOG_NAME:
-                return getCatalogName();
-
-            case OPTION:
-                return getOption();
-
-        }
-        throw new IllegalStateException();
-    }
-
-    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-    public boolean isSet(_Fields field) {
-        if(field == null) {
-            throw new IllegalArgumentException();
-        }
-
-        switch(field) {
-            case CMD_TYPE:
-                return isSetCmdType();
-            case COMMAND:
-                return isSetCommand();
-            case CATALOG_NAME:
-                return isSetCatalogName();
-            case OPTION:
-                return isSetOption();
-        }
-        throw new IllegalStateException();
-    }
-
-    @Override
-    public boolean equals(Object that) {
-        if(that == null)
-            return false;
-        if(that instanceof SqletCommand)
-            return this.equals((SqletCommand) that);
+    boolean this_present_cmdType = true && this.isSetCmdType();
+    boolean that_present_cmdType = true && that.isSetCmdType();
+    if (this_present_cmdType || that_present_cmdType) {
+      if (!(this_present_cmdType && that_present_cmdType))
+        return false;
+      if (!this.cmdType.equals(that.cmdType))
         return false;
     }
 
-    public boolean equals(SqletCommand that) {
-        if(that == null)
-            return false;
-
-        boolean this_present_cmdType = true && this.isSetCmdType();
-        boolean that_present_cmdType = true && that.isSetCmdType();
-        if(this_present_cmdType || that_present_cmdType) {
-            if(!(this_present_cmdType && that_present_cmdType))
-                return false;
-            if(!this.cmdType.equals(that.cmdType))
-                return false;
-        }
-
-        boolean this_present_command = true && this.isSetCommand();
-        boolean that_present_command = true && that.isSetCommand();
-        if(this_present_command || that_present_command) {
-            if(!(this_present_command && that_present_command))
-                return false;
-            if(!this.command.equals(that.command))
-                return false;
-        }
-
-        boolean this_present_catalogName = true && this.isSetCatalogName();
-        boolean that_present_catalogName = true && that.isSetCatalogName();
-        if(this_present_catalogName || that_present_catalogName) {
-            if(!(this_present_catalogName && that_present_catalogName))
-                return false;
-            if(!this.catalogName.equals(that.catalogName))
-                return false;
-        }
-
-        boolean this_present_option = true && this.isSetOption();
-        boolean that_present_option = true && that.isSetOption();
-        if(this_present_option || that_present_option) {
-            if(!(this_present_option && that_present_option))
-                return false;
-            if(!this.option.equals(that.option))
-                return false;
-        }
-
-        return true;
+    boolean this_present_command = true && this.isSetCommand();
+    boolean that_present_command = true && that.isSetCommand();
+    if (this_present_command || that_present_command) {
+      if (!(this_present_command && that_present_command))
+        return false;
+      if (!this.command.equals(that.command))
+        return false;
     }
 
-    @Override
-    public int hashCode() {
-        return 0;
+    boolean this_present_catalogName = true && this.isSetCatalogName();
+    boolean that_present_catalogName = true && that.isSetCatalogName();
+    if (this_present_catalogName || that_present_catalogName) {
+      if (!(this_present_catalogName && that_present_catalogName))
+        return false;
+      if (!this.catalogName.equals(that.catalogName))
+        return false;
     }
 
-    public int compareTo(SqletCommand other) {
-        if(!getClass().equals(other.getClass())) {
-            return getClass().getName().compareTo(other.getClass().getName());
-        }
-
-        int lastComparison = 0;
-        SqletCommand typedOther = (SqletCommand) other;
-
-        lastComparison = Boolean.valueOf(isSetCmdType()).compareTo(typedOther.isSetCmdType());
-        if(lastComparison != 0) {
-            return lastComparison;
-        }
-        if(isSetCmdType()) {
-            lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.cmdType, typedOther.cmdType);
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-        }
-        lastComparison = Boolean.valueOf(isSetCommand()).compareTo(typedOther.isSetCommand());
-        if(lastComparison != 0) {
-            return lastComparison;
-        }
-        if(isSetCommand()) {
-            lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.command, typedOther.command);
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-        }
-        lastComparison = Boolean.valueOf(isSetCatalogName()).compareTo(typedOther.isSetCatalogName());
-        if(lastComparison != 0) {
-            return lastComparison;
-        }
-        if(isSetCatalogName()) {
-            lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.catalogName, typedOther.catalogName);
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-        }
-        lastComparison = Boolean.valueOf(isSetOption()).compareTo(typedOther.isSetOption());
-        if(lastComparison != 0) {
-            return lastComparison;
-        }
-        if(isSetOption()) {
-            lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.option, typedOther.option);
-            if(lastComparison != 0) {
-                return lastComparison;
-            }
-        }
-        return 0;
+    boolean this_present_properties = true && this.isSetProperties();
+    boolean that_present_properties = true && that.isSetProperties();
+    if (this_present_properties || that_present_properties) {
+      if (!(this_present_properties && that_present_properties))
+        return false;
+      if (!this.properties.equals(that.properties))
+        return false;
     }
 
-    public _Fields fieldForId(int fieldId) {
-        return _Fields.findByThriftId(fieldId);
+    boolean this_present_comment = true && this.isSetComment();
+    boolean that_present_comment = true && that.isSetComment();
+    if (this_present_comment || that_present_comment) {
+      if (!(this_present_comment && that_present_comment))
+        return false;
+      if (!this.comment.equals(that.comment))
+        return false;
     }
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot)
-            throws org.apache.thrift.TException {
-        org.apache.thrift.protocol.TField field;
-        iprot.readStructBegin();
-        while(true) {
-            field = iprot.readFieldBegin();
-            if(field.type == org.apache.thrift.protocol.TType.STOP) {
-                break;
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return 0;
+  }
+
+  public int compareTo(SqletCommand other) {
+    if (!getClass().equals(other.getClass())) {
+      return getClass().getName().compareTo(other.getClass().getName());
+    }
+
+    int lastComparison = 0;
+    SqletCommand typedOther = (SqletCommand)other;
+
+    lastComparison = Boolean.valueOf(isSetCmdType()).compareTo(typedOther.isSetCmdType());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetCmdType()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.cmdType, typedOther.cmdType);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetCommand()).compareTo(typedOther.isSetCommand());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetCommand()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.command, typedOther.command);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetCatalogName()).compareTo(typedOther.isSetCatalogName());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetCatalogName()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.catalogName, typedOther.catalogName);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetProperties()).compareTo(typedOther.isSetProperties());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetProperties()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.properties, typedOther.properties);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetComment()).compareTo(typedOther.isSetComment());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetComment()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.comment, typedOther.comment);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    return 0;
+  }
+
+  public _Fields fieldForId(int fieldId) {
+    return _Fields.findByThriftId(fieldId);
+  }
+
+  public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+    org.apache.thrift.protocol.TField field;
+    iprot.readStructBegin();
+    while (true)
+    {
+      field = iprot.readFieldBegin();
+      if (field.type == org.apache.thrift.protocol.TType.STOP) { 
+        break;
+      }
+      switch (field.id) {
+        case 1: // CMD_TYPE
+          if (field.type == org.apache.thrift.protocol.TType.I32) {
+            this.cmdType = CommandType.findByValue(iprot.readI32());
+          } else { 
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 2: // COMMAND
+          if (field.type == org.apache.thrift.protocol.TType.STRING) {
+            this.command = iprot.readString();
+          } else { 
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 3: // CATALOG_NAME
+          if (field.type == org.apache.thrift.protocol.TType.STRING) {
+            this.catalogName = iprot.readString();
+          } else { 
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 4: // PROPERTIES
+          if (field.type == org.apache.thrift.protocol.TType.MAP) {
+            {
+              org.apache.thrift.protocol.TMap _map0 = iprot.readMapBegin();
+              this.properties = new HashMap<String,String>(2*_map0.size);
+              for (int _i1 = 0; _i1 < _map0.size; ++_i1)
+              {
+                String _key2; // required
+                String _val3; // required
+                _key2 = iprot.readString();
+                _val3 = iprot.readString();
+                this.properties.put(_key2, _val3);
+              }
+              iprot.readMapEnd();
             }
-            switch(field.id) {
-                case 1: // CMD_TYPE
-                    if(field.type == org.apache.thrift.protocol.TType.I32) {
-                        this.cmdType = CommandType.findByValue(iprot.readI32());
-                    } else {
-                        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                    }
-                    break;
-                case 2: // COMMAND
-                    if(field.type == org.apache.thrift.protocol.TType.STRING) {
-                        this.command = iprot.readString();
-                    } else {
-                        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                    }
-                    break;
-                case 3: // CATALOG_NAME
-                    if(field.type == org.apache.thrift.protocol.TType.STRING) {
-                        this.catalogName = iprot.readString();
-                    } else {
-                        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                    }
-                    break;
-                case 4: // OPTION
-                    if(field.type == org.apache.thrift.protocol.TType.STRUCT) {
-                        this.option = new CommandOption();
-                        this.option.read(iprot);
-                    } else {
-                        org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-                    }
-                    break;
-                default:
-                    org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
-            }
-            iprot.readFieldEnd();
-        }
-        iprot.readStructEnd();
-        validate();
+          } else { 
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        case 5: // COMMENT
+          if (field.type == org.apache.thrift.protocol.TType.STRING) {
+            this.comment = iprot.readString();
+          } else { 
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+          }
+          break;
+        default:
+          org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+      }
+      iprot.readFieldEnd();
     }
+    iprot.readStructEnd();
+    validate();
+  }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot)
-            throws org.apache.thrift.TException {
-        validate();
+  public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+    validate();
 
-        oprot.writeStructBegin(STRUCT_DESC);
-        if(this.cmdType != null) {
-            oprot.writeFieldBegin(CMD_TYPE_FIELD_DESC);
-            oprot.writeI32(this.cmdType.getValue());
-            oprot.writeFieldEnd();
-        }
-        if(this.command != null) {
-            oprot.writeFieldBegin(COMMAND_FIELD_DESC);
-            oprot.writeString(this.command);
-            oprot.writeFieldEnd();
-        }
-        if(this.catalogName != null) {
-            if(isSetCatalogName()) {
-                oprot.writeFieldBegin(CATALOG_NAME_FIELD_DESC);
-                oprot.writeString(this.catalogName);
-                oprot.writeFieldEnd();
-            }
-        }
-        if(this.option != null) {
-            if(isSetOption()) {
-                oprot.writeFieldBegin(OPTION_FIELD_DESC);
-                this.option.write(oprot);
-                oprot.writeFieldEnd();
-            }
-        }
-        oprot.writeFieldStop();
-        oprot.writeStructEnd();
+    oprot.writeStructBegin(STRUCT_DESC);
+    if (this.cmdType != null) {
+      oprot.writeFieldBegin(CMD_TYPE_FIELD_DESC);
+      oprot.writeI32(this.cmdType.getValue());
+      oprot.writeFieldEnd();
     }
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder("SqletCommand(");
-        boolean first = true;
-
-        sb.append("cmdType:");
-        if(this.cmdType == null) {
-            sb.append("null");
-        } else {
-            sb.append(this.cmdType);
-        }
-        first = false;
-        if(!first)
-            sb.append(", ");
-        sb.append("command:");
-        if(this.command == null) {
-            sb.append("null");
-        } else {
-            sb.append(this.command);
-        }
-        first = false;
-        if(isSetCatalogName()) {
-            if(!first)
-                sb.append(", ");
-            sb.append("catalogName:");
-            if(this.catalogName == null) {
-                sb.append("null");
-            } else {
-                sb.append(this.catalogName);
-            }
-            first = false;
-        }
-        if(isSetOption()) {
-            if(!first)
-                sb.append(", ");
-            sb.append("option:");
-            if(this.option == null) {
-                sb.append("null");
-            } else {
-                sb.append(this.option);
-            }
-            first = false;
-        }
-        sb.append(")");
-        return sb.toString();
+    if (this.command != null) {
+      oprot.writeFieldBegin(COMMAND_FIELD_DESC);
+      oprot.writeString(this.command);
+      oprot.writeFieldEnd();
     }
-
-    public void validate() throws org.apache.thrift.TException {
-        // check for required fields
+    if (this.catalogName != null) {
+      if (isSetCatalogName()) {
+        oprot.writeFieldBegin(CATALOG_NAME_FIELD_DESC);
+        oprot.writeString(this.catalogName);
+        oprot.writeFieldEnd();
+      }
     }
-
-    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-        try {
-            write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-        } catch (org.apache.thrift.TException te) {
-            throw new java.io.IOException(te);
+    if (this.properties != null) {
+      if (isSetProperties()) {
+        oprot.writeFieldBegin(PROPERTIES_FIELD_DESC);
+        {
+          oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRING, this.properties.size()));
+          for (Map.Entry<String, String> _iter4 : this.properties.entrySet())
+          {
+            oprot.writeString(_iter4.getKey());
+            oprot.writeString(_iter4.getValue());
+          }
+          oprot.writeMapEnd();
         }
+        oprot.writeFieldEnd();
+      }
     }
+    if (this.comment != null) {
+      if (isSetComment()) {
+        oprot.writeFieldBegin(COMMENT_FIELD_DESC);
+        oprot.writeString(this.comment);
+        oprot.writeFieldEnd();
+      }
+    }
+    oprot.writeFieldStop();
+    oprot.writeStructEnd();
+  }
 
-    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException,
-            ClassNotFoundException {
-        try {
-            read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-        } catch (org.apache.thrift.TException te) {
-            throw new java.io.IOException(te);
-        }
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("SqletCommand(");
+    boolean first = true;
+
+    sb.append("cmdType:");
+    if (this.cmdType == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.cmdType);
     }
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("command:");
+    if (this.command == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.command);
+    }
+    first = false;
+    if (isSetCatalogName()) {
+      if (!first) sb.append(", ");
+      sb.append("catalogName:");
+      if (this.catalogName == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.catalogName);
+      }
+      first = false;
+    }
+    if (isSetProperties()) {
+      if (!first) sb.append(", ");
+      sb.append("properties:");
+      if (this.properties == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.properties);
+      }
+      first = false;
+    }
+    if (isSetComment()) {
+      if (!first) sb.append(", ");
+      sb.append("comment:");
+      if (this.comment == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.comment);
+      }
+      first = false;
+    }
+    sb.append(")");
+    return sb.toString();
+  }
+
+  public void validate() throws org.apache.thrift.TException {
+    // check for required fields
+  }
+
+  private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+    try {
+      write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+    } catch (org.apache.thrift.TException te) {
+      throw new java.io.IOException(te);
+    }
+  }
+
+  private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+    try {
+      read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+    } catch (org.apache.thrift.TException te) {
+      throw new java.io.IOException(te);
+    }
+  }
 
 }
+

@@ -5,36 +5,43 @@
  */
 package gridool.sqlet.api;
 
+
+import java.util.Map;
+import java.util.HashMap;
+import org.apache.thrift.TEnum;
+
 public enum InputOutputType implements org.apache.thrift.TEnum {
-    CSV(0), JSON(1), XML(2);
+  CSV(0),
+  JSON(1),
+  XML(2);
 
-    private final int value;
+  private final int value;
 
-    private InputOutputType(int value) {
-        this.value = value;
+  private InputOutputType(int value) {
+    this.value = value;
+  }
+
+  /**
+   * Get the integer value of this enum value, as defined in the Thrift IDL.
+   */
+  public int getValue() {
+    return value;
+  }
+
+  /**
+   * Find a the enum type by its integer value, as defined in the Thrift IDL.
+   * @return null if the value is not found.
+   */
+  public static InputOutputType findByValue(int value) { 
+    switch (value) {
+      case 0:
+        return CSV;
+      case 1:
+        return JSON;
+      case 2:
+        return XML;
+      default:
+        return null;
     }
-
-    /**
-     * Get the integer value of this enum value, as defined in the Thrift IDL.
-     */
-    public int getValue() {
-        return value;
-    }
-
-    /**
-     * Find a the enum type by its integer value, as defined in the Thrift IDL.
-     * @return null if the value is not found.
-     */
-    public static InputOutputType findByValue(int value) {
-        switch(value) {
-            case 0:
-                return CSV;
-            case 1:
-                return JSON;
-            case 2:
-                return XML;
-            default:
-                return null;
-        }
-    }
+  }
 }

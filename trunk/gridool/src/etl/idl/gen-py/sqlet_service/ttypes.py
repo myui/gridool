@@ -18,17 +18,20 @@ class CommandType:
   MAP_SHUFFLE = 0
   MAP_NO_COMPILE = 1
   REDUCE = 2
+  EXT_SCRIPT = 3
 
   _VALUES_TO_NAMES = {
     0: "MAP_SHUFFLE",
     1: "MAP_NO_COMPILE",
     2: "REDUCE",
+    3: "EXT_SCRIPT",
   }
 
   _NAMES_TO_VALUES = {
     "MAP_SHUFFLE": 0,
     "MAP_NO_COMPILE": 1,
     "REDUCE": 2,
+    "EXT_SCRIPT": 3,
   }
 
 class ErrorType:
@@ -66,95 +69,14 @@ class InputOutputType:
   }
 
 
-class CommandOption:
-  """
-  Attributes:
-   - properties
-   - comment
-  """
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.MAP, 'properties', (TType.STRING,None,TType.STRING,None), None, ), # 1
-    (2, TType.STRING, 'comment', None, None, ), # 2
-  )
-
-  def __init__(self, properties=None, comment=None,):
-    self.properties = properties
-    self.comment = comment
-
-  def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      if fid == 1:
-        if ftype == TType.MAP:
-          self.properties = {}
-          (_ktype1, _vtype2, _size0 ) = iprot.readMapBegin() 
-          for _i4 in xrange(_size0):
-            _key5 = iprot.readString();
-            _val6 = iprot.readString();
-            self.properties[_key5] = _val6
-          iprot.readMapEnd()
-        else:
-          iprot.skip(ftype)
-      elif fid == 2:
-        if ftype == TType.STRING:
-          self.comment = iprot.readString();
-        else:
-          iprot.skip(ftype)
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
-    oprot.writeStructBegin('CommandOption')
-    if self.properties is not None:
-      oprot.writeFieldBegin('properties', TType.MAP, 1)
-      oprot.writeMapBegin(TType.STRING, TType.STRING, len(self.properties))
-      for kiter7,viter8 in self.properties.items():
-        oprot.writeString(kiter7)
-        oprot.writeString(viter8)
-      oprot.writeMapEnd()
-      oprot.writeFieldEnd()
-    if self.comment is not None:
-      oprot.writeFieldBegin('comment', TType.STRING, 2)
-      oprot.writeString(self.comment)
-      oprot.writeFieldEnd()
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-
-  def validate(self):
-    return
-
-
-  def __repr__(self):
-    L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
-    return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
-
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
 class SqletCommand:
   """
   Attributes:
    - cmdType
    - command
    - catalogName
-   - option
+   - properties
+   - comment
   """
 
   thrift_spec = (
@@ -162,14 +84,16 @@ class SqletCommand:
     (1, TType.I32, 'cmdType', None, None, ), # 1
     (2, TType.STRING, 'command', None, None, ), # 2
     (3, TType.STRING, 'catalogName', None, "default", ), # 3
-    (4, TType.STRUCT, 'option', (CommandOption, CommandOption.thrift_spec), None, ), # 4
+    (4, TType.MAP, 'properties', (TType.STRING,None,TType.STRING,None), None, ), # 4
+    (5, TType.STRING, 'comment', None, None, ), # 5
   )
 
-  def __init__(self, cmdType=None, command=None, catalogName=thrift_spec[3][4], option=None,):
+  def __init__(self, cmdType=None, command=None, catalogName=thrift_spec[3][4], properties=None, comment=None,):
     self.cmdType = cmdType
     self.command = command
     self.catalogName = catalogName
-    self.option = option
+    self.properties = properties
+    self.comment = comment
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -196,9 +120,19 @@ class SqletCommand:
         else:
           iprot.skip(ftype)
       elif fid == 4:
-        if ftype == TType.STRUCT:
-          self.option = CommandOption()
-          self.option.read(iprot)
+        if ftype == TType.MAP:
+          self.properties = {}
+          (_ktype1, _vtype2, _size0 ) = iprot.readMapBegin() 
+          for _i4 in xrange(_size0):
+            _key5 = iprot.readString();
+            _val6 = iprot.readString();
+            self.properties[_key5] = _val6
+          iprot.readMapEnd()
+        else:
+          iprot.skip(ftype)
+      elif fid == 5:
+        if ftype == TType.STRING:
+          self.comment = iprot.readString();
         else:
           iprot.skip(ftype)
       else:
@@ -223,9 +157,17 @@ class SqletCommand:
       oprot.writeFieldBegin('catalogName', TType.STRING, 3)
       oprot.writeString(self.catalogName)
       oprot.writeFieldEnd()
-    if self.option is not None:
-      oprot.writeFieldBegin('option', TType.STRUCT, 4)
-      self.option.write(oprot)
+    if self.properties is not None:
+      oprot.writeFieldBegin('properties', TType.MAP, 4)
+      oprot.writeMapBegin(TType.STRING, TType.STRING, len(self.properties))
+      for kiter7,viter8 in self.properties.items():
+        oprot.writeString(kiter7)
+        oprot.writeString(viter8)
+      oprot.writeMapEnd()
+      oprot.writeFieldEnd()
+    if self.comment is not None:
+      oprot.writeFieldBegin('comment', TType.STRING, 5)
+      oprot.writeString(self.comment)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()

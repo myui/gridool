@@ -11,16 +11,19 @@ $GLOBALS['E_CommandType'] = array(
   'MAP_SHUFFLE' => 0,
   'MAP_NO_COMPILE' => 1,
   'REDUCE' => 2,
+  'EXT_SCRIPT' => 3,
 );
 
 final class CommandType {
   const MAP_SHUFFLE = 0;
   const MAP_NO_COMPILE = 1;
   const REDUCE = 2;
+  const EXT_SCRIPT = 3;
   static public $__names = array(
     0 => 'MAP_SHUFFLE',
     1 => 'MAP_NO_COMPILE',
     2 => 'REDUCE',
+    3 => 'EXT_SCRIPT',
   );
 }
 
@@ -58,139 +61,14 @@ final class InputOutputType {
   );
 }
 
-class CommandOption {
-  static $_TSPEC;
-
-  public $properties = null;
-  public $comment = null;
-
-  public function __construct($vals=null) {
-    if (!isset(self::$_TSPEC)) {
-      self::$_TSPEC = array(
-        1 => array(
-          'var' => 'properties',
-          'type' => TType::MAP,
-          'ktype' => TType::STRING,
-          'vtype' => TType::STRING,
-          'key' => array(
-            'type' => TType::STRING,
-          ),
-          'val' => array(
-            'type' => TType::STRING,
-            ),
-          ),
-        2 => array(
-          'var' => 'comment',
-          'type' => TType::STRING,
-          ),
-        );
-    }
-    if (is_array($vals)) {
-      if (isset($vals['properties'])) {
-        $this->properties = $vals['properties'];
-      }
-      if (isset($vals['comment'])) {
-        $this->comment = $vals['comment'];
-      }
-    }
-  }
-
-  public function getName() {
-    return 'CommandOption';
-  }
-
-  public function read($input)
-  {
-    $xfer = 0;
-    $fname = null;
-    $ftype = 0;
-    $fid = 0;
-    $xfer += $input->readStructBegin($fname);
-    while (true)
-    {
-      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
-      if ($ftype == TType::STOP) {
-        break;
-      }
-      switch ($fid)
-      {
-        case 1:
-          if ($ftype == TType::MAP) {
-            $this->properties = array();
-            $_size0 = 0;
-            $_ktype1 = 0;
-            $_vtype2 = 0;
-            $xfer += $input->readMapBegin($_ktype1, $_vtype2, $_size0);
-            for ($_i4 = 0; $_i4 < $_size0; ++$_i4)
-            {
-              $key5 = '';
-              $val6 = '';
-              $xfer += $input->readString($key5);
-              $xfer += $input->readString($val6);
-              $this->properties[$key5] = $val6;
-            }
-            $xfer += $input->readMapEnd();
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        case 2:
-          if ($ftype == TType::STRING) {
-            $xfer += $input->readString($this->comment);
-          } else {
-            $xfer += $input->skip($ftype);
-          }
-          break;
-        default:
-          $xfer += $input->skip($ftype);
-          break;
-      }
-      $xfer += $input->readFieldEnd();
-    }
-    $xfer += $input->readStructEnd();
-    return $xfer;
-  }
-
-  public function write($output) {
-    $xfer = 0;
-    $xfer += $output->writeStructBegin('CommandOption');
-    if ($this->properties !== null) {
-      if (!is_array($this->properties)) {
-        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
-      }
-      $xfer += $output->writeFieldBegin('properties', TType::MAP, 1);
-      {
-        $output->writeMapBegin(TType::STRING, TType::STRING, count($this->properties));
-        {
-          foreach ($this->properties as $kiter7 => $viter8)
-          {
-            $xfer += $output->writeString($kiter7);
-            $xfer += $output->writeString($viter8);
-          }
-        }
-        $output->writeMapEnd();
-      }
-      $xfer += $output->writeFieldEnd();
-    }
-    if ($this->comment !== null) {
-      $xfer += $output->writeFieldBegin('comment', TType::STRING, 2);
-      $xfer += $output->writeString($this->comment);
-      $xfer += $output->writeFieldEnd();
-    }
-    $xfer += $output->writeFieldStop();
-    $xfer += $output->writeStructEnd();
-    return $xfer;
-  }
-
-}
-
 class SqletCommand {
   static $_TSPEC;
 
   public $cmdType = null;
   public $command = null;
   public $catalogName = "default";
-  public $option = null;
+  public $properties = null;
+  public $comment = null;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
@@ -208,9 +86,20 @@ class SqletCommand {
           'type' => TType::STRING,
           ),
         4 => array(
-          'var' => 'option',
-          'type' => TType::STRUCT,
-          'class' => 'CommandOption',
+          'var' => 'properties',
+          'type' => TType::MAP,
+          'ktype' => TType::STRING,
+          'vtype' => TType::STRING,
+          'key' => array(
+            'type' => TType::STRING,
+          ),
+          'val' => array(
+            'type' => TType::STRING,
+            ),
+          ),
+        5 => array(
+          'var' => 'comment',
+          'type' => TType::STRING,
           ),
         );
     }
@@ -224,8 +113,11 @@ class SqletCommand {
       if (isset($vals['catalogName'])) {
         $this->catalogName = $vals['catalogName'];
       }
-      if (isset($vals['option'])) {
-        $this->option = $vals['option'];
+      if (isset($vals['properties'])) {
+        $this->properties = $vals['properties'];
+      }
+      if (isset($vals['comment'])) {
+        $this->comment = $vals['comment'];
       }
     }
   }
@@ -271,9 +163,28 @@ class SqletCommand {
           }
           break;
         case 4:
-          if ($ftype == TType::STRUCT) {
-            $this->option = new CommandOption();
-            $xfer += $this->option->read($input);
+          if ($ftype == TType::MAP) {
+            $this->properties = array();
+            $_size0 = 0;
+            $_ktype1 = 0;
+            $_vtype2 = 0;
+            $xfer += $input->readMapBegin($_ktype1, $_vtype2, $_size0);
+            for ($_i4 = 0; $_i4 < $_size0; ++$_i4)
+            {
+              $key5 = '';
+              $val6 = '';
+              $xfer += $input->readString($key5);
+              $xfer += $input->readString($val6);
+              $this->properties[$key5] = $val6;
+            }
+            $xfer += $input->readMapEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 5:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->comment);
           } else {
             $xfer += $input->skip($ftype);
           }
@@ -306,12 +217,27 @@ class SqletCommand {
       $xfer += $output->writeString($this->catalogName);
       $xfer += $output->writeFieldEnd();
     }
-    if ($this->option !== null) {
-      if (!is_object($this->option)) {
+    if ($this->properties !== null) {
+      if (!is_array($this->properties)) {
         throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
       }
-      $xfer += $output->writeFieldBegin('option', TType::STRUCT, 4);
-      $xfer += $this->option->write($output);
+      $xfer += $output->writeFieldBegin('properties', TType::MAP, 4);
+      {
+        $output->writeMapBegin(TType::STRING, TType::STRING, count($this->properties));
+        {
+          foreach ($this->properties as $kiter7 => $viter8)
+          {
+            $xfer += $output->writeString($kiter7);
+            $xfer += $output->writeString($viter8);
+          }
+        }
+        $output->writeMapEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->comment !== null) {
+      $xfer += $output->writeFieldBegin('comment', TType::STRING, 5);
+      $xfer += $output->writeString($this->comment);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();

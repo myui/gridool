@@ -11,7 +11,7 @@ public class PartitioningConfTest {
     public void testLoadSettingsString() throws SqletException {
         PartitioningConf conf = new PartitioningConf();
         conf.loadSettings("/home/myui/workspace/gridool/src/etl/test/gridool/sqlet/env/partitioning_test01.csv");
-        conf.toString();
+        System.out.println(conf);
     }
 
 }

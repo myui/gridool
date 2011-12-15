@@ -23,16 +23,16 @@
 import gridool.sqlet.SqletException;
 import gridool.sqlet.SqletException.SqletErrorType;
 import gridool.sqlet.SqletModule;
-import gridool.sqlet.api.CommandType;
-import gridool.sqlet.api.SqletCommand;
+import gridool.sqlet.api.*;
 import gridool.sqlet.catalog.MapReduceConf;
 import gridool.sqlet.catalog.PartitioningConf;
 import gridool.sqlet.catalog.SystemCatalog;
 
 public class SqletParser {
 
-    private static final String[] LEX_STATES = { "DEFAULT", "LOAD_STMT", "EXPECT_SELECT", "IN_MAP_NOCOMPILE",
-            "END_MAP_DIRECTIVE", "KEYWORD", "URI", "CONSUME_SEMICOLON", "IN_MULTI_LINE_COMMENT" };
+    private static final String[] LEX_STATES = { "DEFAULT", "LOAD_STMT", "IN_MAP_NOCOMPILE",
+            "EXPECT_SELECT", "END_MR_DIRECTIVE", "DIRECTIVE_OPTION", "MAY_CONSUME_SEMICOLON",
+            "KEYWORD", "URI", "IN_MULTI_LINE_COMMENT" };
 
     /** parse state variables */
     private Token currentToken = null;
@@ -124,6 +124,10 @@ TOKEN_MGR_DECLS :
 	}
 }
 
+//------------------------------
+// Load statment
+
+< DEFAULT >
 TOKEN :
 {
   < StartLoadPartition : ("load" | "LOAD") <Skip_> ("partitions" | "PARTITIONS") <Skip_> > : LOAD_STMT | < StartLoadReducers : ("load" | "LOAD") <Skip_> ("reducers" | "REDUCERS") <Skip_> > : LOAD_STMT 
@@ -132,38 +136,70 @@ TOKEN :
 < LOAD_STMT >
 TOKEN :
 {  < LoadStmt_IntoCatalog : ("into" | "INTO") <Skip_> ("catalog" | "CATALOG") <Skip_> > { pushState(LOAD_STMT); } : KEYWORD
-| < LoadStmt_FromFile : ("from" | "FROM") <Skip_> ("file" | "FILE") <Skip_> > { pushState(CONSUME_SEMICOLON); } : URI
-| < LoadStmt_FromTable : ("from" | "FROM") <Skip_ > ("table" | "TABLE") <Skip_> > { pushState(CONSUME_SEMICOLON); } : KEYWORD
+| < LoadStmt_FromFile : ("from" | "FROM") <Skip_> ("file" | "FILE") <Skip_> > { pushState(MAY_CONSUME_SEMICOLON); } : URI
+| < LoadStmt_FromTable : ("from" | "FROM") <Skip_ > ("table" | "TABLE") <Skip_> > { pushState(MAY_CONSUME_SEMICOLON); } : KEYWORD
 }
 
+//------------------------------
+// Map directive
+
+< DEFAULT >
 TOKEN:
 {  < BeginMapShuffle : "map-and-shuffle" <Skip_> "{" (<Skip_>)* > : EXPECT_SELECT
 | < BeginMapNoCompile : "map#no_compile"  <Skip_> "{" (<Skip_>)* > : IN_MAP_NOCOMPILE
 }
 
-< EXPECT_SELECT >
-TOKEN :
-{  < SelectQuery : ( "SELECT" | "select" ) <Skip_> (~[";"])+ ";" > : END_MAP_DIRECTIVE
-}
-
 < IN_MAP_NOCOMPILE >
 TOKEN :
 {
-  < OtherThanRbrace : ( ~["}"] | "\\}" )+ > : END_MAP_DIRECTIVE
+  < MapRedOtherThanRbrace : ( ~["}"] | "\\}" )+ > : END_MR_DIRECTIVE
 }
 
-< END_MAP_DIRECTIVE >
+//------------------------------
+// Reduce directive
+
+< DEFAULT >
 TOKEN:
-{  
-  < EndMapUsingCatalog : "}" <Skip_> ("using"|"USING") <Skip_> ("catalog"|"CATALOG") <Skip_> > { pushState(CONSUME_SEMICOLON); } : KEYWORD
-| < EndMapRbrace : "}" > : CONSUME_SEMICOLON
+{
+  < BeginReduce : ( "REDUCE" | "reduce" ) <Skip_> "{" (<Skip_>)* > : EXPECT_SELECT
+| < BeginGatherReduce : ( "REDUCE#gather" | "reduce#gather" ) <Skip_> "{" (<Skip_>)* > : EXPECT_SELECT
 }
+
+//------------------------------
+// directive common
+
+< EXPECT_SELECT >
+TOKEN :
+{
+  < SelectQuery : ( "SELECT" | "select" ) <Skip_> (~[";"])+ ";" > : END_MR_DIRECTIVE
+}
+
+< END_MR_DIRECTIVE >
+TOKEN :
+{  
+  < EndDirectiveRbrace : "}" > : MAY_CONSUME_SEMICOLON
+}
+
+< DIRECTIVE_OPTION, MAY_CONSUME_SEMICOLON >
+TOKEN :
+{  < OPT_CATALOG_NAME : ("catalog_name"|"CATALOG_NAME") (<Skip_>)* "=" (<Skip_>)* > { pushState(MAY_CONSUME_SEMICOLON); } : KEYWORD
+| < OPT_NUM_REDUCERS : ("num_reducers"|"NUM_REDUCERS") (<Skip_>)* "=" (<Skip_>)* > { pushState(MAY_CONSUME_SEMICOLON); } : KEYWORD
+}
+
+< MAY_CONSUME_SEMICOLON >
+TOKEN :
+{  < OPT_COMMA : "," > : DIRECTIVE_OPTION
+}
+
+//------------------------------
+// general stuff
 
 < KEYWORD >
 TOKEN :
 {
   < QuotedIdentifier : "\"" < Identifier > "\"" > { popState(); }
 | < Identifier : ( < Letter > | "_") ( < Letter > | < Digit > | ["-",".","_"] )* > { popState(); }
+| < PositiveNumber : ["1"-"9"] (["0"-"9"])* > { popState(); }
 }
 
 < URI >
@@ -172,7 +208,7 @@ TOKEN :
 | < #URILiteral : ([ "0"-"9","a"-"z","A"-"Z","-", "_", ".", "#", ":", "/", "(", ")" ])+ >
 }
 
-< CONSUME_SEMICOLON >
+< MAY_CONSUME_SEMICOLON, CONSUME_SEMICOLON >
 TOKEN :
 {
   < SemiColon : ";" > : DEFAULT
@@ -185,6 +221,9 @@ TOKEN :
 | < #Letter: ["A"-"Z","a"-"z"]>
 | < #Digit : ["0"-"9"] >
 }
+
+//------------------------------
+// Comment
 
 MORE :
 {
@@ -208,7 +247,9 @@ SPECIAL_TOKEN :
   < SINGLE_LINE_COMMENT: "--" (~["\r","\n"])* >
 }
 
-< DEFAULT, LOAD_STMT, EXPECT_SELECT, IN_MAP_NOCOMPILE, END_MAP_DIRECTIVE, KEYWORD, URI, CONSUME_SEMICOLON >
+< DEFAULT,
+  LOAD_STMT, EXPECT_SELECT, IN_MAP_NOCOMPILE, END_MR_DIRECTIVE, MAY_CONSUME_SEMICOLON, DIRECTIVE_OPTION,
+  START_LANG_EXPR, IN_LANG_EXPR, END_LANG_EXPR >
 SKIP :
 {
   < (<WhitespaceChar>)+ >
@@ -320,53 +361,80 @@ void parseMapDirective(SqletModule mod) throws SqletException :
 
 void parseMapShuffle(SqletModule m) throws SqletException :
 {
-	String catalogName = SystemCatalog.DEFAULT_CATALOG_NAME;
 	String selectQuery = null;
+	SqletCommand cmd = null;
 }
 {
   	currentToken = < BeginMapShuffle >
     currentToken = < SelectQuery >
     {		selectQuery = removeLastSemiColon(currentToken.image);
     }
-  	(
-  	  	(		  	currentToken = < EndMapUsingCatalog >
-		  	catalogName = ObjectName()
-  	 	)
-  	 |
-  	 	currentToken = < EndMapRbrace >
-  	)
+	currentToken = < EndDirectiveRbrace >
   	{
-  	  	assert selectQuery != null;		SqletCommand cmd = new SqletCommand(CommandType.MAP_SHUFFLE, selectQuery);
-        cmd.setCatalogName(catalogName);
+  	  	assert selectQuery != null;		cmd = new SqletCommand(CommandType.MAP_SHUFFLE, selectQuery);
 		m.offerCommand(cmd);
   	}
+  	[
+  		parseDirectiveOptions(cmd)
+  	]
 }
 
 void parseMapNoCompile(SqletModule m) throws SqletException :
 {
-	String catalogName = SystemCatalog.DEFAULT_CATALOG_NAME;
 	String rawQuery = null;
+	SqletCommand cmd = null;
 }
 {
   	currentToken = < BeginMapNoCompile >
-  	currentToken = < OtherThanRbrace >
+  	currentToken = < MapRedOtherThanRbrace >
   	{
   	  	rawQuery = currentToken.image.trim();
   	}
-  	(
-  	  	(  	  	  
-		  	currentToken = < EndMapUsingCatalog >
-		  	catalogName = ObjectName()
-  	 	)
-  	 |
-  	 	currentToken = < EndMapRbrace >
-  	)
+  	currentToken = < EndDirectiveRbrace >
   	{
   	  	assert rawQuery != null;
-  	   	SqletCommand cmd = new SqletCommand(CommandType.MAP_NO_COMPILE, rawQuery);
-  	   	cmd.setCatalogName(catalogName);
+  	   	cmd = new SqletCommand(CommandType.MAP_NO_COMPILE, rawQuery);
 		m.offerCommand(cmd);  	}
+  	[
+  		parseDirectiveOptions(cmd)
+  	]
 }
+
+void parseDirectiveOptions(SqletCommand cmd) throws SqletException :
+{}
+{
+  	parseDirectiveOption(cmd)	(
+	  	currentToken = < OPT_COMMA >	  	
+	  	parseDirectiveOption(cmd)
+	)*
+}
+
+void parseDirectiveOption(SqletCommand cmd) throws SqletException :
+{}
+{
+  	(  	  
+  		parseCatalogNameOption(cmd)
+  	  | parseNumReducersOption(cmd)
+ 	) 
+}
+
+void parseCatalogNameOption(SqletCommand cmd) throws SqletException :
+{
+  	String catalogName = null;}
+{
+  	currentToken = < OPT_CATALOG_NAME >
+  	catalogName = ObjectName()
+  	{  	  	
+  	  	cmd.setCatalogName(catalogName);  	}  	}
+
+void parseNumReducersOption(SqletCommand cmd) throws SqletException :
+{}
+{
+  	currentToken = < OPT_NUM_REDUCERS >
+  	currentToken = < PositiveNumber >
+  	{
+  	  	String nm = currentToken.image;		cmd.putToProperties(Constants.PROP_NUM_REDUCERS, nm);
+  	}}
 
 String ObjectName():
 {}

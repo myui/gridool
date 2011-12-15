@@ -14,7 +14,7 @@ public class MapReduceConfTest {
     public void testLoadReducers() throws SqletException {
         MapReduceConf conf = new MapReduceConf();
         conf.loadReducers("/home/myui/workspace/gridool/src/etl/test/gridool/sqlet/env/reducers01.csv");
-        List<Reducer> reducers = conf.getReducers(true);
+        List<Reducer> reducers = conf.getReducers();
         System.out.println(reducers);
     }
 
