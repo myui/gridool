@@ -25,6 +25,7 @@ import gridool.GridJobFuture;
 import gridool.GridKernel;
 import gridool.GridNode;
 import gridool.db.catalog.DistributionCatalog;
+import gridool.db.dba.DBAccessor;
 import gridool.db.partitioning.phihash.DBPartitioningJobConf;
 import gridool.db.partitioning.phihash.NodeWithPartitionNo;
 import gridool.db.partitioning.phihash.monetdb.MonetDBCsvLoadOperation;

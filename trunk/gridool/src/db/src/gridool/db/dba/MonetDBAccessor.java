@@ -1,7 +1,7 @@
 /*
  * @(#)$Id$
  *
- * Copyright 2006-2008 Makoto YUI
+ * Copyright 2010-2011 Makoto YUI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,25 +18,30 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.db.helpers;
+package gridool.db.dba;
 
-import javax.annotation.Nonnull;
+import java.io.File;
+
 
 /**
- * 
- * <DIV lang="en"></DIV>
- * <DIV lang="ja"></DIV>
- * 
- * @author Makoto YUI (yuin405@gmail.com)
+ * @author Makoto YUI
  */
-public final class DBAccessorFactory {
+public final class MonetDBAccessor extends DBAccessor {
 
-    private DBAccessorFactory() {}
-
-    @Nonnull
-    public static DBAccessor createDBAccessor() {
-        // TODO more variants
-        return new DBAccessor();
+    public MonetDBAccessor() {
+        super();
     }
+
+    @Override
+    public long copyToFile(String selectQuery, File outFile) {
+        
+        return 0;
+    }
+
+    @Override
+    public long copyFromFile(String filepath, String tblName) {
+        return 0;
+    }
+
 
 }

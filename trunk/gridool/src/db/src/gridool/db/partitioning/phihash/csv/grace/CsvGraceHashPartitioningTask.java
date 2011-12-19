@@ -30,7 +30,7 @@ import gridool.Settings;
 import gridool.annotation.GridKernelResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridTaskAdapter;
-import gridool.db.helpers.DBAccessor;
+import gridool.db.dba.DBAccessor;
 import gridool.db.helpers.ForeignKey;
 import gridool.db.helpers.GridDbUtils;
 import gridool.db.helpers.PrimaryKey;

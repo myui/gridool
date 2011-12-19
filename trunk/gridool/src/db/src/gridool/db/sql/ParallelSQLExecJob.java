@@ -33,7 +33,7 @@ import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridJobBase;
 import gridool.db.catalog.DistributionCatalog;
 import gridool.db.catalog.NodeState;
-import gridool.db.helpers.DBAccessor;
+import gridool.db.dba.DBAccessor;
 import gridool.db.helpers.GridDbUtils;
 import gridool.db.sql.ParallelSQLMapTask.ParallelSQLMapTaskResult;
 import gridool.db.sql.SQLTranslator.QueryString;

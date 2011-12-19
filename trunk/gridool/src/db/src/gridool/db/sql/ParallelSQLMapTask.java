@@ -30,7 +30,7 @@ import gridool.annotation.GridConfigResource;
 import gridool.annotation.GridRegistryResource;
 import gridool.construct.GridTaskAdapter;
 import gridool.db.catalog.DistributionCatalog;
-import gridool.db.helpers.DBAccessor;
+import gridool.db.dba.DBAccessor;
 import gridool.db.helpers.GridDbUtils;
 import gridool.db.sql.SQLTranslator.QueryString;
 import gridool.locking.LockManager;

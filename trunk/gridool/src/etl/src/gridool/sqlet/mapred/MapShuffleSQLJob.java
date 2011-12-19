@@ -70,6 +70,7 @@ public final class MapShuffleSQLJob extends GridJobBase<MapShuffleSQLJob.JobConf
         final Map<GridTask, GridNode> taskMap = new KeyValueMap<GridTask, GridNode>();
         final Map<String, MapShuffleSQLTask> reverseMap = new HashMap<String, MapShuffleSQLTask>(jobConf.partitions.size());
         final Map<Partition, Reducer> shuffleMap = new HashMap<Partition, Reducer>();
+        int taskNum = 0;
         for(Partition partition : jobConf.partitions) {
             if(!reducerItor.hasNext()) {
                 reducerItor = jobConf.reducers.iterator();
@@ -77,6 +78,7 @@ public final class MapShuffleSQLJob extends GridJobBase<MapShuffleSQLJob.JobConf
             Reducer reducer = reducerItor.next();
 
             MapShuffleSQLTask task = new MapShuffleSQLTask(this, partition, reducer, jobConf);
+            task.setTaskNumber(++taskNum);
             GridNode node = partition.getNode();
             taskMap.put(task, node);
 
