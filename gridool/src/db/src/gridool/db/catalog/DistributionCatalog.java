@@ -23,7 +23,7 @@ package gridool.db.catalog;
 import gridool.GridException;
 import gridool.GridNode;
 import gridool.Settings;
-import gridool.db.helpers.DBAccessor;
+import gridool.db.dba.DBAccessor;
 import gridool.db.helpers.GridDbUtils;
 import gridool.util.GridUtils;
 import gridool.util.jdbc.JDBCUtils;

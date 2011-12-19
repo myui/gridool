@@ -18,7 +18,7 @@
  * Contributors:
  *     Makoto YUI - initial implementation
  */
-package gridool.db.helpers;
+package gridool.db.dba;
 
 import gridool.Settings;
 import gridool.util.GridUtils;
@@ -27,6 +27,7 @@ import gridool.util.jdbc.PooledDbConnection;
 import gridool.util.pool.BoundedObjectPool;
 import gridool.util.pool.ObjectPool;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -35,7 +36,6 @@ import javax.annotation.Nonnull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
 /**
  * 
  * <DIV lang="en"></DIV>
@@ -43,7 +43,7 @@ import org.apache.commons.logging.LogFactory;
  * 
  * @author Makoto YUI (yuin405@gmail.com)
  */
-public class DBAccessor {
+public abstract class DBAccessor {
     private static final Log LOG = LogFactory.getLog(DBAccessor.class);
 
     public static final String SYS_TABLE_SYMBOL = "__i_am_system_table__";
@@ -179,5 +179,9 @@ public class DBAccessor {
     protected String extractDbName(@Nonnull String dburl) {
         return GridUtils.extractDbName(dburl);
     }
+
+    public abstract long copyToFile(String selectQuery, File file);
+
+    public abstract long copyFromFile(String filepath, String tblName);
 
 }

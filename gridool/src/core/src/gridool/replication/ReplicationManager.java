@@ -28,7 +28,7 @@ import gridool.GridNode;
 import gridool.GridTask;
 import gridool.Settings;
 import gridool.communication.payload.GridNodeInfo;
-import gridool.db.helpers.DBAccessor;
+import gridool.db.dba.DBAccessor;
 import gridool.db.helpers.GridDbUtils;
 import gridool.processors.task.GridTaskProcessor;
 import gridool.replication.jobs.CoordinateReplicaJobConf;

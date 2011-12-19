@@ -1,3 +1,3 @@
-ID,NODE,DBURL,USER,PASSWORD,shuffleDataSink
-PE1,dc01.hpcc.jp:1999,tpch100,tom,tom1,/work/shufflesink
-PE2,dc02.hpcc.jp:1999,tpch100,alice,alice00,
+ID,NODE,DBURL,USER,PASSWORD,XFER_PORT,SHUFFLE_DATASINK
+PE1,dc01.hpcc.jp:1999,tpch100,tom,tom1,47110,/work/shufflesink
+PE2,dc02.hpcc.jp:1999,tpch100,alice,alice00,,

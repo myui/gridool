@@ -21,6 +21,7 @@
 package gridool.sqlet.catalog;
 
 import gridool.GridNode;
+import gridool.dfs.GridXferService;
 import gridool.sqlet.SqletException;
 import gridool.sqlet.SqletException.SqletErrorType;
 import gridool.util.GridUtils;
@@ -98,12 +99,15 @@ public class MapReduceConf implements Serializable {
                 String dbUrl = csvReader.get(fieldIndexes[2]);
                 String user = csvReader.get(fieldIndexes[3]);
                 String password = csvReader.get(fieldIndexes[4]);
-                String shuffleDataSink = csvReader.get(fieldIndexes[5]);
+                String xferPortStr = csvReader.get(fieldIndexes[5]);
+                String shuffleDataSink = csvReader.get(fieldIndexes[6]);
 
                 Preconditions.checkNotNull(id, nodeStr);
 
                 GridNode hostNode = GridUtils.getNode(nodeStr);
-                Reducer r = new Reducer(id, hostNode, dbUrl, user, password, shuffleDataSink);
+                int xferPort = (xferPortStr == null || xferPortStr.isEmpty()) ? GridXferService.DEFAULT_RECV_PORT
+                        : Integer.parseInt(xferPortStr);
+                Reducer r = new Reducer(id, hostNode, dbUrl, user, password, xferPort, shuffleDataSink);
                 reducers.add(r);
             }
         } else {
@@ -113,24 +117,26 @@ public class MapReduceConf implements Serializable {
 
     private static int[] toFieldIndexes(@Nullable Map<String, Integer> map) {
         if(map == null) {
-            return new int[] { 0, 1, 2, 3, 4, 5 };
+            return new int[] { 0, 1, 2, 3, 4, 5, 6 };
         } else {
             Integer c0 = map.get("ID");
             Integer c1 = map.get("NODE");
             Integer c2 = map.get("DBURL");
             Integer c3 = map.get("USER");
             Integer c4 = map.get("PASSWORD");
-            Integer c5 = map.get("SHUFFLEDATASINK");
+            Integer c5 = map.get("XFER_PORT");
+            Integer c6 = map.get("SHUFFLE_DATASINK");
 
-            Preconditions.checkNotNull(c0, c1, c2, c3, c4, c5);
+            Preconditions.checkNotNull(c0, c1, c2, c3, c4, c5, c6);
 
-            final int[] indexes = new int[6];
+            final int[] indexes = new int[7];
             indexes[0] = c0.intValue();
             indexes[1] = c1.intValue();
             indexes[2] = c2.intValue();
             indexes[3] = c3.intValue();
             indexes[4] = c4.intValue();
             indexes[5] = c5.intValue();
+            indexes[6] = c6.intValue();
             return indexes;
         }
     }
@@ -148,15 +154,17 @@ public class MapReduceConf implements Serializable {
         final String user;
         @Nullable
         final String password;
+        final int xferPort;
         @Nullable
         final String shuffleDataSink;
 
-        public Reducer(@Nonnull String id, @Nonnull GridNode host, @Nullable String dbUrl, @Nullable String user, @Nullable String password, @Nullable String shuffleDataSink) {
+        public Reducer(@Nonnull String id, @Nonnull GridNode host, @Nullable String dbUrl, @Nullable String user, @Nullable String password, int xferPort, @Nullable String shuffleDataSink) {
             this.id = id;
             this.host = host;
             this.dbUrl = dbUrl;
             this.user = user;
             this.password = password;
+            this.xferPort = xferPort;
             this.shuffleDataSink = shuffleDataSink;
         }
 
@@ -180,6 +188,10 @@ public class MapReduceConf implements Serializable {
             return password;
         }
 
+        public int getXferPort() {
+            return xferPort;
+        }
+
         public String getShuffleDataSink() {
             return shuffleDataSink;
         }
@@ -187,9 +199,9 @@ public class MapReduceConf implements Serializable {
         @Override
         public String toString() {
             return "Reducer [id=" + id + ", host=" + host + ", dbUrl=" + dbUrl + ", user=" + user
-                    + ", password=" + password + ", shuffleDataSink=" + shuffleDataSink + "]";
+                    + ", password=" + password + ", xferPort=" + xferPort + ", shuffleDataSink="
+                    + shuffleDataSink + "]";
         }
-
     }
 
     @Override

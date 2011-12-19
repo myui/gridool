@@ -146,7 +146,7 @@ TOKEN :
 < DEFAULT >
 TOKEN:
 {  < BeginMapShuffle : "map-and-shuffle" <Skip_> "{" (<Skip_>)* > : EXPECT_SELECT
-| < BeginMapNoCompile : "map#no_compile"  <Skip_> "{" (<Skip_>)* > : IN_MAP_NOCOMPILE
+| < BeginMapNoCompile : "map"  <Skip_> "{" (<Skip_>)* > : IN_MAP_NOCOMPILE
 }
 
 < IN_MAP_NOCOMPILE >

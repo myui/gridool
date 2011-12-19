@@ -25,7 +25,7 @@ import gridool.GridNode;
 import gridool.Settings;
 import gridool.db.DBOperation;
 import gridool.db.catalog.DistributionCatalog;
-import gridool.db.helpers.DBAccessor;
+import gridool.db.dba.DBAccessor;
 import gridool.db.helpers.MonetDBUtils;
 import gridool.db.partitioning.phihash.csv.distmm.InMemoryMappingIndex;
 import gridool.dht.ILocalDirectory;
