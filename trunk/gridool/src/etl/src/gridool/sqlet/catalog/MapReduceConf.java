@@ -27,6 +27,7 @@ import gridool.sqlet.SqletException.SqletErrorType;
 import gridool.util.GridUtils;
 import gridool.util.csv.HeaderAwareCsvReader;
 import gridool.util.io.FastBufferedInputStream;
+import gridool.util.io.FileUtils;
 import gridool.util.lang.Preconditions;
 
 import java.io.IOException;
@@ -34,6 +35,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -100,8 +102,9 @@ public class MapReduceConf implements Serializable {
                 String user = csvReader.get(fieldIndexes[3]);
                 String password = csvReader.get(fieldIndexes[4]);
                 String xferPortStr = csvReader.get(fieldIndexes[5]);
-                String shuffleDataSink = csvReader.get(fieldIndexes[6]);
-
+                String shuffleDataSinkStr = csvReader.get(fieldIndexes[6]);
+                String[] shuffleDataSink = FileUtils.parsePathExpressions(shuffleDataSinkStr, ",");
+                
                 Preconditions.checkNotNull(id, nodeStr);
 
                 GridNode hostNode = GridUtils.getNode(nodeStr);
@@ -113,7 +116,7 @@ public class MapReduceConf implements Serializable {
         } else {
             throw new IllegalArgumentException("Unsupported URI: " + uri);
         }
-    }
+    }    
 
     private static int[] toFieldIndexes(@Nullable Map<String, Integer> map) {
         if(map == null) {
@@ -156,9 +159,9 @@ public class MapReduceConf implements Serializable {
         final String password;
         final int xferPort;
         @Nullable
-        final String shuffleDataSink;
+        final String[] shuffleDataSink;
 
-        public Reducer(@Nonnull String id, @Nonnull GridNode host, @Nullable String dbUrl, @Nullable String user, @Nullable String password, int xferPort, @Nullable String shuffleDataSink) {
+        public Reducer(@Nonnull String id, @Nonnull GridNode host, @Nullable String dbUrl, @Nullable String user, @Nullable String password, int xferPort, @Nullable String[] shuffleDataSink) {
             this.id = id;
             this.host = host;
             this.dbUrl = dbUrl;
@@ -192,7 +195,7 @@ public class MapReduceConf implements Serializable {
             return xferPort;
         }
 
-        public String getShuffleDataSink() {
+        public String[] getShuffleDataSink() {
             return shuffleDataSink;
         }
 
@@ -200,8 +203,9 @@ public class MapReduceConf implements Serializable {
         public String toString() {
             return "Reducer [id=" + id + ", host=" + host + ", dbUrl=" + dbUrl + ", user=" + user
                     + ", password=" + password + ", xferPort=" + xferPort + ", shuffleDataSink="
-                    + shuffleDataSink + "]";
-        }
+                    + Arrays.toString(shuffleDataSink) + "]";
+        }               
+
     }
 
     @Override
