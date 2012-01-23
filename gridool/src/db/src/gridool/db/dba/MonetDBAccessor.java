@@ -21,6 +21,7 @@
 package gridool.db.dba;
 
 import java.io.File;
+import java.sql.SQLException;
 
 
 /**
@@ -33,13 +34,12 @@ public final class MonetDBAccessor extends DBAccessor {
     }
 
     @Override
-    public long copyToFile(String selectQuery, File outFile) {
-        
+    public long copyToFile(String selectQuery, File file) throws SQLException {
         return 0;
     }
 
     @Override
-    public long copyFromFile(String filepath, String tblName) {
+    public long copyFromFile(String filepath, String tblName) throws SQLException {
         return 0;
     }
 

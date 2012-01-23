@@ -203,10 +203,16 @@ public final class GridUtils {
         int port = Integer.parseInt(portStr);
         return getNode(host, port);
     }
-    
+
     public static GridNode getNode(String host, int port) {
         InetAddress addr = NetUtils.getInetAddress(host);
         return new GridNodeInfo(addr, port, false);
+    }
+
+    public static boolean isSameHost(GridNode lhs, GridNode rhs) {
+        InetAddress laddr = lhs.getPhysicalAdress();
+        InetAddress raddr = rhs.getPhysicalAdress();
+        return laddr.equals(raddr);
     }
 
     @Nonnull

@@ -180,8 +180,8 @@ public abstract class DBAccessor {
         return GridUtils.extractDbName(dburl);
     }
 
-    public abstract long copyToFile(String selectQuery, File file);
+    public abstract long copyToFile(String selectQuery, File file) throws SQLException;
 
-    public abstract long copyFromFile(String filepath, String tblName);
+    public abstract long copyFromFile(String filepath, String tblName) throws SQLException;
 
 }

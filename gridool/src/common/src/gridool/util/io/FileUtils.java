@@ -258,6 +258,14 @@ public final class FileUtils {
         }
     }
 
+    public static String[] parsePathExpressions(String expr, String separatorRegex) {
+        final String[] paths = expr.split(separatorRegex);
+        for(int i = 0; i < paths.length; i++) {
+            paths[i] = paths[i].trim();
+        }
+        return paths;
+    }
+
     public interface IOFileFilter extends FileFilter, FilenameFilter {
     }
 
