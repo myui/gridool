@@ -14,11 +14,10 @@ map-and-shuffle {
 	SELECT * from table 
 	where c1 = "test" and c2 = "test2"
 	order by c3;
-} catalog_name = "test01", num_reducers=3 ;
+} catalog_name = "test01";
 
 -- this is a comment
-map#no_compile 
-{
+map {
 	alter table name set c1 = "test1";
 	select * from table;
 };

@@ -115,17 +115,17 @@ TOKEN_MGR_DECLS :
 	}
 	
 	public void popState() {
-		if(stateStack.isEmpty()) {
-			System.err.println("Line: " + input_stream.getEndLine());
+		if(!stateStack.isEmpty()) {
+		    SwitchTo(SqletParserConstants.DEFAULT);
 		} else {
-			final int state = stateStack.pop();
+			int state = stateStack.pop();
 			SwitchTo(state);
 		}
 	}
 }
 
 //------------------------------
-// Load statment
+// Load statement
 
 < DEFAULT >
 TOKEN :
@@ -139,6 +139,40 @@ TOKEN :
 | < LoadStmt_FromFile : ("from" | "FROM") <Skip_> ("file" | "FILE") <Skip_> > { pushState(MAY_CONSUME_SEMICOLON); } : URI
 | < LoadStmt_FromTable : ("from" | "FROM") <Skip_ > ("table" | "TABLE") <Skip_> > { pushState(MAY_CONSUME_SEMICOLON); } : KEYWORD
 }
+
+//------------------------------
+// Let spawn clause
+
+< DEFAULT >
+TOKEN :
+{  < LetVariable : "let" <Skip_> <VariableIndicator> > { pushState(SPAWN_CLAUSE); } : KEYWORD
+| < #VariableIndicator : "$" >
+}
+
+< BEGIN_SPAWN >
+TOKEN:
+{
+  < ColonEqualsSpawn : ":=" (<Skip_>)* "spawn" (<Skip_>)* "{" > { pushState(END_SPAWN); } : DEFAULT}
+
+< END_SPAWN >
+TOKEN:
+{
+  < EndSpawnRbrace : "}" (< Skip_ >)* ";" > : DEFAULT}
+
+//------------------------------
+// Sync clause
+
+< DEFAULT >
+TOKEN:
+{
+  < SYNC_VARS_START : "sync" <Skip_> <VariableIndicator> > { pushState(SYNC_PLIST); } : KEYWORD
+| < SYNC_ALL : "sync" < Skip_ > "all" (< Skip_ >)* ";" > : DEFAULT }
+
+< SYNC_PLIST >
+TOKEN:
+{
+  < PLIST_COMMA : "," (<Skip_>)* <VariableIndicator> > { pushState(SYNC_PLIST); } : KEYWORD
+| < PLIST_SEMICOLON : ";" > : DEFAULT}
 
 //------------------------------
 // Map directive
@@ -161,8 +195,12 @@ TOKEN :
 < DEFAULT >
 TOKEN:
 {
-  < BeginReduce : ( "REDUCE" | "reduce" ) <Skip_> "{" (<Skip_>)* > : EXPECT_SELECT
-| < BeginGatherReduce : ( "REDUCE#gather" | "reduce#gather" ) <Skip_> "{" (<Skip_>)* > : EXPECT_SELECT
+  < BeginReduce : ( "reduce" ) <Skip_> "at" <Skip_> > { pushState(REDUCE_DIRECTIVE); } : KEYWORD
+}
+
+< REDUCE_DIRECTIVE >
+TOKEN:
+{  < LBraceInReduce : "{" > : EXPECT_SELECT
 }
 
 //------------------------------
@@ -211,7 +249,7 @@ TOKEN :
 < MAY_CONSUME_SEMICOLON, CONSUME_SEMICOLON >
 TOKEN :
 {
-  < SemiColon : ";" > : DEFAULT
+  < SemiColon : ";" > { popState(); }
 }
 
 TOKEN :
@@ -262,7 +300,7 @@ SqletModule parseCompilationUnit() throws SqletException:
  	(
  	  (LOOKAHEAD(2)		  parseLoadPartitions(m)
 		| parseLoadReducers(m)
-		| parseMapDirective(m)
+		| parseMapReduceDirective(m)
 	  )
 	  currentToken = < SemiColon >
  	)+	<EOF>
@@ -354,12 +392,22 @@ void parseLoadReducersFromTable(MapReduceConf conf) throws SqletException :
 	}
 }
 
-void parseMapDirective(SqletModule mod) throws SqletException :
-{}
+void parseMapReduceDirective(SqletModule mod) throws SqletException :
 {
-	parseMapShuffle(mod) | parseMapNoCompile(mod)}
+  	SqletCommand cmd = null;}
+{    	  
+  	(
+  	  cmd = parseMapShuffle(mod)
+  	 |
+  	  cmd = parseMapNoCompile(mod)
+     |
+      cmd = parseReduce(mod)
+ 	)
+  	{  	  
+ 		mod.offerCommand(cmd);
+	}}
 
-void parseMapShuffle(SqletModule m) throws SqletException :
+SqletCommand parseMapShuffle(SqletModule m) throws SqletException :
 {
 	String selectQuery = null;
 	SqletCommand cmd = null;
@@ -372,14 +420,16 @@ void parseMapShuffle(SqletModule m) throws SqletException :
 	currentToken = < EndDirectiveRbrace >
   	{
   	  	assert selectQuery != null;		cmd = new SqletCommand(CommandType.MAP_SHUFFLE, selectQuery);
-		m.offerCommand(cmd);
   	}
   	[
   		parseDirectiveOptions(cmd)
   	]
+  	{
+		return cmd;
+  	}
 }
 
-void parseMapNoCompile(SqletModule m) throws SqletException :
+SqletCommand parseMapNoCompile(SqletModule m) throws SqletException :
 {
 	String rawQuery = null;
 	SqletCommand cmd = null;
@@ -393,12 +443,39 @@ void parseMapNoCompile(SqletModule m) throws SqletException :
   	currentToken = < EndDirectiveRbrace >
   	{
   	  	assert rawQuery != null;
-  	   	cmd = new SqletCommand(CommandType.MAP_NO_COMPILE, rawQuery);
-		m.offerCommand(cmd);  	}
+  	   	cmd = new SqletCommand(CommandType.MAP_NO_COMPILE, rawQuery);  	}
   	[
   		parseDirectiveOptions(cmd)
   	]
+  	{
+		return cmd;
+  	}
 }
+
+SqletCommand parseReduce(SqletModule m) throws SqletException :
+{
+  	String processorElementName = null;
+  	String selectQuery = null;
+  	SqletCommand cmd = null;}
+{
+  	currentToken = < BeginReduce >
+  	currentToken = < Identifier >
+  	{
+  	  	processorElementName = currentToken.image;  	}
+  	currentToken = < LBraceInReduce >
+  	currentToken = < SelectQuery >
+    {
+		selectQuery = removeLastSemiColon(currentToken.image);
+    }
+ 	currentToken = < EndDirectiveRbrace >
+ 	{
+ 	    cmd = new SqletCommand(CommandType.REDUCE, selectQuery);
+		cmd.putToProperties(Constants.PROP_REDUCE_PE, processorElementName); 	}
+ 	[
+  		parseDirectiveOptions(cmd)
+  	]
+  	{		return cmd;
+  	}}
 
 void parseDirectiveOptions(SqletCommand cmd) throws SqletException :
 {}

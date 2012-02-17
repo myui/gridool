@@ -71,10 +71,9 @@ public final class InvokeLocalCsvPartitioningTask extends GridTaskAdapter {
     @GridKernelResource
     private transient GridKernel kernel;
 
-    @SuppressWarnings("unchecked")
-    public InvokeLocalCsvPartitioningTask(final GridJob job, @Nonnull final List<String> lineList, @Nonnull final PartitioningJobConf ops, @Nonnull GridRouter router) {
+    public InvokeLocalCsvPartitioningTask(@SuppressWarnings("rawtypes") final GridJob job, @Nonnull final List<String> lineList, @Nonnull final PartitioningJobConf ops, @Nonnull GridRouter router) {
         super(job, false);
-        this.lines = ArrayUtils.toArray(lineList);
+        this.lines = ArrayUtils.toStringArray(lineList);
         this.fileName = ops.getFileName();
         this.isFirst = ops.isFirst();
         this.primaryForeignKeys = ops.getPrimaryForeignKeys();
