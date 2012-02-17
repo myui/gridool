@@ -729,7 +729,7 @@ public final class ArrayUtils {
         return array;
     }
 
-    public static byte[][] toArray(final Collection<byte[]> c) {
+    public static <T> byte[][] toByteArray(final Collection<byte[]> c) {
         final int length = c.size();
         final byte[][] array = new byte[length][];
         if(length > 0) {
@@ -741,7 +741,7 @@ public final class ArrayUtils {
         return array;
     }
 
-    public static String[] toArray(final Collection<String> c) {
+    public static String[] toStringArray(final Collection<String> c) {
         final int length = c.size();
         final String[] array = new String[length];
         if(length > 0) {

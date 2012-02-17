@@ -11,7 +11,8 @@ struct SqletCommand {
 }
 
 const string PROP_OUTPUT_TYPE = "output_type";
-const string PROP_OUTPUT_TBLNAME = "output_tblname";
+const string PROP_OUTPUT_TBLNAME = "output_table_name";
+const string PROP_REDUCE_PE = "reduce_processor_element";
 
 enum ErrorType { PARSE, EXECUTION, UNSUPPORTED }
 
