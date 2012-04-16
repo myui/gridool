@@ -146,7 +146,6 @@ TOKEN :
 < DEFAULT >
 TOKEN :
 {  < LetVariable : "let" <Skip_> <VariableIndicator> > { pushState(SPAWN_CLAUSE); } : KEYWORD
-| < #VariableIndicator : "$" >
 }
 
 < BEGIN_SPAWN >
@@ -222,11 +221,21 @@ TOKEN :
 TOKEN :
 {  < OPT_CATALOG_NAME : ("catalog_name"|"CATALOG_NAME") (<Skip_>)* "=" (<Skip_>)* > { pushState(MAY_CONSUME_SEMICOLON); } : KEYWORD
 | < OPT_NUM_REDUCERS : ("num_reducers"|"NUM_REDUCERS") (<Skip_>)* "=" (<Skip_>)* > { pushState(MAY_CONSUME_SEMICOLON); } : KEYWORD
+| < DISTRIBUTED_BY : "distributed" <Skip_> "by" <Skip_> > : DISTRIBUTION_METHOD
 }
 
 < MAY_CONSUME_SEMICOLON >
 TOKEN :
 {  < OPT_COMMA : "," > : DIRECTIVE_OPTION
+}
+
+//------------------------------
+// distribution
+
+< DISTRIBUTION_METHOD >
+TOKEN:
+{
+  < HASH_DIST : "hash(" > 
 }
 
 //------------------------------
@@ -258,6 +267,7 @@ TOKEN :
 | < #WhitespaceChar : ["\t", "\r", "\n", " "] >
 | < #Letter: ["A"-"Z","a"-"z"]>
 | < #Digit : ["0"-"9"] >
+| < #VariableIndicator : "$" >
 }
 
 //------------------------------
@@ -391,6 +401,21 @@ void parseLoadReducersFromTable(MapReduceConf conf) throws SqletException :
 		throw new SqletException(SqletErrorType.unsupported, "'load reducers from table' is not supported yet");
 	}
 }
+
+void parseSync(SqletModule mod) throws SqletException :{}{
+  (
+    currentToken = < SYNC_ALL >
+   |
+    (      		currentToken = < SYNC_VARS_START >
+		currentToken = < Identifier >
+		[
+			currentToken = < PLIST_COMMA >
+			currentToken = < Identifier >
+		]
+		currentToken = < PLIST_SEMICOLON >
+	)
+  )
+  {  }}
 
 void parseMapReduceDirective(SqletModule mod) throws SqletException :
 {
