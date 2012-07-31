@@ -130,7 +130,8 @@ TOKEN_MGR_DECLS :
 < DEFAULT >
 TOKEN :
 {
-  < StartLoadPartition : ("load" | "LOAD") <Skip_> ("partitions" | "PARTITIONS") <Skip_> > : LOAD_STMT | < StartLoadReducers : ("load" | "LOAD") <Skip_> ("reducers" | "REDUCERS") <Skip_> > : LOAD_STMT 
+  < StartLoadPEs : ("load" | "LOAD") <Skip_> ("processor" | "PROCESSOR") <Skip_> ("elements" | "ELEMENTS") <Skip_> > : LOAD_STMT
+| < StartLoadPartition : ("load" | "LOAD") <Skip_> ("partitions" | "PARTITIONS") <Skip_> > : LOAD_STMT | < StartLoadReducers : ("load" | "LOAD") <Skip_> ("reducers" | "REDUCERS") <Skip_> > : LOAD_STMT 
 }
 
 < LOAD_STMT >
@@ -318,6 +319,17 @@ SqletModule parseCompilationUnit() throws SqletException:
 		return m;
 	}
 }
+
+void parseLoadProcessorElements(SqletModule m) throws SqletException :
+{
+  	String catalogName = SystemCatalog.DEFAULT_CATALOG_NAME;}
+{
+ 	currentToken = < StartLoadPEs >
+ 	[
+		currentToken = < LoadStmt_IntoCatalog >
+		catalogName = ObjectName()
+	]
+	}
 
 void parseLoadPartitions(SqletModule m) throws SqletException :
 {
